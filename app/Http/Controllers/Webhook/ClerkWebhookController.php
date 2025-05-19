@@ -5,83 +5,87 @@ namespace App\Http\Controllers\Webhook;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use Illuminate\Http\Request;
-use Svix\Exception\WebhookVerificationException;
-use Svix\Webhook;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class ClerkWebhookController extends Controller
 {
     public function __invoke(Request $request)
     {
-        // // 1. Verify signature
-        // $payload = file_get_contents('php://input');
-        // $secret = env('CLERK_WEBHOOK_SECRET');
-        // // 1. Read raw body
-        // // $payload = $request->getContent();
-
-        // // 2. Gather Svix headers
-        // $headers = [
-        //     'svix-id' => $request->header('svix-id'),
-        //     'svix-timestamp' => $request->header('svix-timestamp'),
-        //     'svix-signature' => $request->header('svix-signature'),
-        // ];
-
-        // if (!$this->verifySignature($headers['svix-signature'], $payload, $secret)) {
-        //     return response()->json(['error' => 'Invalid signature'], Response::HTTP_UNAUTHORIZED);
-        // }
-        // 1. Read raw body
-        $payload = $request->getContent();
-
-        // 2. Gather Svix headers
-        $headers = [
-            'svix-id' => $request->header('svix-id'),
-            'svix-timestamp' => $request->header('svix-timestamp'),
-            'svix-signature' => $request->header('svix-signature'),
-        ];
-
-        // 3. Verify Svix webhook signature
         try {
-            $wh = new Webhook(env('CLERK_WEBHOOK_SECRET'));
-            $event = $wh->verify($payload, $headers);
-        } catch (WebhookVerificationException $e) {
-            \Log::warning('Svix webhook verification failed: ' . $e->getMessage());
-            return response()->json([
-                'error' => 'Invalid signature'
-            ], Response::HTTP_UNAUTHORIZED);
+            // Get headers
+            $signature = $request->header('svix-signature');
+            $timestamp = $request->header('svix-timestamp');
+            $eventId = $request->header('svix-id');
+
+            // Get raw payload
+            $payload = $request->getContent();
+
+            // Verify headers exist
+            if (!$signature || !$timestamp || !$eventId) {
+                Log::error('Missing Svix headers', ['headers' => $request->headers->all()]);
+                return response()->json(['error' => 'Invalid headers'], 400);
+            }
+
+            // Verify signature
+            $secret = env('CLERK_WEBHOOK_SECRET');
+            if (!$this->verifySignature($signature, $timestamp, $payload, $secret)) {
+                Log::error('Invalid signature', [
+                    'received' => $signature,
+                    'expected' => $this->calculateExpectedSignature($timestamp, $payload, $secret)
+                ]);
+                return response()->json(['error' => 'Invalid signature'], 401);
+            }
+
+            // Verify timestamp freshness (5 minutes tolerance)
+            if (abs(time() - (int)$timestamp) > 300) {
+                Log::error('Stale timestamp', [
+                    'server_time' => time(),
+                    'webhook_time' => (int)$timestamp
+                ]);
+                return response()->json(['error' => 'Expired request'], 401);
+            }
+
+            // Process payload
+            $body = json_decode($payload, true);
+            $data = $body['data'];
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('Invalid JSON payload');
+                return response()->json(['error' => 'Invalid payload'], 400);
+            }
+
+            // Handle events
+            $userService = new UserService();
+            $userData = [
+                'clerk_id'  => $data['id'],
+                'email'  => $data['email_addresses'][0]['email_address'],
+                'first_name'  => $data['first_name'],
+                'last_name'  => $data['last_name'],
+                'image'  => $data['image_url'],
+            ];
+            switch ($body['type']) {
+                case 'user.created':
+                    $userService->store($userData);
+                    break;
+                case 'user.updated':
+                    $userService->updateByClerkId($data['id'], $userData);
+                    break;
+                case 'user.deleted':
+                    $userService->deleteByClerkId($data['id']);
+                    break;
+                    // Add other cases
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            Log::error('Webhook error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'payload' => $payload
+            ]);
+            return response()->json(['error' => 'Server error'], 500);
         }
-
-        // 4. Process the verified event payload
-        $body = $event; // verified and decoded payload
-        \Log::info('Svix event received', $body);
-
-        $data = $body['data'];
-        \Log::info($data);
-
-        $userService = new UserService();
-        $userData = [
-            'clerk_id'  => $data['id'],
-            'email'  => $data['email_addresses'][0]['email_address'],
-            'first_name'  => $data['first_name'],
-            'last_name'  => $data['last_name'],
-            'image'  => $data['image_url'],
-        ];
-        switch ($body['type']) {
-            case 'user.created':
-                $userService->store($userData);
-                break;
-
-            case 'user.updated':
-                $userService->updateByClerkId($data['id'], $userData);
-                break;
-
-            case 'user.deleted':
-                $userService->deleteByClerkId($data['id']);
-                break;
-        }
-
-        return response()->json(['success' => true]);
     }
-    
+
     private function verifySignature(string $signatureHeader, string $payload, string $secret): bool
     {
         // 1. Split the signature header
@@ -112,6 +116,14 @@ class ClerkWebhookController extends Controller
 
         // 5. Compare signatures
         return hash_equals($expectedSignature, $receivedSignature);
+    }
+
+    // Helper to calculate expected signature for debugging
+    private function calculateExpectedSignature(string $timestamp, string $payload, string $secret): string
+    {
+        $secret = substr($secret, 6);
+        $decodedSecret = base64_decode($secret);
+        return hash_hmac('sha256', "{$timestamp}.{$payload}", $decodedSecret);
     }
 
     private function handleUserCreated(array $userData)
