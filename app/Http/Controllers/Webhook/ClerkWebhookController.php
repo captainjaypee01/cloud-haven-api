@@ -58,15 +58,15 @@ class ClerkWebhookController extends Controller
         } catch (WebhookVerificationException $e) {
             Log::error('Webhook verification failed: ' . $e->getMessage(), [
                 'headers' => $request->headers->all(),
-                'payload' => $payload ?? null
+                // 'payload' => $payload ?? null
             ]);
             return response()->json(['error' => 'Invalid signature'], Response::HTTP_UNAUTHORIZED);
         } catch (\Throwable $e) {
             Log::error('Webhook processing error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'payload' => $payload ?? null
+                // 'payload' => $payload ?? null
             ]);
-            return response()->json(['error' => 'Server error'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['error' => 'Server error', 'trace' => $e->getTraceAsString()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
