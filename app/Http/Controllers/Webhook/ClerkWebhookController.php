@@ -36,7 +36,7 @@ class ClerkWebhookController extends Controller
             'last_name'  => $data['last_name'],
             'image'  => $data['image_url'],
         ];
-        switch ($data['type']) {
+        switch ($body['type']) {
             case 'user.created':
                 $userService->store($userData);
                 break;
