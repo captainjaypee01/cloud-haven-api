@@ -15,7 +15,7 @@ class UserService
      */
     public function store(array $userData): User
     {
-        $user = User::create($userData);
+        $user = User::insert($userData);
         return $user;
     }
 
