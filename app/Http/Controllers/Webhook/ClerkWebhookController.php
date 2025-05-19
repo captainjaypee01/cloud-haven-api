@@ -33,21 +33,14 @@ class ClerkWebhookController extends Controller
 
             // Handle events
             $userService = new UserService();
-            $userData = [
-                'clerk_id'  => $data['id'],
-                'email'  => $data['email_addresses'][0]['email_address'],
-                'first_name'  => $data['first_name'],
-                'last_name'  => $data['last_name'],
-                'image'  => $data['image_url'],
-            ];
             // 4. Handle Clerk events
             switch ($body['type']) {
                 case 'user.created':
-                    // $userService->store($userData);
+                    $userService->createUserByClerk($data);
                     break;
 
                 case 'user.updated':
-                    // $userService->updateByClerkId($data['id'], $userData);
+                    // $userService->updateByClerkId($data['id'], $data);
                     break;
 
                 case 'user.deleted':
