@@ -86,35 +86,23 @@ class ClerkWebhookController extends Controller
         }
     }
 
-    private function verifySignature(string $signatureHeader, string $payload, string $secret): bool
+    private function verifySignature(string $receivedSignature, string $timestamp, string $payload, string $secret): bool
     {
-        // 1. Split the signature header
-        $parts = explode(',', $signatureHeader, 3);
-
-        // Should have 3 parts: v1, timestamp, signature
-        if (count($parts) !== 3 || $parts[0] !== 'v1') {
-            return false;
-        }
-
-        $version = $parts[0];
-        $timestamp = $parts[1];
-        $receivedSignature = $parts[2];
-
-        // 2. Prepare the secret (Clerk secrets are base64 encoded with "whsec_" prefix)
+        // 1. Prepare the secret
         $secret = substr($secret, 6); // Remove "whsec_" prefix
         $decodedSecret = base64_decode($secret);
 
-        // 3. Create the signed content
+        // 2. Create the signed content
         $signedContent = "{$timestamp}.{$payload}";
 
-        // 4. Compute expected signature
+        // 3. Compute expected signature
         $expectedSignature = hash_hmac(
             'sha256',
             $signedContent,
             $decodedSecret
         );
 
-        // 5. Compare signatures
+        // 4. Compare signatures
         return hash_equals($expectedSignature, $receivedSignature);
     }
 
