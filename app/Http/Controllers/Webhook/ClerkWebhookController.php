@@ -5,17 +5,32 @@ namespace App\Http\Controllers\Webhook;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use Illuminate\Http\Request;
+use Svix\Exception\WebhookVerificationException;
+use Svix\Webhook;
 use Symfony\Component\HttpFoundation\Response;
 
 class ClerkWebhookController extends Controller
 {
     public function __invoke(Request $request)
     {
-        // 1. Verify signature
-        $payload = file_get_contents('php://input');
-        $secret = env('CLERK_WEBHOOK_SECRET');
+        // // 1. Verify signature
+        // $payload = file_get_contents('php://input');
+        // $secret = env('CLERK_WEBHOOK_SECRET');
+        // // 1. Read raw body
+        // // $payload = $request->getContent();
+
+        // // 2. Gather Svix headers
+        // $headers = [
+        //     'svix-id' => $request->header('svix-id'),
+        //     'svix-timestamp' => $request->header('svix-timestamp'),
+        //     'svix-signature' => $request->header('svix-signature'),
+        // ];
+
+        // if (!$this->verifySignature($headers['svix-signature'], $payload, $secret)) {
+        //     return response()->json(['error' => 'Invalid signature'], Response::HTTP_UNAUTHORIZED);
+        // }
         // 1. Read raw body
-        // $payload = $request->getContent();
+        $payload = $request->getContent();
 
         // 2. Gather Svix headers
         $headers = [
@@ -24,13 +39,20 @@ class ClerkWebhookController extends Controller
             'svix-signature' => $request->header('svix-signature'),
         ];
 
-        if (!$this->verifySignature($headers['svix-signature'], $payload, $secret)) {
-            return response()->json(['error' => 'Invalid signature'], Response::HTTP_UNAUTHORIZED);
+        // 3. Verify Svix webhook signature
+        try {
+            $wh = new Webhook(env('CLERK_WEBHOOK_SECRET'));
+            $event = $wh->verify($payload, $headers);
+        } catch (WebhookVerificationException $e) {
+            \Log::warning('Svix webhook verification failed: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Invalid signature'
+            ], Response::HTTP_UNAUTHORIZED);
         }
 
-        // 2. Process event
-        $body = json_decode($payload, true);
-        \Log::info($body);
+        // 4. Process the verified event payload
+        $body = $event; // verified and decoded payload
+        \Log::info('Svix event received', $body);
 
         $data = $body['data'];
         \Log::info($data);
