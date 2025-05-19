@@ -14,6 +14,7 @@ class ClerkWebhookController extends Controller
 {
     public function __invoke(Request $request)
     {
+        $userData = [];
         try {
             // 1. Initialize Svix Webhook with secret
             $webhook = new Webhook(env('CLERK_WEBHOOK_SECRET'));
@@ -42,15 +43,15 @@ class ClerkWebhookController extends Controller
             // 4. Handle Clerk events
             switch ($body['type']) {
                 case 'user.created':
-                    $userService->store($userData);
+                    // $userService->store($userData);
                     break;
 
                 case 'user.updated':
-                    $userService->updateByClerkId($data['id'], $userData);
+                    // $userService->updateByClerkId($data['id'], $userData);
                     break;
 
                 case 'user.deleted':
-                    $userService->deleteByClerkId($data['id']);
+                    // $userService->deleteByClerkId($data['id']);
                     break;
             }
 
