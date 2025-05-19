@@ -11,19 +11,26 @@ class ClerkWebhookController extends Controller
 {
     public function __invoke(Request $request)
     {
-        \Log::info($request);
         // 1. Verify signature
-        $signature = $request->header('svix-signature');
         $payload = file_get_contents('php://input');
         $secret = env('CLERK_WEBHOOK_SECRET');
+        // 1. Read raw body
+        // $payload = $request->getContent();
 
-        if (!$this->verifySignature($signature, $payload, $secret)) {
+        // 2. Gather Svix headers
+        $headers = [
+            'svix-id' => $request->header('svix-id'),
+            'svix-timestamp' => $request->header('svix-timestamp'),
+            'svix-signature' => $request->header('svix-signature'),
+        ];
+
+        if (!$this->verifySignature($headers['svix-signature'], $payload, $secret)) {
             return response()->json(['error' => 'Invalid signature'], Response::HTTP_UNAUTHORIZED);
         }
 
         // 2. Process event
         $body = json_decode($payload, true);
-        \Log::info($data);
+        \Log::info($body);
 
         $data = $body['data'];
         \Log::info($data);
@@ -52,19 +59,37 @@ class ClerkWebhookController extends Controller
 
         return response()->json(['success' => true]);
     }
-
-    private function verifySignature($signature, $payload, $secret)
+    
+    private function verifySignature(string $signatureHeader, string $payload, string $secret): bool
     {
-        // Clerk uses Svix libraries for signing
-        // Implementation example:
-        $parts = explode(',', $signature, 2);
-        $timestamp = explode('=', $parts[0], 2)[1];
-        $signature = explode('=', $parts[1], 2)[1];
+        // 1. Split the signature header
+        $parts = explode(',', $signatureHeader, 3);
 
+        // Should have 3 parts: v1, timestamp, signature
+        if (count($parts) !== 3 || $parts[0] !== 'v1') {
+            return false;
+        }
+
+        $version = $parts[0];
+        $timestamp = $parts[1];
+        $receivedSignature = $parts[2];
+
+        // 2. Prepare the secret (Clerk secrets are base64 encoded with "whsec_" prefix)
+        $secret = substr($secret, 6); // Remove "whsec_" prefix
+        $decodedSecret = base64_decode($secret);
+
+        // 3. Create the signed content
         $signedContent = "{$timestamp}.{$payload}";
-        $expectedSignature = hash_hmac('sha256', $signedContent, $secret);
 
-        return hash_equals($expectedSignature, $signature);
+        // 4. Compute expected signature
+        $expectedSignature = hash_hmac(
+            'sha256',
+            $signedContent,
+            $decodedSecret
+        );
+
+        // 5. Compare signatures
+        return hash_equals($expectedSignature, $receivedSignature);
     }
 
     private function handleUserCreated(array $userData)
