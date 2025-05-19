@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Svix\Exception\WebhookVerificationException;
+use Svix\Webhook;
 use Symfony\Component\HttpFoundation\Response;
 
 class ClerkWebhookController extends Controller
@@ -13,46 +15,20 @@ class ClerkWebhookController extends Controller
     public function __invoke(Request $request)
     {
         try {
-            // Get headers
-            $signature = $request->header('svix-signature');
-            $timestamp = $request->header('svix-timestamp');
-            $eventId = $request->header('svix-id');
+            // 1. Initialize Svix Webhook with secret
+            $webhook = new Webhook(env('CLERK_WEBHOOK_SECRET'));
 
-            // Get raw payload
+            // 2. Get raw payload and headers
             $payload = $request->getContent();
+            $headers = [
+                'svix-id' => $request->header('svix-id'),
+                'svix-timestamp' => $request->header('svix-timestamp'),
+                'svix-signature' => $request->header('svix-signature'),
+            ];
 
-            // Verify headers exist
-            if (!$signature || !$timestamp || !$eventId) {
-                Log::error('Missing Svix headers', ['headers' => $request->headers->all()]);
-                return response()->json(['error' => 'Invalid headers'], 400);
-            }
-
-            // Verify signature
-            $secret = env('CLERK_WEBHOOK_SECRET');
-            if (!$this->verifySignature($signature, $timestamp, $payload, $secret)) {
-                Log::error('Invalid signature', [
-                    'received' => $signature,
-                    'expected' => $this->calculateExpectedSignature($timestamp, $payload, $secret)
-                ]);
-                return response()->json(['error' => 'Invalid signature'], 401);
-            }
-
-            // Verify timestamp freshness (5 minutes tolerance)
-            if (abs(time() - (int)$timestamp) > 300) {
-                Log::error('Stale timestamp', [
-                    'server_time' => time(),
-                    'webhook_time' => (int)$timestamp
-                ]);
-                return response()->json(['error' => 'Expired request'], 401);
-            }
-
-            // Process payload
-            $body = json_decode($payload, true);
+            // 3. Verify and process payload
+            $body = $webhook->verify($payload, $headers);
             $data = $body['data'];
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                Log::error('Invalid JSON payload');
-                return response()->json(['error' => 'Invalid payload'], 400);
-            }
 
             // Handle events
             $userService = new UserService();
@@ -63,26 +39,34 @@ class ClerkWebhookController extends Controller
                 'last_name'  => $data['last_name'],
                 'image'  => $data['image_url'],
             ];
+            // 4. Handle Clerk events
             switch ($body['type']) {
                 case 'user.created':
                     $userService->store($userData);
                     break;
+
                 case 'user.updated':
                     $userService->updateByClerkId($data['id'], $userData);
                     break;
+
                 case 'user.deleted':
                     $userService->deleteByClerkId($data['id']);
                     break;
-                    // Add other cases
             }
 
             return response()->json(['success' => true]);
-        } catch (\Throwable $e) {
-            Log::error('Webhook error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'payload' => $payload
+        } catch (WebhookVerificationException $e) {
+            Log::error('Webhook verification failed: ' . $e->getMessage(), [
+                'headers' => $request->headers->all(),
+                'payload' => $payload ?? null
             ]);
-            return response()->json(['error' => 'Server error'], 500);
+            return response()->json(['error' => 'Invalid signature'], Response::HTTP_UNAUTHORIZED);
+        } catch (\Throwable $e) {
+            Log::error('Webhook processing error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'payload' => $payload ?? null
+            ]);
+            return response()->json(['error' => 'Server error'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
