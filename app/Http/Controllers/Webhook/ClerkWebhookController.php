@@ -11,6 +11,7 @@ class ClerkWebhookController extends Controller
 {
     public function __invoke(Request $request)
     {
+        \Log::info($request);
         // 1. Verify signature
         $signature = $request->header('svix-signature');
         $payload = file_get_contents('php://input');
@@ -22,8 +23,10 @@ class ClerkWebhookController extends Controller
 
         // 2. Process event
         $body = json_decode($payload, true);
+        \Log::info($data);
 
         $data = $body['data'];
+        \Log::info($data);
 
         $userService = new UserService();
         $userData = [
