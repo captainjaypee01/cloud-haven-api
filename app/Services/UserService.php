@@ -3,12 +3,13 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Models\UserProvider;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class UserService
 {
-    
+
     /**
      * To Create a new user account from Clerk
      * 
@@ -17,15 +18,22 @@ class UserService
      */
     public function createUserByClerk(array $data): User
     {
-        $userData = [
-            'clerk_id'  => $data['id'],
-            'email'  => $data['email_addresses'][0]['email_address'],
-            'first_name'  => $data['first_name'],
-            'last_name'  => $data['last_name'],
-            'image'  => $data['image_url'],
-            'password' => Hash::make(Str::random(10)),
-        ];
-        $user = User::create($userData);
+        // Find or create the user using Clerk's ID
+        $user = User::updateOrCreate(
+            ['clerk_id' => $data['id']],
+            [
+                'email' => $data['email_addresses'][0]['email_address'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'image' => $data['image_url'],
+            ]
+        );
+
+        // Extract providers from the webhook's linked_to array
+        $linkedProviders = $data['email_addresses'][0]['linked_to'] ?? [];
+
+        $this->updateUserLinkedProviders($user->clerk_id, $linkedProviders);
+
         return $user;
     }
 
@@ -52,13 +60,28 @@ class UserService
     /**
      * To Update the User by Clerk Id
      * 
-     * @param int $id
+     * @param string $id
      * @param array $userData
      * @return \App\Models\User
      */
-    public function updateByClerkId($id, array $userData): User
+    public function updateByClerkId($id, array $data): User
     {
-        $user = User::where('clerk_id', $id)->update($userData);
+        // Find or create the user using Clerk's ID
+        $user = User::updateOrCreate(
+            ['clerk_id' => $data['id']],
+            [
+                'email' => $data['email_addresses'][0]['email_address'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'image' => $data['image_url'],
+            ]
+        );
+
+        // Extract providers from the webhook's linked_to array
+        $linkedProviders = $data['email_addresses'][0]['linked_to'] ?? [];
+
+        $this->updateUserLinkedProviders($user->clerk_id, $linkedProviders);
+        
         return $user;
     }
 
@@ -78,7 +101,7 @@ class UserService
     /**
      * To Delete the User by Clerk Id
      * 
-     * @param int $id
+     * @param string $id
      * @param array $userData
      * @return \App\Models\User
      */
@@ -87,4 +110,37 @@ class UserService
         User::where('clerk_id', $id)->delete();
     }
 
+    /**
+     * To Update the user's linked providers by User Id
+     * 
+     * @param string $id
+     * @param array $linkedProviders
+     * @return mixed
+     */
+    public function updateUserLinkedProviders($userId, $linkedProviders)
+    {
+        // Track provider IDs to delete stale entries
+        $currentProviderIds = [];
+
+        foreach ($linkedProviders as $provider) {
+            $providerName = str_replace('oauth_', '', $provider['type']); // "google", "facebook"
+            $providerId = $provider['id'];
+
+            // Update or create the provider link
+            UserProvider::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'provider' => $providerName,
+                    'provider_id' => $providerId,
+                ]
+            );
+
+            $currentProviderIds[] = $providerId;
+        }
+
+        // Delete providers no longer linked
+        UserProvider::where('user_id', $userId)
+            ->whereNotIn('provider_id', $currentProviderIds)
+            ->delete();
+    }
 }

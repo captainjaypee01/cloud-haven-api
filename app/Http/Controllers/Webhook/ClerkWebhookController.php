@@ -40,11 +40,11 @@ class ClerkWebhookController extends Controller
                     break;
 
                 case 'user.updated':
-                    // $userService->updateByClerkId($data['id'], $data);
+                    $userService->updateByClerkId($data['id'], $data);
                     break;
 
                 case 'user.deleted':
-                    // $userService->deleteByClerkId($data['id']);
+                    $userService->deleteByClerkId($data['id']);
                     break;
             }
 
@@ -62,65 +62,5 @@ class ClerkWebhookController extends Controller
             ]);
             return response()->json(['error' => 'Server error', 'trace' => $e->getTraceAsString()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private function verifySignature(string $receivedSignature, string $timestamp, string $payload, string $secret): bool
-    {
-        // 1. Prepare the secret
-        $secret = substr($secret, 6); // Remove "whsec_" prefix
-        $decodedSecret = base64_decode($secret);
-
-        // 2. Create the signed content
-        $signedContent = "{$timestamp}.{$payload}";
-
-        // 3. Compute expected signature
-        $expectedSignature = hash_hmac(
-            'sha256',
-            $signedContent,
-            $decodedSecret
-        );
-
-        // 4. Compare signatures
-        return hash_equals($expectedSignature, $receivedSignature);
-    }
-
-    // Helper to calculate expected signature for debugging
-    private function calculateExpectedSignature(string $timestamp, string $payload, string $secret): string
-    {
-        $secret = substr($secret, 6);
-        $decodedSecret = base64_decode($secret);
-        return hash_hmac('sha256', "{$timestamp}.{$payload}", $decodedSecret);
-    }
-
-    private function handleUserCreated(array $userData)
-    {
-        // Example implementation
-        \App\Models\User::updateOrCreate(
-            ['clerk_id' => $userData['id']],
-            [
-                'first_name' => $userData['first_name'],
-                'last_name' => $userData['last_name'],
-                'email' => $userData['email_addresses'][0]['email_address'],
-                // Add other fields
-            ]
-        );
-    }
-
-    private function handleUserUpdated(array $userData)
-    {
-        \App\Models\User::where('clerk_id', $userData['id'])
-            ->update([
-                'first_name' => $userData['first_name'],
-                'last_name' => $userData['last_name'],
-                'email' => $userData['email_addresses'][0]['email_address'],
-                // Update other fields
-            ]);
-    }
-
-    private function handleUserDeleted(array $userData)
-    {
-        // Soft delete example
-        \App\Models\User::where('clerk_id', $userData['id'])
-            ->delete();
     }
 }
