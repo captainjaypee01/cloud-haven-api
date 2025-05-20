@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'clerk' => [
+        'secret_key' => env('CLERK_SECRET_KEY'),
+        'publishable_key' => env('CLERK_PUBLISHABLE_KEY'),
+        'domain' => env('CLERK_DOMAIN'),
+        'authorized_origins' => explode(',', env('CLERK_AUTHORIZED_ORIGINS', '')),
+        'webhook_secret_key' => env('CLERK_WEBHOOK_SECRET')
+    ],
+
 ];

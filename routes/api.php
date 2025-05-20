@@ -14,11 +14,9 @@ Route::prefix('v1')->group(function () {
     // Route::post('/login', [AuthController::class, 'login']);
 
     // Protected routes
-    // Route::middleware('auth:sanctum')->group(function () {
-    //     Route::apiResource('posts', PostController::class);
-    //     Route::apiResource('posts.comments', PostCommentController::class);
-    //     Route::post('/posts/{post}/archive', [PostController::class, 'archive']);
-    // });
+    Route::middleware('clerk:api')->group(function () {
+        Route::get('/clerk/test', fn() => 'Clerk Middleware Check');
+    });
 });
 
 Route::get('/user', function (Request $request) {

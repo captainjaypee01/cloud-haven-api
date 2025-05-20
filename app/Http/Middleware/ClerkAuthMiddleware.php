@@ -20,17 +20,26 @@ class ClerkAuthMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $options = new AuthenticateRequestOptions(
-            secretKey: getenv("CLERK_SECRET_KEY"),
-            authorizedParties: ["localhost", "localhost:5173", "localhost:3000"]
-        );
+        try {
+            
+            $options = new AuthenticateRequestOptions(
+                secretKey: config('services.clerk.secret_key'),
+                authorizedParties: [
+                    config('services.clerk.domain'), // e.g. 'your-app.clerk.accounts.dev'
+                    ...config('services.clerk.authorized_origins')
+                ]
+            );
 
-        $requestState = AuthenticateRequest::authenticateRequest($request, $options);
+            $requestState = AuthenticateRequest::authenticateRequest($request, $options);
 
-        $isSignedIn = $requestState->isSignedIn();
+            if (!$requestState->isSignedIn()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
 
-        Log::info([$isSignedIn]);
-
-        return $next($request);
+            return $next($request);
+        } catch (\Exception $e) {
+            Log::error('Clerk authentication failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Authentication failed'], 401);
+        }
     }
 }
