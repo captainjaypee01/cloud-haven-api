@@ -14,7 +14,14 @@ return new class extends Migration
         Schema::create('room_images', function (Blueprint $table) {
             $table->id();
             $table->foreignId('room_id')->constrained()->nullOnDelete();
-            $table->string('image_path');
+            $table->string('image_url', 500)->nullable();
+            $table->string('secure_image_url', 500)->nullable();
+            $table->string('image_path')->nullable();
+            $table->string('public_id');
+            $table->unsignedInteger('width')->nullable();
+            $table->unsignedInteger('height')->nullable();
+            $table->tinyInteger('order')->nullable()->default(0);
+            $table->string('alt_text')->nullable();
             $table->timestamps();
             $table->timestamp('deleted_at');
         });
