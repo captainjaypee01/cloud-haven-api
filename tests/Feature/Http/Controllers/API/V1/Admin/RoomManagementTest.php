@@ -128,7 +128,7 @@ describe('Admin Room Management', function () {
                 'allows_day_use'        => false,
                 'base_weekday_rate'     => 0,
                 'base_weekend_rate'     => 0,
-                'status'                => 2,
+                'status'                => "archived",
             ];
             actingAs($this->admin)
                 ->withHeader('X-TEST-USER-ID', $this->admin->id)
@@ -165,15 +165,6 @@ describe('Admin Room Management', function () {
                  'base_weekend_rate',
              ]);
         });
-
-        // it('return "Room Not Found" if Room is not existing', function () {
-        //     // Get the highest possible ID
-        //     actingAs($this->admin)
-        //         ->withHeader('X-TEST-USER-ID', $this->admin->id)
-        //         ->getJson("/api/v1/admin/rooms/$this->nonExistentId")
-        //         ->assertNotFound()
-        //         ->assertJson(['error' => 'Room not found.']);
-        // });
     });
     
     describe('Update Room', function () {
@@ -208,12 +199,12 @@ describe('Admin Room Management', function () {
                 'allows_day_use'        => false,
                 'base_weekday_rate'     => 10,
                 'base_weekend_rate'     => 10,
-                'status'                => 1,
+                'status'                => "available",
             ];
             actingAs($this->admin)
                 ->withHeader('X-TEST-USER-ID', $this->admin->id)
                 ->putJson("/api/v1/admin/rooms/{$this->roomId}", $data)
-                ->assertCreated()
+                ->assertOk()
                 ->assertJsonStructure([
                     'id',
                     'name',
@@ -256,11 +247,49 @@ describe('Admin Room Management', function () {
                 'allows_day_use'        => false,
                 'base_weekday_rate'     => 10,
                 'base_weekend_rate'     => 10,
-                'status'                => 1,
+                'status'                => "unavailable",
             ];
             actingAs($this->admin)
                 ->withHeader('X-TEST-USER-ID', $this->admin->id)
                 ->putJson("/api/v1/admin/rooms/{$this->nonExistentId}", $data)
+                ->assertNotFound()
+                ->assertJson(['error' => 'Room not found.']);
+        });
+    });
+
+    describe('Delete Room', function () {
+        beforeEach(function () {
+            $this->roomId = $this->rooms->random()->id;
+            $maxId = Room::max('id') ?? 0;
+            $this->nonExistentId = $maxId + 100;
+        });
+
+        it('denies access when no X-TEST-USER-ID header is set', function () {
+            // Hit the protected admin route without any header:
+            $response = $this->delete("/api/v1/admin/rooms/{$this->roomId}");
+            $response->assertStatus(401)
+                ->assertJson(['error' => 'Unauthorized']);
+        });
+
+        it('denies access for a logged-in user with role=guest', function () {
+
+            $response = $this->withHeader('X-TEST-USER-ID', $this->guest->id)
+                ->delete("/api/v1/admin/rooms/{$this->roomId}");
+            $response->assertJson(['error' => 'Forbidden'])
+                ->assertStatus(403);
+        });
+
+        it('allows an admin to remove a room', function () {
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->delete("/api/v1/admin/rooms/{$this->roomId}")
+                ->assertNoContent();
+        });
+
+        it('return "Room Not Found" if Room is not existing', function () {
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->delete("/api/v1/admin/rooms/{$this->nonExistentId}")
                 ->assertNotFound()
                 ->assertJson(['error' => 'Room not found.']);
         });

@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Room;
 
+use App\Enums\RoomStatusEnum;
 use App\Http\Responses\ValidationErrorResponse;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class UpdateRoomRequest extends FormRequest
@@ -54,7 +56,7 @@ class UpdateRoomRequest extends FormRequest
             'extra_guest_fee'       => 'required|numeric|min:0',
             'base_weekday_rate'     => 'required|numeric|min:0',
             'base_weekend_rate'     => 'required|numeric|min:0',
-            'status'                => 'required|integer|in:1,0,2',
+            'status'                => ['required','string', Rule::in(RoomStatusEnum::labels())],
         ];
     }
 }

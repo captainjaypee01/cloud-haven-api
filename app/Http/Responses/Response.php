@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 abstract class Response implements Responsable
 {
     public function __construct(
-        private readonly JsonResource|ResourceCollection|array $data,
+        private readonly JsonResource|ResourceCollection|array|null $data,
         private readonly int $status = JsonResponse::HTTP_OK
     ) {}
 

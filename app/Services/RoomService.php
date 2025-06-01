@@ -12,6 +12,7 @@ use App\Http\Requests\Room\UpdateRoomRequest;
 use App\Models\Room;
 use App\Queries\RoomQuery;
 use App\Services\Rooms\NewRoom;
+use App\Services\Rooms\RoomDtoFactory;
 use App\Services\Rooms\UpdateRoom as UpdateRoomDto;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -24,6 +25,7 @@ class RoomService implements RoomServiceInterface
         private   UpdateRoomContract        $updater,
         private   DeleteRoomContract        $deleter,
         private   UpdateStatusContract      $statusUpdater,
+        private   RoomDtoFactory            $dtoFactory,
     ) {}
 
     /**
@@ -33,7 +35,7 @@ class RoomService implements RoomServiceInterface
     {
         return $this->query->get(
             filters: $filters,
-            sort: $filters['sort']   ?? null,
+            sort: $filters['sort'] ?? null,
             perPage: $filters['per_page'] ?? 10
         );
     }
@@ -41,9 +43,9 @@ class RoomService implements RoomServiceInterface
     /**
      * Create a new Room.
      */
-    public function create(StoreRoomRequest $request, int $userId): Room
+    public function create(array $data, int $userId): Room
     {
-        $dto = NewRoom::from($request->validated());
+        $dto = $this->dtoFactory->newRoom($data);
         return $this->creator->handle($dto, $userId);
     }
 
@@ -58,26 +60,28 @@ class RoomService implements RoomServiceInterface
     /**
      * Update all Room fields.
      */
-    public function update(UpdateRoomRequest $request, int $roomId, int $userId): Room
+    public function update(array $data, int $roomId, int $userId): Room
     {
         $room = $this->query->getId($roomId);
-        $dto = UpdateRoomDto::from($request->validated());
+        $dto = $this->dtoFactory->updateRoom($data);
         return $this->updater->handle($room, $dto, $userId);
     }
 
     /**
      * Soft‐archive (delete) the room.
      */
-    public function delete(Room $room, int $userId): void
+    public function delete($roomId, int $userId): void
     {
+        $room = $this->query->getId($roomId);
         $this->deleter->handle($room, $userId);
     }
 
     /**
      * Only change the room's status.
      */
-    public function updateStatus(Room $room, string $newStatus, int $userId): Room
+    public function updateStatus($roomId, string $newStatus, int $userId): Room
     {
+        $room = $this->query->getId($roomId);
         return $this->statusUpdater->handle($room, $newStatus, $userId);
     }
 }
