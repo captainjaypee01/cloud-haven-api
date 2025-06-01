@@ -21,8 +21,8 @@ return new class extends Migration
         });
         Schema::create('seasonal_room_rates', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('room_id')->constrained()->nullOnDelete();
-            $table->foreignId('season_id')->constrained()->nullOnDelete();
+            $table->foreignId('room_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('season_id')->constrained()->cascadeOnDelete();
             $table->double('weekday_rate');
             $table->double('weekend_rate');
             $table->tinyInteger('status')->default(1);

@@ -21,6 +21,10 @@ return new class extends Migration
             $table->boolean('allows_day_use')->nullable()->default(false);
             $table->double('base_weekday_rate');
             $table->double('base_weekend_rate');
+            $table->tinyInteger('status')->default(1); // 1= available, 0= unavailable, 2= archived
+            $table->foreignId('updated_by')->nullable()->constrained('users', 'id', 'idx_user_update')->nullOnDelete();
+            $table->foreignId('archived_by')->nullable()->constrained('users', 'id', 'idx_user_archive')->nullOnDelete();
+            $table->foreignId('created_by')->nullable()->constrained('users', 'id', 'idx_user_create')->nullOnDelete();
             $table->timestamps();
         });
     }

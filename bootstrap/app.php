@@ -40,7 +40,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-            'clerk' => \App\Http\Middleware\ClerkAuthMiddleware::class,
+            'clerk.auth' => \App\Http\Middleware\ClerkAuthMiddleware::class,
+            'role'  => \App\Http\Middleware\EnsureRole::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

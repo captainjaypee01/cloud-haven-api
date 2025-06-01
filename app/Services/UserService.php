@@ -53,8 +53,11 @@ class UserService
             'last_name'  => $data['last_name'],
             'image'  => $data['image_url'],
         ];
-        $user = User::find($id)->update($userData);
-        return $user;
+
+        $user = User::find($id);
+        $user->update($userData);
+        $freshUser = $user->refresh();
+        return $freshUser;
     }
 
     /**
@@ -90,9 +93,9 @@ class UserService
      * 
      * @param int $id
      * @param array $userData
-     * @return \App\Models\User
+     * @return int
      */
-    public function deleteById($id): User
+    public function deleteById($id): int
     {
         $user = User::find($id)->delete();
         return $user;

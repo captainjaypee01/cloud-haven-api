@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email')->unique()->nullable();
+            $table->string('role')->default('user');
             $table->string('country_code')->nullable();
             $table->string('contact_number')->nullable();
             $table->timestamp('email_verified_at')->nullable();
@@ -62,9 +63,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
         Schema::dropIfExists('user_providers');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('users');
     }
 };

@@ -24,7 +24,11 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'clerk_id' => fake()->uuid(),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
+            'country_code' => fake()->countryCode(),
+            'contact_number' => fake()->phoneNumber(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
@@ -37,8 +41,28 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the model's role should be admin.
+     */
+    public function admin()
+    {
+        return $this->state([
+            'role' => 'admin'
+        ]);
+    }
+    
+    /**
+     * Indicate that the model's role should be admin.
+     */
+    public function guest()
+    {
+        return $this->state([
+            'role' => 'user'
         ]);
     }
 }
