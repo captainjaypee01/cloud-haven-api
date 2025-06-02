@@ -1,16 +1,14 @@
 <?php
 
-namespace App\Http\Requests\Room;
+namespace App\Http\Requests\User;
 
-use App\Enums\RoomStatusEnum;
 use App\Http\Responses\ValidationErrorResponse;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
-class UpdateRoomRequest extends FormRequest
+class UpdateUserRequest extends FormRequest
 {
     public function failedValidation(Validator $validator)
     {
@@ -29,7 +27,6 @@ class UpdateRoomRequest extends FormRequest
         // Throw as an exception so Laravel returns it immediately
         throw new HttpResponseException($json);
     }
-    
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -48,25 +45,14 @@ class UpdateRoomRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'                  => 'required|string|max:255',
-            'description'           => 'nullable|string',
-            'quantity'              => 'required|integer|min:1',
-            'max_guests'            => 'required|integer|min:1',
-            'allows_day_use'        => 'required|boolean',
-            'extra_guest_fee'       => 'required|numeric|min:0',
-            'base_weekday_rate'     => 'required|numeric|min:0',
-            'base_weekend_rate'     => 'required|numeric|min:0',
-            'status'                => ['required','string', Rule::in(RoomStatusEnum::labels())],
-        ];
-    }
-    
-    /**
-     * Custom error message
-     */
-    public function messages()
-    {
-        return [
-            'status.in' => 'Invalid status. Valid values: unavailable, available, archived',
+            'clerk_id' => ['nullable'],
+            'role'  => ['required', 'string'],
+            'email_addresses' => ['required', 'array'],
+            'email_addresses.0.email_address' => ['required','email'],
+            'email_addresses.0.linked_to' => ['array'],
+            'first_name' => ['required','string'],
+            'last_name' => ['required','string'],
+            'image_url' => ['nullable','url'],
         ];
     }
 }

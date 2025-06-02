@@ -11,11 +11,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(\App\Contracts\RoomServiceInterface::class, \App\Services\RoomService::class);
-        $this->app->bind(\App\Contracts\Room\CreateRoomContract::class,\App\Services\Rooms\Actions\CreateRoomAction::class);
-        $this->app->bind(\App\Contracts\Room\UpdateRoomContract::class,\App\Services\Rooms\Actions\UpdateRoomAction::class);
-        $this->app->bind(\App\Contracts\Room\DeleteRoomContract::class,\App\Services\Rooms\Actions\DeleteRoomAction::class);
-        $this->app->bind(\App\Contracts\Room\UpdateStatusContract::class,\App\Services\Rooms\Actions\UpdateStatusAction::class);
+        // Admin Room
+        $this->app->bind(\App\Contracts\Services\RoomServiceInterface::class, \App\Services\RoomService::class);
+        $this->app->bind(\App\Contracts\Room\CreateRoomContract::class, \App\Services\Rooms\Actions\CreateRoomAction::class);
+        $this->app->bind(\App\Contracts\Room\UpdateRoomContract::class, \App\Services\Rooms\Actions\UpdateRoomAction::class);
+        $this->app->bind(\App\Contracts\Room\DeleteRoomContract::class, \App\Services\Rooms\Actions\DeleteRoomAction::class);
+        $this->app->bind(\App\Contracts\Room\UpdateStatusContract::class, \App\Services\Rooms\Actions\UpdateStatusAction::class);
+
+        // Admin User
+        $this->app->bind(\App\Contracts\Services\UserServiceInterface::class, \App\Services\UserService::class);
+        $this->app->bind(\App\Contracts\Repositories\UserRepositoryInterface::class, \App\Repositories\UserRepository::class);
+        $this->app->bind(\App\Contracts\Users\CreateUserContract::class, \App\Services\Users\Actions\CreateUserAction::class);
+        $this->app->bind(\App\Contracts\Users\UpdateUserContract::class, \App\Services\Users\Actions\UpdateUserAction::class);
+        $this->app->bind(\App\Contracts\Users\SyncLinkedProvidersContract::class, \App\Services\Users\Actions\SyncLinkedProvidersAction::class);
+        $this->app->bind(\App\Contracts\Users\DeleteUserContract::class, \App\Services\Users\Actions\DeleteUserAction::class);
     }
 
     /**

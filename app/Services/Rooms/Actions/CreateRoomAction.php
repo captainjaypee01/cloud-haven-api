@@ -4,7 +4,7 @@ namespace App\Services\Rooms\Actions;
 
 use App\Contracts\Room\CreateRoomContract;
 use App\Models\Room;
-use App\Services\Rooms\NewRoom;
+use App\DTO\Rooms\NewRoom;
 use Illuminate\Support\Facades\DB;
 
 final class CreateRoomAction implements CreateRoomContract

@@ -12,9 +12,9 @@ use App\Contracts\Room\CreateRoomContract;
 use App\Contracts\Room\UpdateRoomContract;
 use App\Contracts\Room\DeleteRoomContract;
 use App\Contracts\Room\UpdateStatusContract;
-use App\Services\Rooms\NewRoom;
-use App\Services\Rooms\RoomDtoFactory;
-use App\Services\Rooms\UpdateRoom;
+use App\DTO\Rooms\NewRoom;
+use App\DTO\Rooms\RoomDtoFactory;
+use App\DTO\Rooms\UpdateRoom;
 
 describe('Room Service Test', function () {
 

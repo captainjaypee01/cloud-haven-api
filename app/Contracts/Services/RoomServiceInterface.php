@@ -1,10 +1,8 @@
 <?php
-namespace App\Contracts;
+namespace App\Contracts\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\Room;
-use App\Http\Requests\Room\StoreRoomRequest;
-use App\Http\Requests\Room\UpdateRoomRequest;
 
 interface RoomServiceInterface
 {

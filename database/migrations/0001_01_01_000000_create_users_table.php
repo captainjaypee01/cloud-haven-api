@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->rememberToken();
             $table->timestamps();
+            $table->timestamp('deleted_at')->nullable();
 
             $table->unique('clerk_id', 'idx_clerk');
         });

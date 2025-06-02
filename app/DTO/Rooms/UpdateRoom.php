@@ -1,7 +1,6 @@
 <?php
-// app/Services/Rooms/NewRoom.php
 
-namespace App\Services\Rooms;
+namespace App\DTO\Rooms;
 
 use Spatie\LaravelData\Data;
 

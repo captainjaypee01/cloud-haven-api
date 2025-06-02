@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\API\V1\Admin;
 
-use App\Contracts\RoomServiceInterface;
+use App\Contracts\Services\RoomServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Room\StoreRoomRequest;
 use App\Http\Requests\Room\UpdateRoomRequest;
@@ -24,6 +24,9 @@ class RoomController extends Controller
         private readonly RoomServiceInterface $roomService
     ) {}
 
+    /**
+     * Display a listing of the resource.
+     */
     public function index(Request $request): CollectionResponse
     {
         $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page']);
@@ -31,6 +34,9 @@ class RoomController extends Controller
         return new CollectionResponse(new RoomCollection($paginator), JsonResponse::HTTP_OK);
     }
 
+    /**
+     * Display the specified resource.
+     */
     public function show($room): ItemResponse|ErrorResponse
     {
         try {
@@ -41,6 +47,9 @@ class RoomController extends Controller
         return new ItemResponse(new RoomResource($data));
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(StoreRoomRequest $request): ItemResponse|ErrorResponse
     {
         try {
@@ -52,6 +61,9 @@ class RoomController extends Controller
         return new ItemResponse(new RoomResource($data), JsonResponse::HTTP_CREATED);
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(UpdateRoomRequest $request, $room): ItemResponse|ErrorResponse
     {
         try {
@@ -66,6 +78,9 @@ class RoomController extends Controller
         return new ItemResponse(new RoomResource($data), JsonResponse::HTTP_OK);
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(Request $request, $room): EmptyResponse|ErrorResponse
     {
         try {

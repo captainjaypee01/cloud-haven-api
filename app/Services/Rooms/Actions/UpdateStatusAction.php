@@ -1,5 +1,4 @@
 <?php
-// app/Services/Rooms/UpdateStatusAction.php
 
 namespace App\Services\Rooms\Actions;
 

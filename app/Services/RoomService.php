@@ -6,14 +6,10 @@ use App\Contracts\Room\CreateRoomContract;
 use App\Contracts\Room\DeleteRoomContract;
 use App\Contracts\Room\UpdateRoomContract;
 use App\Contracts\Room\UpdateStatusContract;
-use App\Contracts\RoomServiceInterface;
-use App\Http\Requests\Room\StoreRoomRequest;
-use App\Http\Requests\Room\UpdateRoomRequest;
+use App\Contracts\Services\RoomServiceInterface;
 use App\Models\Room;
 use App\Queries\RoomQuery;
-use App\Services\Rooms\NewRoom;
-use App\Services\Rooms\RoomDtoFactory;
-use App\Services\Rooms\UpdateRoom as UpdateRoomDto;
+use App\DTO\Rooms\RoomDtoFactory;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class RoomService implements RoomServiceInterface

@@ -1,8 +1,8 @@
 <?php
-namespace App\Services\Rooms;
+namespace App\DTO\Rooms;
 
-use App\Services\Rooms\NewRoom;
-use App\Services\Rooms\UpdateRoom;
+use App\DTO\Rooms\NewRoom;
+use App\DTO\Rooms\UpdateRoom;
 
 class RoomDtoFactory
 {

@@ -3,7 +3,7 @@
 namespace App\Contracts\Room;
 
 use App\Models\Room;
-use App\Services\Rooms\NewRoom;
+use App\DTO\Rooms\NewRoom;
 
 interface CreateRoomContract
 {

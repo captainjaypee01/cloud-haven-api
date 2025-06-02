@@ -3,7 +3,7 @@
 namespace App\Contracts\Room;
 
 use App\Models\Room;
-use App\Services\Rooms\UpdateRoom;
+use App\DTO\Rooms\UpdateRoom;
 
 interface UpdateRoomContract
 {

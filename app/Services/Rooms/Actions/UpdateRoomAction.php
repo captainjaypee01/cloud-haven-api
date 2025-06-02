@@ -4,7 +4,7 @@ namespace App\Services\Rooms\Actions;
 
 use App\Contracts\Room\UpdateRoomContract;
 use App\Models\Room;
-use App\Services\Rooms\UpdateRoom;
+use App\DTO\Rooms\UpdateRoom;
 use Illuminate\Support\Facades\DB;
 
 final class UpdateRoomAction implements UpdateRoomContract
