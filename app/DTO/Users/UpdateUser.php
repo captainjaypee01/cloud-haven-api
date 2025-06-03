@@ -29,6 +29,6 @@ class UpdateUser extends Data
         #[DateFormat('Y-m-d H:i:s')]
         #[WithCast(DateTimeInterfaceCast::class, type: CarbonImmutable::class)]
         public ?CarbonImmutable $email_verified_at,
-        public array $linkedProviders // an array of [ ['type'=>'oauth_google','id'=>'…'], … ]
+        public ?array $linkedProviders // an array of [ ['type'=>'oauth_google','id'=>'…'], … ]
     ) {}
 }

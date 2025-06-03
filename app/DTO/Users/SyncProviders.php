@@ -10,6 +10,6 @@ class SyncProviders extends Data
      * Create a new class instance.
      */
     public function __construct(
-        public array $linkedProviders
+        public ?array $linkedProviders
     ) {}
 }

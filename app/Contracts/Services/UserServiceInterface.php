@@ -24,6 +24,14 @@ interface UserServiceInterface
     public function show(int $id): User;
 
     /**
+     * To Show a user by clerk id
+     * 
+     * @param int $id
+     * @return \App\Models\User
+     */
+    public function showByClerkId(string $id): User;
+
+    /**
      * To Create a new user account from Clerk
      * 
      * @param array $userData

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Webhook;
 
+use App\Contracts\Services\UserServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Svix\Exception\WebhookVerificationException;
@@ -12,6 +14,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ClerkWebhookController extends Controller
 {
+    public function __construct(
+        private readonly UserServiceInterface $userService
+    ) {}
+
     public function __invoke(Request $request)
     {
         $userData = [];
@@ -30,25 +36,43 @@ class ClerkWebhookController extends Controller
             // 3. Verify and process payload
             $body = $webhook->verify($payload, $headers);
             $data = $body['data'];
-
+            $payload = [
+                'clerk_id'              => $data['id'],
+                'email'                 => $data['email_addresses'][0]['email_address'],
+                'first_name'            => $data['first_name'],
+                'last_name'             => $data['last_name'],
+                'role'                  => 'user',
+                'country_code'          => '',
+                'contact_number'        => '',
+                'image_url'             => $data['image_url'],
+                'password'              => '',
+                'email_verified_at'     => \Carbon\CarbonImmutable::createFromTimestampUTC($data['email_addresses'][0]['created_at']),//'2025-05-31 18:53:35',
+                'linkedProviders'       => $data['email_addresses'][0]['linked_to'],
+            ];
             // Handle events
-            $userService = new UserService();
             // 4. Handle Clerk events
             switch ($body['type']) {
                 case 'user.created':
-                    $userService->createUserByClerk($data);
+                    $this->userService->createUserByClerk($payload);
                     break;
 
                 case 'user.updated':
-                    $userService->updateByClerkId($data['id'], $data);
+                    $user = $this->userService->showByClerkId($data['id']);
+                    $payload['role'] = $user->role ?? 'user';
+                    $this->userService->updateByClerkId($data['id'], $payload);
                     break;
 
                 case 'user.deleted':
-                    $userService->deleteByClerkId($data['id']);
+                    $this->userService->deleteByClerkId($data['id']);
                     break;
             }
 
             return response()->json(['success' => true]);
+        } catch (ModelNotFoundException $e) {
+            Log::error('User not found: ' . $e->getMessage(), [
+                'headers' => $request->headers->all(),
+            ]);
+            return response()->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
         } catch (WebhookVerificationException $e) {
             Log::error('Webhook verification failed: ' . $e->getMessage(), [
                 'headers' => $request->headers->all(),

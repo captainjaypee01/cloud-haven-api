@@ -39,7 +39,7 @@ class UserService implements UserServiceInterface
             perPage: $filters['per_page'] ?? 10
         );
     }
-    
+
     /**
      * To Show a user by user id
      * 
@@ -52,6 +52,17 @@ class UserService implements UserServiceInterface
     }
 
     /**
+     * To Show a user by clerk id
+     * 
+     * @param int $id
+     * @return \App\Models\User
+     */
+    public function showByClerkId(string $id): User
+    {
+        return $this->repository->findByClerkId($id);
+    }
+
+    /**
      * To Create a new user account from Clerk
      * 
      * @param array $userData
@@ -60,19 +71,12 @@ class UserService implements UserServiceInterface
     public function createUser(array $data): User
     {
         // Find or create the user using Clerk's ID
-        $user = User::updateOrCreate(
-            [
-                'email' => $data['email_addresses'][0]['email_address'],
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'image' => $data['image_url'],
-            ]
-        );
+        $dto  = $this->dtoFactory->newUser($data);
+        $user = $this->creator->handle($dto);
 
-        // Extract providers from the webhook's linked_to array
-        $linkedProviders = $data['email_addresses'][0]['linked_to'] ?? [];
-
-        $this->updateUserLinkedProviders($user->clerk_id, $linkedProviders);
+        // Run linked‐providers sync
+        $syncDto = $this->dtoFactory->syncProviders($dto->linkedProviders);
+        $this->syncProviders->handle($user, $syncDto);
 
         return $user;
     }
@@ -85,7 +89,7 @@ class UserService implements UserServiceInterface
      */
     public function createUserByClerk(array $data): User
     {
-        
+
         $dto  = $this->dtoFactory->newUser($data);
         $user = $this->creator->handle($dto);
 
@@ -94,23 +98,6 @@ class UserService implements UserServiceInterface
         $this->syncProviders->handle($user, $syncDto);
 
         return $user;
-        // // Find or create the user using Clerk's ID
-        // $user = User::updateOrCreate(
-        //     ['clerk_id' => $data['id']],
-        //     [
-        //         'email' => $data['email_addresses'][0]['email_address'],
-        //         'first_name' => $data['first_name'],
-        //         'last_name' => $data['last_name'],
-        //         'image' => $data['image_url'],
-        //     ]
-        // );
-
-        // // Extract providers from the webhook's linked_to array
-        // $linkedProviders = $data['email_addresses'][0]['linked_to'] ?? [];
-
-        // $this->updateUserLinkedProviders($user->clerk_id, $linkedProviders);
-
-        // return $user;
     }
 
     /**
@@ -126,18 +113,6 @@ class UserService implements UserServiceInterface
         $dto  = $this->dtoFactory->updateUser($data);
         $updatedUser = $this->updater->handle($user, $dto);
         return $updatedUser;
-        // $userData = [
-        //     'clerk_id'  => $data['clerk_id'],
-        //     'email'  => $data['email_addresses'][0]['email_address'],
-        //     'first_name'  => $data['first_name'],
-        //     'last_name'  => $data['last_name'],
-        //     'image'  => $data['image_url'],
-        // ];
-
-        // $user = User::find($id);
-        // $user->update($userData);
-        // $freshUser = $user->refresh();
-        // return $freshUser;
     }
 
     /**
@@ -149,42 +124,17 @@ class UserService implements UserServiceInterface
      */
     public function updateByClerkId(string $clerkId, array $data): User
     {
-        
-        // If user exists with that clerk_id, pull it; otherwise the
-        // CreateUserAction will insert it.
-        $existing = $this->repository->findByClerkId($clerkId);
-        $dto      = $this->dtoFactory->updateUser($data);
 
-        if ($existing) {
-            $user = $this->updater->handle($existing, $dto);
-        } else {
-            $user = $this->creator->handle($this->dtoFactory->newUser($data));
-        }
+        $user = $this->repository->findByClerkId($clerkId);
 
-        // Sync providers
-        $emailEntry   = $data['email_addresses'][0] ?? [];
-        $linkedTo     = $emailEntry['linked_to'] ?? [];
-        $syncDto      = $this->dtoFactory->syncProviders($linkedTo);
-        $this->syncProviders->handle($user, $syncDto);
+        $dto = $this->dtoFactory->updateUser(array_merge($data, ['id' => $clerkId]));
 
-        return $user;
-        // // Find or create the user using Clerk's ID
-        // $user = User::updateOrCreate(
-        //     ['clerk_id' => $data['id']],
-        //     [
-        //         'email' => $data['email_addresses'][0]['email_address'],
-        //         'first_name' => $data['first_name'],
-        //         'last_name' => $data['last_name'],
-        //         'image' => $data['image_url'],
-        //     ]
-        // );
+        $updatedUser = $this->updater->handle($user, $dto);
 
-        // // Extract providers from the webhook's linked_to array
-        // $linkedProviders = $data['email_addresses'][0]['linked_to'] ?? [];
+        $syncDto = $this->dtoFactory->syncProviders($dto->linkedProviders);
+        $this->syncProviders->handle($updatedUser, $syncDto);
 
-        // $this->updateUserLinkedProviders($user->clerk_id, $linkedProviders);
-        
-        // return $user;
+        return $updatedUser;
     }
 
     /**
@@ -228,28 +178,5 @@ class UserService implements UserServiceInterface
         $user = $this->repository->getById($userId);
         $syncDto = $this->dtoFactory->syncProviders($linkedProviders);
         $this->syncProviders->handle($user, $syncDto);
-
-        // Track provider IDs to delete stale entries
-        // $currentProviderIds = [];
-        // foreach ($linkedProviders as $provider) {
-        //     $providerName = str_replace('oauth_', '', $provider['type']); // "google", "facebook"
-        //     $providerId = $provider['id'];
-
-        //     // Update or create the provider link
-        //     UserProvider::updateOrCreate(
-        //         [
-        //             'user_id' => $userId,
-        //             'provider' => $providerName,
-        //             'provider_id' => $providerId,
-        //         ]
-        //     );
-
-        //     $currentProviderIds[] = $providerId;
-        // }
-
-        // // Delete providers no longer linked
-        // UserProvider::where('user_id', $userId)
-        //     ->whereNotIn('provider_id', $currentProviderIds)
-        //     ->delete();
     }
 }
