@@ -43,7 +43,7 @@ class ClerkWebhookController extends Controller
                 case 'user.created':
                 case 'user.updated':
                     $payload = [
-                        'clerk_id'              => $data['id'],
+                        'id'                    => $data['id'],
                         'email'                 => $data['email_addresses'][0]['email_address'],
                         'first_name'            => $data['first_name'],
                         'last_name'             => $data['last_name'],
