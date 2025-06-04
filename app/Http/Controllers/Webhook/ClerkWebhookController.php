@@ -22,7 +22,7 @@ class ClerkWebhookController extends Controller
     public function __invoke(Request $request)
     {
         try {
-            // 1. Initialize Svix Webhook with secret
+            // 1. No need to initialize as we inject a webhook verifier
             // $webhook = new Webhook(env('CLERK_WEBHOOK_SECRET'));
 
             // 2. Get raw payload and headers
@@ -36,27 +36,40 @@ class ClerkWebhookController extends Controller
             // 3. Verify and process payload
             $body = $this->webhookVerifier->verify($payload, $headers);
             $data = $body['data'];
-            $payload = [
-                'clerk_id'              => $data['id'],
-                'email'                 => $data['email_addresses'][0]['email_address'],
-                'first_name'            => $data['first_name'],
-                'last_name'             => $data['last_name'],
-                'role'                  => 'user',
-                'country_code'          => '',
-                'contact_number'        => '',
-                'image_url'             => $data['image_url'],
-                'password'              => '',
-                'email_verified_at'     => \Carbon\CarbonImmutable::createFromTimestampUTC($data['email_addresses'][0]['created_at']),//'2025-05-31 18:53:35',
-                'linkedProviders'       => $data['email_addresses'][0]['linked_to'],
-            ];
             // Handle events
             // 4. Handle Clerk events
             switch ($body['type']) {
                 case 'user.created':
+                    $payload = [
+                        'clerk_id'              => $data['id'],
+                        'email'                 => $data['email_addresses'][0]['email_address'],
+                        'first_name'            => $data['first_name'],
+                        'last_name'             => $data['last_name'],
+                        'role'                  => 'user',
+                        'country_code'          => '',
+                        'contact_number'        => '',
+                        'image_url'             => $data['image_url'],
+                        'password'              => '',
+                        'email_verified_at'     => \Carbon\CarbonImmutable::createFromTimestampUTC($data['email_addresses'][0]['created_at']), //'2025-05-31 18:53:35',
+                        'linkedProviders'       => $data['email_addresses'][0]['linked_to'],
+                    ];
                     $this->userService->createUserByClerk($payload);
                     break;
 
                 case 'user.updated':
+                    $payload = [
+                        'clerk_id'              => $data['id'],
+                        'email'                 => $data['email_addresses'][0]['email_address'],
+                        'first_name'            => $data['first_name'],
+                        'last_name'             => $data['last_name'],
+                        'role'                  => 'user',
+                        'country_code'          => '',
+                        'contact_number'        => '',
+                        'image_url'             => $data['image_url'],
+                        'password'              => '',
+                        'email_verified_at'     => \Carbon\CarbonImmutable::createFromTimestampUTC($data['email_addresses'][0]['created_at']), //'2025-05-31 18:53:35',
+                        'linkedProviders'       => $data['email_addresses'][0]['linked_to'],
+                    ];
                     $user = $this->userService->showByClerkId($data['id']);
                     $payload['role'] = $user->role ?? 'user';
                     $this->userService->updateByClerkId($data['id'], $payload);

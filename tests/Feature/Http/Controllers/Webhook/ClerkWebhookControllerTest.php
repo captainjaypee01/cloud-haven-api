@@ -26,6 +26,12 @@ describe('Clerk Webhook Controller Test', function () {
         ];
 
         $this->baseEventData = function (string $type) {
+            if($type === "user.deleted"){
+                return [
+                    'type' => $type,
+                    'data' => ['id' => 'user_test123']
+                ];
+            }
             return [
                 'type' => $type,
                 'data' => [
