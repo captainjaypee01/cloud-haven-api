@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Webhook;
 
 use App\Contracts\Services\UserServiceInterface;
 use App\Http\Controllers\Controller;
-use App\Services\UserService;
+use App\Services\WebhookVerifier;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -15,15 +15,15 @@ use Symfony\Component\HttpFoundation\Response;
 class ClerkWebhookController extends Controller
 {
     public function __construct(
-        private readonly UserServiceInterface $userService
+        private readonly UserServiceInterface $userService,
+        private readonly WebhookVerifier $webhookVerifier
     ) {}
 
     public function __invoke(Request $request)
     {
-        $userData = [];
         try {
             // 1. Initialize Svix Webhook with secret
-            $webhook = new Webhook(env('CLERK_WEBHOOK_SECRET'));
+            // $webhook = new Webhook(env('CLERK_WEBHOOK_SECRET'));
 
             // 2. Get raw payload and headers
             $payload = $request->getContent();
@@ -34,7 +34,7 @@ class ClerkWebhookController extends Controller
             ];
 
             // 3. Verify and process payload
-            $body = $webhook->verify($payload, $headers);
+            $body = $this->webhookVerifier->verify($payload, $headers);
             $data = $body['data'];
             $payload = [
                 'clerk_id'              => $data['id'],

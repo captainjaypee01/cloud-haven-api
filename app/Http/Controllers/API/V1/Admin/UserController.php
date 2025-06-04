@@ -4,13 +4,16 @@ namespace App\Http\Controllers\API\V1\Admin;
 
 use App\Contracts\Services\UserServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Resources\User\UserCollection;
 use App\Http\Resources\User\UserResource;
 use App\Http\Responses\CollectionResponse;
 use App\Http\Responses\ErrorResponse;
 use App\Http\Responses\ItemResponse;
+use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class UserController extends Controller
@@ -32,9 +35,16 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreUserRequest $request): ItemResponse|ErrorResponse
     {
-        //
+        
+        try {
+            $data = $this->userService->createUser($request->validated());
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return new ErrorResponse('Unable to create a user.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new ItemResponse(new UserResource($data), JsonResponse::HTTP_CREATED);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\WebhookVerifier;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,6 +12,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Svix Webhok
+        $this->app->bind(WebhookVerifier::class, function ($app) {
+            $secret = config('services.clerk.webhook_secret_key');
+            return new WebhookVerifier(new \Svix\Webhook($secret));
+        });
+
         // Admin Room
         $this->app->bind(\App\Contracts\Services\RoomServiceInterface::class, \App\Services\RoomService::class);
         $this->app->bind(\App\Contracts\Room\CreateRoomContract::class, \App\Services\Rooms\Actions\CreateRoomAction::class);

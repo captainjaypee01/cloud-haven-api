@@ -11,7 +11,7 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('webhooks')->namespace('App\Http\Controllers\Webhook')
         ->group(function () {
-            Route::post('clerk', ClerkWebhookController::class);
+            Route::post('clerk', ClerkWebhookController::class)->name('webhook.clerk');
         });
     // Auth routes
     // Route::post('/login', [AuthController::class, 'login']);
