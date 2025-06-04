@@ -39,7 +39,7 @@ describe('Clerk Webhook Controller Test', function () {
                     'email_addresses' => [
                         [
                             'email_address' => 'test@example.com',
-                            'created_at' => \Carbon\CarbonImmutable::createFromTimestampUTC(now()->getTimestamp() * 1000), // Clerk uses milliseconds
+                            'created_at' => now()->getTimestamp() * 1000, // Clerk uses milliseconds
                             'linked_to' => [['id' => 'oauth_1', 'type' => 'google']],
                         ]
                     ],

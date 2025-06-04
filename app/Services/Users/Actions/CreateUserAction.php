@@ -22,7 +22,7 @@ final class CreateUserAction implements CreateUserContract
                     'image'             => $dto->image_url,
                     'country_code'      => $dto->country_code,
                     'contact_number'    => $dto->contact_number,
-                    'email_verified_at' => $dto->email_verified_at ? $dto->email_verified_at->toString() : null,
+                    'email_verified_at' => $dto->email_verified_at ? $dto->email_verified_at->format('Y-m-d H:i:s') : null,
                 ]
             )
         );

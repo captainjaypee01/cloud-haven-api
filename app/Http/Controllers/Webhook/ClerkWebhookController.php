@@ -36,26 +36,11 @@ class ClerkWebhookController extends Controller
             // 3. Verify and process payload
             $body = $this->webhookVerifier->verify($payload, $headers);
             $data = $body['data'];
+
             // Handle events
             // 4. Handle Clerk events
             switch ($body['type']) {
                 case 'user.created':
-                    $payload = [
-                        'clerk_id'              => $data['id'],
-                        'email'                 => $data['email_addresses'][0]['email_address'],
-                        'first_name'            => $data['first_name'],
-                        'last_name'             => $data['last_name'],
-                        'role'                  => 'user',
-                        'country_code'          => '',
-                        'contact_number'        => '',
-                        'image_url'             => $data['image_url'],
-                        'password'              => '',
-                        'email_verified_at'     => \Carbon\CarbonImmutable::createFromTimestampUTC($data['email_addresses'][0]['created_at']), //'2025-05-31 18:53:35',
-                        'linkedProviders'       => $data['email_addresses'][0]['linked_to'],
-                    ];
-                    $this->userService->createUserByClerk($payload);
-                    break;
-
                 case 'user.updated':
                     $payload = [
                         'clerk_id'              => $data['id'],
@@ -67,12 +52,16 @@ class ClerkWebhookController extends Controller
                         'contact_number'        => '',
                         'image_url'             => $data['image_url'],
                         'password'              => '',
-                        'email_verified_at'     => \Carbon\CarbonImmutable::createFromTimestampUTC($data['email_addresses'][0]['created_at']), //'2025-05-31 18:53:35',
+                        'email_verified_at'     => \Carbon\CarbonImmutable::createFromTimestampMsUTC($data['email_addresses'][0]['created_at']), //'2025-05-31 18:53:35',
                         'linkedProviders'       => $data['email_addresses'][0]['linked_to'],
                     ];
-                    $user = $this->userService->showByClerkId($data['id']);
-                    $payload['role'] = $user->role ?? 'user';
-                    $this->userService->updateByClerkId($data['id'], $payload);
+                    if ($body['type'] === 'user.created') {
+                        $this->userService->createUserByClerk($payload);
+                    } else {
+                        $user = $this->userService->showByClerkId($data['id']);
+                        $payload['role'] = $user->role ?? 'user';
+                        $this->userService->updateByClerkId($data['id'], $payload);
+                    }
                     break;
 
                 case 'user.deleted':
