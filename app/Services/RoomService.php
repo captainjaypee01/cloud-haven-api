@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Contracts\Repositories\RoomRepositoryInterface;
 use App\Contracts\Room\CreateRoomContract;
 use App\Contracts\Room\DeleteRoomContract;
 use App\Contracts\Room\UpdateRoomContract;
 use App\Contracts\Room\UpdateStatusContract;
 use App\Contracts\Services\RoomServiceInterface;
 use App\Models\Room;
-use App\Queries\RoomQuery;
 use App\DTO\Rooms\RoomDtoFactory;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -16,7 +16,7 @@ class RoomService implements RoomServiceInterface
 {
 
     public function __construct(
-        protected RoomQuery                 $query,
+        protected RoomRepositoryInterface   $query,
         private   CreateRoomContract        $creator,
         private   UpdateRoomContract        $updater,
         private   DeleteRoomContract        $deleter,

@@ -2,11 +2,11 @@
 
 namespace Tests\Unit\Services;
 
+use App\Contracts\Repositories\RoomRepositoryInterface;
 use Mockery;
 use App\Models\Room;
 use App\Services\RoomService;
 use Tests\TestCase;
-use App\Queries\RoomQuery;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Contracts\Room\CreateRoomContract;
 use App\Contracts\Room\UpdateRoomContract;
@@ -20,7 +20,7 @@ describe('Room Service Test', function () {
 
     beforeEach(function () {
         // Create mock dependencies
-        $this->query = Mockery::mock(RoomQuery::class);
+        $this->query = Mockery::mock(RoomRepositoryInterface::class);
         $this->creator = Mockery::mock(CreateRoomContract::class);
         $this->updater = Mockery::mock(UpdateRoomContract::class);
         $this->deleter = Mockery::mock(DeleteRoomContract::class);

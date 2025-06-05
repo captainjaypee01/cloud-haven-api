@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Admin Room
+        $this->app->bind(\App\Contracts\Repositories\RoomRepositoryInterface::class, \App\Repositories\RoomRepository::class);
         $this->app->bind(\App\Contracts\Services\RoomServiceInterface::class, \App\Services\RoomService::class);
         $this->app->bind(\App\Contracts\Room\CreateRoomContract::class, \App\Services\Rooms\Actions\CreateRoomAction::class);
         $this->app->bind(\App\Contracts\Room\UpdateRoomContract::class, \App\Services\Rooms\Actions\UpdateRoomAction::class);

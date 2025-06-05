@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Queries;
+namespace App\Repositories;
 
+use App\Contracts\Repositories\RoomRepositoryInterface;
 use App\Models\Room;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class RoomQuery
+class RoomRepository implements RoomRepositoryInterface
 {
     public function get(
         array $filters,

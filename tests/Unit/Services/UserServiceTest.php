@@ -16,6 +16,7 @@ use App\DTO\Users\NewUser;
 use App\DTO\Users\SyncProviders;
 use App\DTO\Users\UpdateUser;
 use App\DTO\Users\UserDtoFactory;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 describe('User Service Test', function () {
@@ -28,7 +29,6 @@ describe('User Service Test', function () {
         $this->deleter = Mockery::mock(DeleteUserContract::class);
         $this->syncProviders = Mockery::mock(SyncLinkedProvidersContract::class);
         $this->dtoFactory = Mockery::mock(UserDtoFactory::class);
-
         // Instantiate service with mocked dependencies
         $this->service = new UserService(
             $this->repository,
@@ -139,7 +139,7 @@ describe('User Service Test', function () {
 
         expect($result)->toBeInstanceOf(User::class);
     });
-    
+
     test('createUser - user by Admin dashboard with default role of user', function () {
         $user = new User();
         $data = [
@@ -359,33 +359,48 @@ describe('User Service Test', function () {
         $this->service->deleteByClerkId($clerkId);
     });
 
-    // test('create propagates exceptions', function () {
-    //     $data = ['name' => 'Test User'];
-    //     $userId = 100;
+    test('create propagates exceptions', function () {
 
-    //     // Mock DTO creation
-    //     $dto = new NewUser(
-    //         'Test User',
-    //         null,
-    //         1,
-    //         2,
-    //         10.0,
-    //         false,
-    //         'available',
-    //         100.0,
-    //         150.0
-    //     );
+        $data = [
+            'clerk_id'              => 'user_2xsCuoAOUwJ8CNLPlfihRtrisai',
+            'email'                 => 'user@cloudhaven.com',
+            'first_name'            => 'Cloud Haven',
+            'last_name'             => 'Resort',
+            'role'                  => 'user',
+            'country_code'          => '+63',
+            'contact_number'        => '9124576322',
+            'image_url'             => '',
+            'password'              => '',
+            'email_verified_at'     => null, //'2025-05-31 18:53:35',
+            'linkedProviders'       => [],
+        ];
 
-    //     $this->dtoFactory->shouldReceive('newUser')
-    //         ->with($data)
-    //         ->once()
-    //         ->andReturn($dto);
+        // Mock DTO creation
+        $dto = new NewUser(
+            'Test User',
+            fake()->email(),
+            1,
+            2,
+            10.0,
+            false,
+            'available',
+            100.0,
+            150.0,
+            CarbonImmutable::createFromTimestampMsUTC(now()->timestamp * 1000),
+            [],
+        );
 
-    //     $this->creator->shouldReceive('handle')
-    //         ->with($dto, $userId)
-    //         ->once()
-    //         ->andThrow(new \Exception('Test error'));
+        $this->dtoFactory->shouldReceive('newUser')
+            ->with($data)
+            ->once()
+            ->andReturn($dto);
 
-    //     $this->service->create($data, $userId);
-    // })->throws(\Exception::class, 'Test error');
+        $this->creator->shouldReceive('handle')
+            ->with($dto)
+            ->once()
+            ->andThrow(new \Exception('Test error'));
+
+        $this->service->createUser($data);
+        // $result = $this->service->createUser($data);
+    })->throws(\Exception::class, 'Test error');
 });

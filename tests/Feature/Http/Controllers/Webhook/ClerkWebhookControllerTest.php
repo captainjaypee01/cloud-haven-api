@@ -66,7 +66,7 @@ describe('Clerk Webhook Controller Test', function () {
                 ->once()
                 ->withArgs(
                     fn($payload) =>
-                    $payload['clerk_id'] === 'user_test123' &&
+                    $payload['id'] === 'user_test123' &&
                         $payload['email'] === 'test@example.com'
                 );
         });

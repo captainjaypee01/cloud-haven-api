@@ -47,9 +47,9 @@ class UpdateUserRequest extends FormRequest
         return [
             'clerk_id' => ['nullable'],
             'role'  => ['required', 'string'],
-            'email_addresses' => ['required', 'array'],
-            'email_addresses.0.email_address' => ['required','email'],
-            'email_addresses.0.linked_to' => ['array'],
+            'email' => ['required', 'string'],
+            // 'email_addresses.0.email_address' => ['required','email'],
+            // 'email_addresses.0.linked_to' => ['array'],
             'first_name' => ['required','string'],
             'last_name' => ['required','string'],
             'image_url' => ['nullable','url'],

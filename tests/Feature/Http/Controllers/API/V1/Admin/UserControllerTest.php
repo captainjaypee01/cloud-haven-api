@@ -203,131 +203,136 @@ describe('Admin User Management', function () {
         });
     });
 
-    // describe('Update User', function () {
-    //     beforeEach(function () {
-    //         $this->userId = $this->users->random()->id;
-    //         $maxId = User::max('id') ?? 0;
-    //         $this->nonExistentId = $maxId + 100;
-    //     });
+    describe('Update User', function () {
+        beforeEach(function () {
+            $this->userId = $this->users->random()->id;
+            $maxId = User::max('id') ?? 0;
+            $this->nonExistentId = $maxId + 100;
+        });
 
-    //     it('denies access when no X-TEST-USER-ID header is set', function () {
-    //         // Hit the protected admin route without any header:
-    //         $response = $this->postJson("/api/v1/admin/users/");
-    //         $response->assertStatus(401)
-    //             ->assertJson(['error' => 'Unauthorized']);
-    //     });
+        it('denies access when no X-TEST-USER-ID header is set', function () {
+            // Hit the protected admin route without any header:
+            $response = $this->postJson("/api/v1/admin/users/");
+            $response->assertStatus(401)
+                ->assertJson(['error' => 'Unauthorized']);
+        });
 
-    //     it('denies access for a logged-in user with role=guest', function () {
+        it('denies access for a logged-in user with role=guest', function () {
 
-    //         $response = $this->withHeader('X-TEST-USER-ID', $this->guest->id)
-    //             ->postJson("/api/v1/admin/users");
-    //         $response->assertJson(['error' => 'Forbidden'])
-    //             ->assertStatus(403);
-    //     });
+            $response = $this->withHeader('X-TEST-USER-ID', $this->guest->id)
+                ->postJson("/api/v1/admin/users");
+            $response->assertJson(['error' => 'Forbidden'])
+                ->assertStatus(403);
+        });
 
-    //     it('allows an admin to update a user', function () {
-    //         // Define user data to create
-    //         $data = [
-    //             'name'                  => 'Conference User B',
-    //             'quantity'              => 4,
-    //             'max_guests'            => 10,
-    //             'extra_guest_fee'       => 22,
-    //             'allows_day_use'        => false,
-    //             'base_weekday_rate'     => 10,
-    //             'base_weekend_rate'     => 10,
-    //             'status'                => "available",
-    //         ];
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->putJson("/api/v1/admin/users/{$this->userId}", $data)
-    //             ->assertOk()
-    //             ->assertJsonStructure([
-    //                 'id',
-    //                 'name',
-    //                 'description',
-    //                 'quantity',
-    //                 'max_guests',
-    //                 'extra_guest_fee',
-    //                 'status',
-    //                 'created_at',
-    //                 'updated_at',
-    //             ]);
-    //     });
+        it('allows an admin to update a user', function () {
+            // Define user data to create
+            $data = [
+                // 'clerk_id'              => 'user_2xsCuoAOUwJ8CNLPlfihRtrisai',
+                'email'                 => 'user@cloudhaven.com',
+                'first_name'            => 'Cloud Haven',
+                'last_name'             => 'Resort',
+                'role'                  => 'user',
+                'country_code'          => '+63',
+                'contact_number'        => '9124576322',
+                'image_url'             => '',
+                'password'              => '',
+                'email_verified_at'     => null, //'2025-05-31 18:53:35',
+                'linkedProviders'       => [],
+            ];
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->putJson("/api/v1/admin/users/{$this->userId}", $data)
+                ->assertOk()
+                ->assertJsonStructure([
+                    'id',
+                    'clerk_id',
+                    'email',
+                    'first_name',
+                    'last_name',
+                    'country_code',
+                    'contact_number',
+                    'image',
+                    'created_at',
+                    'updated_at',
+                    'providers',
+                ]);
+        });
 
-    //     it('returns validation errors if fields are missing', function () {
-    //         // Define user data to create
-    //         $data = [
-    //             'name' => 'Conference User C',
-    //             'max_guests' => 4,
-    //         ];
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->putJson("/api/v1/admin/users/{$this->userId}", $data)
-    //             ->assertUnprocessable()
-    //             ->assertJsonValidationErrors([
-    //              'quantity',
-    //              'extra_guest_fee',
-    //              'status',
-    //              'base_weekday_rate',
-    //              'base_weekend_rate',
-    //          ]);
-    //     });
+        it('returns validation errors if fields are missing', function () {
+            // Define user data to create
+            $data = [
+            ];
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->putJson("/api/v1/admin/users/{$this->userId}", $data)
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors([
+                    'role',
+                    'email',
+                    'first_name',
+                    'last_name',
+                ]);
+        });
 
-    //     it('return "User Not Found" if User is not existing', function () {
-    //         // Get the highest possible ID
-    //         $data = [
-    //             'name'                  => 'Conference User B',
-    //             'quantity'              => 4,
-    //             'max_guests'            => 10,
-    //             'extra_guest_fee'       => 22,
-    //             'allows_day_use'        => false,
-    //             'base_weekday_rate'     => 10,
-    //             'base_weekend_rate'     => 10,
-    //             'status'                => "unavailable",
-    //         ];
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->putJson("/api/v1/admin/users/{$this->nonExistentId}", $data)
-    //             ->assertNotFound()
-    //             ->assertJson(['error' => 'User not found.']);
-    //     });
-    // });
+        it('return "User Not Found" if User is not existing', function () {
+            // Get the highest possible ID
+            $data = [
+                // 'clerk_id'              => 'user_2xsCuoAOUwJ8CNLPlfihRtrisai',
+                'email'                 => 'user@cloudhaven.com',
+                'first_name'            => 'Cloud Haven',
+                'last_name'             => 'Resort',
+                'role'                  => 'user',
+                'country_code'          => '+63',
+                'contact_number'        => '9124576322',
+                'image_url'             => '',
+                'password'              => '',
+                'email_verified_at'     => null, //'2025-05-31 18:53:35',
+                'linkedProviders'       => [],
+            ];
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->putJson("/api/v1/admin/users/{$this->nonExistentId}", $data)
+                ->assertNotFound()
+                ->assertJson(['error' => 'User not found.']);
+        });
+    });
 
-    // describe('Delete User', function () {
-    //     beforeEach(function () {
-    //         $this->userId = $this->users->random()->id;
-    //         $maxId = User::max('id') ?? 0;
-    //         $this->nonExistentId = $maxId + 100;
-    //     });
+    describe('Delete User', function () {
+        beforeEach(function () {
+            $this->userId = $this->users->random()->id;
+            $maxId = User::max('id') ?? 0;
+            $this->nonExistentId = $maxId + 100;
+        });
 
-    //     it('denies access when no X-TEST-USER-ID header is set', function () {
-    //         // Hit the protected admin route without any header:
-    //         $response = $this->delete("/api/v1/admin/users/{$this->userId}");
-    //         $response->assertStatus(401)
-    //             ->assertJson(['error' => 'Unauthorized']);
-    //     });
+        it('denies access when no X-TEST-USER-ID header is set', function () {
+            // Hit the protected admin route without any header:
+            $response = $this->delete("/api/v1/admin/users/{$this->userId}");
+            $response->assertStatus(401)
+                ->assertJson(['error' => 'Unauthorized']);
+        });
 
-    //     it('denies access for a logged-in user with role=guest', function () {
+        it('denies access for a logged-in user with role=guest', function () {
 
-    //         $response = $this->withHeader('X-TEST-USER-ID', $this->guest->id)
-    //             ->delete("/api/v1/admin/users/{$this->userId}");
-    //         $response->assertJson(['error' => 'Forbidden'])
-    //             ->assertStatus(403);
-    //     });
+            $response = $this->withHeader('X-TEST-USER-ID', $this->guest->id)
+                ->delete("/api/v1/admin/users/{$this->userId}");
+            $response->assertJson(['error' => 'Forbidden'])
+                ->assertStatus(403);
+        });
 
-    //     it('allows an admin to remove a user', function () {
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->delete("/api/v1/admin/users/{$this->userId}")
-    //             ->assertNoContent();
-    //     });
+        it('allows an admin to remove a user', function () {
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->delete("/api/v1/admin/users/{$this->userId}")
+                ->assertNoContent();
+        });
 
-    //     it('return "User Not Found" if User is not existing', function () {
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->delete("/api/v1/admin/users/{$this->nonExistentId}")
-    //             ->assertNotFound()
-    //             ->assertJson(['error' => 'User not found.']);
-    //     });
-    // });
+        it('return "User Not Found" if User is not existing', function () {
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->delete("/api/v1/admin/users/{$this->nonExistentId}")
+                ->assertNotFound()
+                ->assertJson(['error' => 'User not found.']);
+        });
+    });
 });
