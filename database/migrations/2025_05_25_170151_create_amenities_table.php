@@ -14,13 +14,17 @@ return new class extends Migration
         Schema::create('amenities', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->text('description')->nullable();
+            $table->string('icon')->nullable();
+            $table->double('price')->nullable();
             $table->timestamps();
+            $table->timestamp('deleted_at')->nullable();
         });
 
-        Schema::create('room_amenity', function (Blueprint $table) {
+        Schema::create('amenity_room', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('room_id')->constrained()->onDelete('cascade');
             $table->foreignId('amenity_id')->constrained()->onDelete('cascade');
+            $table->foreignId('room_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

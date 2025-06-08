@@ -33,6 +33,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Contracts\Users\UpdateUserContract::class, \App\Services\Users\Actions\UpdateUserAction::class);
         $this->app->bind(\App\Contracts\Users\SyncLinkedProvidersContract::class, \App\Services\Users\Actions\SyncLinkedProvidersAction::class);
         $this->app->bind(\App\Contracts\Users\DeleteUserContract::class, \App\Services\Users\Actions\DeleteUserAction::class);
+
+        // Admin Amenity
+        $this->app->bind(\App\Contracts\Repositories\AmenityRepositoryInterface::class, \App\Repositories\AmenityRepository::class);
+        $this->app->bind(\App\Contracts\Services\AmenityServiceInterface::class, \App\Services\Amenities\AmenityService::class);
+        $this->app->bind(\App\Contracts\Amenities\CreateAmenityContract::class, \App\Services\Amenities\Actions\CreateAmenityAction::class);
+        $this->app->bind(\App\Contracts\Amenities\UpdateAmenityContract::class, \App\Services\Amenities\Actions\UpdateAmenityAction::class);
+        $this->app->bind(\App\Contracts\Amenities\DeleteAmenityContract::class, \App\Services\Amenities\Actions\DeleteAmenityAction::class);
     }
 
     /**

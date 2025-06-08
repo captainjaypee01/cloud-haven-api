@@ -48,7 +48,7 @@ class UserService implements UserServiceInterface
      */
     public function show(int $id): User
     {
-        return $this->repository->getById($id);
+        return $this->repository->getId($id);
     }
 
     /**
@@ -109,7 +109,7 @@ class UserService implements UserServiceInterface
      */
     public function updateById(int $id, array $data): User
     {
-        $user = $this->repository->getById($id);
+        $user = $this->repository->getId($id);
         $dto  = $this->dtoFactory->updateUser($data);
         $updatedUser = $this->updater->handle($user, $dto);
         return $updatedUser;
@@ -146,7 +146,7 @@ class UserService implements UserServiceInterface
      */
     public function deleteById($id): void
     {
-        $user = $this->repository->getById($id);
+        $user = $this->repository->getId($id);
         $this->deleter->handle($user);
     }
 
@@ -175,7 +175,7 @@ class UserService implements UserServiceInterface
     public function updateUserLinkedProviders($userId, $linkedProviders): void
     {
 
-        $user = $this->repository->getById($userId);
+        $user = $this->repository->getId($userId);
         $syncDto = $this->dtoFactory->syncProviders($linkedProviders);
         $this->syncProviders->handle($user, $syncDto);
     }

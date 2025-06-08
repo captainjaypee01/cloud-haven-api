@@ -56,7 +56,6 @@ describe('Room Service Test', function () {
         expect($result)->toBeInstanceOf(LengthAwarePaginator::class);
     });
 
-
     test('show returns room by id', function () {
         $room = Room::factory()->make(['id' => 5]);
 

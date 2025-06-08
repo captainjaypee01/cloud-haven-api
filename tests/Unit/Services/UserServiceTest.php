@@ -63,7 +63,7 @@ describe('User Service Test', function () {
         $user = new User();
         $user->id = 10;
 
-        $this->repository->shouldReceive('getById')
+        $this->repository->shouldReceive('getId')
             ->with(10)
             ->once()
             ->andReturn($user);
@@ -79,7 +79,7 @@ describe('User Service Test', function () {
         $user = new User();
         $user->id = 10;
 
-        $this->repository->shouldReceive('getById')
+        $this->repository->shouldReceive('getId')
             ->with(5)
             ->once()
             ->andThrow(new \Exception('User not found'));
@@ -275,7 +275,7 @@ describe('User Service Test', function () {
             linkedProviders: [['id' => 'provider_1', 'type' => 'google']]
         );
 
-        $this->repository->shouldReceive('getById')
+        $this->repository->shouldReceive('getId')
             ->with($userId)
             ->once()
             ->andReturn($existingUser);
@@ -322,7 +322,7 @@ describe('User Service Test', function () {
             'role' => 'user'
         ];
 
-        $this->repository->shouldReceive('getById')
+        $this->repository->shouldReceive('getId')
             ->with($userId)
             ->once()
             ->andThrow(ModelNotFoundException::class);

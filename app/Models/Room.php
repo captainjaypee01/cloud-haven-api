@@ -22,4 +22,9 @@ class Room extends Model
                 : $value
         );
     }
+
+    public function amenities()
+    {
+        return $this->belongsToMany(Amenity::class);
+    }
 }

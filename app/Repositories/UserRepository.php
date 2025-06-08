@@ -42,7 +42,7 @@ class UserRepository implements UserRepositoryInterface
     /**
      * Find one user by primary key, or throw ModelNotFoundException.
      */
-    public function getById(int $id): User
+    public function getId(int $id): User
     {
         return User::findOrFail($id);
     }
