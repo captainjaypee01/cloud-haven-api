@@ -48,7 +48,7 @@ describe('Admin Amenity Management', function () {
                 ->assertJsonCount(10, 'data')
                 ->assertJsonPath('meta.current_page', 1);
         });
-    });
+    })->group('read-operation');
 
     describe('Show Amenity', function () {
         beforeEach(function () {
@@ -96,7 +96,7 @@ describe('Admin Amenity Management', function () {
                 ->assertNotFound()
                 ->assertJson(['error' => 'Amenity not found.']);
         });
-    });
+    })->group('read-operation');
 
     describe('Store Amenity', function () {
         beforeEach(function () {});
@@ -178,120 +178,114 @@ describe('Admin Amenity Management', function () {
                     'name',
                 ]);
         });
-    });
+    })->group('create-operation');
 
-    // describe('Update Amenity', function () {
-    //     beforeEach(function () {
-    //         $this->amenityId = $this->amenities->random()->id;
-    //         $maxId = Amenity::max('id') ?? 0;
-    //         $this->nonExistentId = $maxId + 100;
-    //     });
+    describe('Update Amenity', function () {
+        beforeEach(function () {
+            $this->amenityId = $this->amenities->random()->id;
+            $maxId = Amenity::max('id') ?? 0;
+            $this->nonExistentId = $maxId + 100;
+        });
 
-    //     it('denies access when no X-TEST-USER-ID header is set', function () {
-    //         // Hit the protected admin route without any header:
-    //         $response = $this->postJson("/api/v1/admin/amenities/");
-    //         $response->assertStatus(401)
-    //             ->assertJson(['error' => 'Unauthorized']);
-    //     });
+        it('denies access when no X-TEST-USER-ID header is set', function () {
+            // Hit the protected admin route without any header:
+            $response = $this->putJson("/api/v1/admin/amenities/{$this->amenityId}");
+            $response->assertStatus(401)
+                ->assertJson(['error' => 'Unauthorized']);
+        });
 
-    //     it('denies access for a logged-in user with role=guest', function () {
+        it('denies access for a logged-in user with role=guest', function () {
 
-    //         $response = $this->withHeader('X-TEST-USER-ID', $this->guest->id)
-    //             ->postJson("/api/v1/admin/amenities");
-    //         $response->assertJson(['error' => 'Forbidden'])
-    //             ->assertStatus(403);
-    //     });
+            $response = $this->withHeader('X-TEST-USER-ID', $this->guest->id)
+                ->putJson("/api/v1/admin/amenities/{$this->amenityId}");
+            $response->assertJson(['error' => 'Forbidden'])
+                ->assertStatus(403);
+        });
 
-    //     it('allows an admin to update a amenity', function () {
-    //         // Define amenity data to create
-    //         $data = [
-    //             'name'                  => fake()->word(),
-    //             'description'           => fake()->text(),
-    //             'icon'                  => null,
-    //             'price'                 => array_rand([null, 10, 100, 500, 1000, 0]),
-    //         ];
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->putJson("/api/v1/admin/amenities/{$this->amenityId}", $data)
-    //             ->assertOk()
-    //             ->assertJsonStructure([
-    //                 'id',
-    //                 'name',
-    //                 'description',
-    //                 'icon',
-    //                 'price',
-    //                 'created_at',
-    //                 'updated_at',
-    //             ]);
-    //     });
+        it('allows an admin to update a amenity', function () {
+            // Define amenity data to update
+            $data = [
+                'name'                  => fake()->word(),
+                'description'           => fake()->text(),
+                'icon'                  => null,
+                'price'                 => array_rand([null, 10, 100, 500, 1000, 0]),
+            ];
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->putJson("/api/v1/admin/amenities/{$this->amenities->random()->id}", $data)
+                ->assertOk()
+                ->assertJsonStructure([
+                    'name',
+                    'description',
+                    'icon',
+                    'price',
+                    'created_at',
+                    'updated_at',
+                ]);
+        });
 
-    //     it('returns validation errors if fields are missing', function () {
-    //         // Define amenity data to create
-    //         $data = [
-    //         ];
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->putJson("/api/v1/admin/amenities/{$this->amenityId}", $data)
-    //             ->assertUnprocessable()
-    //             ->assertJsonValidationErrors([
-    //              'quantity',
-    //              'extra_guest_fee',
-    //              'status',
-    //              'base_weekday_rate',
-    //              'base_weekend_rate',
-    //          ]);
-    //     });
+        it('returns validation errors if fields are missing', function () {
+            // Define amenity data to create
+            $data = [];
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->putJson("/api/v1/admin/amenities/{$this->amenityId}", $data)
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors([
+                    'name',
+                ]);
+        });
 
-    //     it('return "Amenity Not Found" if Amenity is not existing', function () {
-    //         // Get the highest possible ID
-    //         $data = [
-    //             'name'                  => fake()->word(),
-    //             'description'           => fake()->text(),
-    //             'icon'                  => null,
-    //         ];
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->putJson("/api/v1/admin/amenities/{$this->nonExistentId}", $data)
-    //             ->assertNotFound()
-    //             ->assertJson(['error' => 'Amenity not found.']);
-    //     });
-    // });
+        it('return "Amenity Not Found" if Amenity is not existing', function () {
+            // Get the highest possible ID
+            $data = [
+                'name'                  => fake()->word(),
+                'description'           => fake()->text(),
+                'icon'                  => null,
+            ];
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->putJson("/api/v1/admin/amenities/{$this->nonExistentId}", $data)
+                ->assertNotFound()
+                ->assertJson(['error' => 'Amenity not found.']);
+        });
+    })->group('update-operation');
 
-    // describe('Delete Amenity', function () {
-    //     beforeEach(function () {
-    //         $this->amenityId = $this->amenities->random()->id;
-    //         $maxId = Amenity::max('id') ?? 0;
-    //         $this->nonExistentId = $maxId + 100;
-    //     });
+    describe('Delete Amenity', function () {
+        beforeEach(function () {
+            $this->amenityId = $this->amenities->random()->id;
+            $maxId = Amenity::max('id') ?? 0;
+            $this->nonExistentId = $maxId + 100;
+        });
 
-    //     it('denies access when no X-TEST-USER-ID header is set', function () {
-    //         // Hit the protected admin route without any header:
-    //         $response = $this->delete("/api/v1/admin/amenities/{$this->amenityId}");
-    //         $response->assertStatus(401)
-    //             ->assertJson(['error' => 'Unauthorized']);
-    //     });
+        it('denies access when no X-TEST-USER-ID header is set', function () {
+            // Hit the protected admin route without any header:
+            $response = $this->delete("/api/v1/admin/amenities/{$this->amenityId}");
+            $response->assertStatus(401)
+                ->assertJson(['error' => 'Unauthorized']);
+        });
 
-    //     it('denies access for a logged-in user with role=guest', function () {
+        it('denies access for a logged-in user with role=guest', function () {
 
-    //         $response = $this->withHeader('X-TEST-USER-ID', $this->guest->id)
-    //             ->delete("/api/v1/admin/amenities/{$this->amenityId}");
-    //         $response->assertJson(['error' => 'Forbidden'])
-    //             ->assertStatus(403);
-    //     });
+            $response = $this->withHeader('X-TEST-USER-ID', $this->guest->id)
+                ->delete("/api/v1/admin/amenities/{$this->amenityId}");
+            $response->assertJson(['error' => 'Forbidden'])
+                ->assertStatus(403);
+        });
 
-    //     it('allows an admin to remove a amenity', function () {
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->delete("/api/v1/admin/amenities/{$this->amenityId}")
-    //             ->assertNoContent();
-    //     });
+        it('allows an admin to remove a amenity', function () {
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->delete("/api/v1/admin/amenities/{$this->amenityId}")
+                ->assertNoContent();
+        });
 
-    //     it('return "Amenity Not Found" if Amenity is not existing', function () {
-    //         actingAs($this->admin)
-    //             ->withHeader('X-TEST-USER-ID', $this->admin->id)
-    //             ->delete("/api/v1/admin/amenities/{$this->nonExistentId}")
-    //             ->assertNotFound()
-    //             ->assertJson(['error' => 'Amenity not found.']);
-    //     });
-    // });
+        it('return "Amenity Not Found" if Amenity is not existing', function () {
+            actingAs($this->admin)
+                ->withHeader('X-TEST-USER-ID', $this->admin->id)
+                ->delete("/api/v1/admin/amenities/{$this->nonExistentId}")
+                ->assertNotFound()
+                ->assertJson(['error' => 'Amenity not found.']);
+        });
+    })->group('delete-operation');
 });
