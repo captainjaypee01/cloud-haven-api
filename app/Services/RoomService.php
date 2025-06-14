@@ -80,4 +80,33 @@ class RoomService implements RoomServiceInterface
         $room = $this->query->getId($roomId);
         return $this->statusUpdater->handle($room, $newStatus, $userId);
     }
+
+    public function listPublicRooms(array $filters)
+    {
+        
+        return $this->query->get(
+            filters: $filters,
+            sort: $filters['sort'] ?? null,
+            perPage: $filters['per_page'] ?? 10
+        );
+    }
+    public function showBySlug(string $slug): Room
+    {
+        return $this->query->getBySlug($slug);
+    }
+    /**
+     * Get the available room
+     */
+    public function getAvailableRooms(string $start, string $end): mixed
+    {
+        return $this->query->findAvailableRooms($start, $end);
+    }
+
+    /**
+     * Get the available unit of the room based on the selected date
+     */
+    public function availableUnits(int $roomId, string $start, string $end): int
+    {
+        return $this->query->availableUnits($roomId, $start, $end);
+    }
 }

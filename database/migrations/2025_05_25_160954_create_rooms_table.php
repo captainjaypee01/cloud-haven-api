@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('short_description')->nullable();
             $table->text('description')->nullable();
             $table->integer('max_guests');
             $table->double('extra_guest_fee')->nullable()->default(0.00);

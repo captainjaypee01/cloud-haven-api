@@ -12,6 +12,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "spatie/laravel-data": "^4.15",
+        "spatie/laravel-sluggable": "^3.7",
         "svix/svix": "^1.65"
     },
     "require-dev": {

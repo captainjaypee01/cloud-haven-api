@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('bookings', function (Blueprint $table) {
-            $table->ulid()->primary();
+            $table->ulid('id')->primary();
             $table->foreignId('user_id')->nullable()->constrained();
             $table->string('reference_number', 10)->unique(); // add reference number, adjust length as needed
             $table->date('check_in_date');
@@ -28,7 +28,6 @@ return new class extends Migration
             $table->enum('status', ['pending', 'confirmed', 'deposit', 'cancelled']);
             $table->timestamp('downpayment_at')->nullable();
             $table->timestamp('paid_at')->nullable();
-            $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
             $table->softDeletes(); 
             

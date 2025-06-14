@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Amenity;
+use App\Models\Room;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,6 +20,7 @@ class RoomFactory extends Factory
     {
         return [
             'name' => fake()->city(),
+            'short_description' => fake()->paragraph(1),
             'description' => fake()->text(),
             'max_guests' => fake()->numberBetween(1, 8),
             'extra_guest_fee' => 1000,
@@ -27,7 +30,14 @@ class RoomFactory extends Factory
             'base_weekend_rate' => fake()->numberBetween(10000, 16000),
         ];
     }
-    
+    public function configure()
+    {
+        $amenities = Amenity::all()->pluck('id');
+        return $this->afterCreating(function (Room $room) use ($amenities){
+            $room->amenities()->sync($amenities);
+        });
+    }
+
     /**
      * Indicate that the model's status should be available.
      */
@@ -37,7 +47,7 @@ class RoomFactory extends Factory
             'status' => 1
         ]);
     }
-    
+
     /**
      * Indicate that the model's status should be available.
      */
@@ -47,7 +57,7 @@ class RoomFactory extends Factory
             'status' => 0
         ]);
     }
-    
+
     /**
      * Indicate that the model's status should be available.
      */
