@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->ulid()->primary();
-            $table->foreignId('user_id')->constrained();
+            $table->foreignId('user_id')->nullable()->constrained();
             $table->string('reference_number', 10)->unique(); // add reference number, adjust length as needed
             $table->date('check_in_date');
             $table->time('check_in_time');
             $table->date('check_out_date');
             $table->time('check_out_time');
+            $table->string('guest_name')->nullable();
             $table->integer('total_guests');
             $table->foreignId('promo_id')->nullable()->constrained();
             $table->double('total_price'); // Precision for money
