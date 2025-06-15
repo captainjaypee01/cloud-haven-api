@@ -18,6 +18,7 @@ class PublicRoomResource extends JsonResource
         return [
             'slug'                  => $this->slug,                     // identifier for detail route
             'name'                  => $this->name,
+            'available'             => $this->quantity,
             'short_description'     => $this->short_description,
             'long_description'      => $this->description,
             'guests'                => $this->max_guests,
