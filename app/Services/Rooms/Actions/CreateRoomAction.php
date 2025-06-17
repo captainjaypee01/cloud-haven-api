@@ -21,6 +21,7 @@ final class CreateRoomAction implements CreateRoomContract
             'base_weekend_rate'     => $payload->base_weekend_rate,
             'status'                => $payload->status,
             'created_by'            => $userId,
+            'is_featured'           => $payload->is_featured,
         ]));
     }
 }

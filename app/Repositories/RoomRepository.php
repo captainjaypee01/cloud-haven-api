@@ -7,6 +7,7 @@ use App\Models\BookingRoom;
 use App\Models\ReservationLock;
 use App\Models\Room;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class RoomRepository implements RoomRepositoryInterface
 {
@@ -20,6 +21,11 @@ class RoomRepository implements RoomRepositoryInterface
         // Filter by status
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
+        }
+
+        // Filter by featured
+        if (!empty($filters['featured'])) {
+            $query->where('is_featured', $filters['featured']);
         }
 
         // Search by name
@@ -77,5 +83,10 @@ class RoomRepository implements RoomRepositoryInterface
             fn($room) =>
             $this->availableUnits($room->id, $start, $end) > 0
         )->values();
+    }
+
+    public function getFeaturedRooms(): Collection
+    {
+        return Room::with('amenities')->where('is_featured', 1)->take(4)->get();
     }
 }

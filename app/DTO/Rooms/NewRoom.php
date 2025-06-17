@@ -16,5 +16,6 @@ class NewRoom extends Data
         public string   $status,       // available|unavailable|archived
         public float    $base_weekday_rate,
         public float    $base_weekend_rate,
+        public ?int     $is_featured = 0,
     ) {}
 }

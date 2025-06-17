@@ -42,4 +42,15 @@ class RoomController extends Controller
         }
         return new ItemResponse(new PublicRoomResource($data));
     }
+    
+    /**
+     * Display the featured rooms.
+     */
+    public function featuredRooms(Request $request): CollectionResponse
+    {
+        $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page']);
+        $paginator = $this->roomService->listPublicRooms($filters);
+        // sleep(2);
+        return new CollectionResponse(new PublicRoomCollection($paginator), JsonResponse::HTTP_OK);
+    }
 }

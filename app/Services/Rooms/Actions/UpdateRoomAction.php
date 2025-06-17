@@ -21,6 +21,7 @@ final class UpdateRoomAction implements UpdateRoomContract
             'base_weekend_rate'     => $payload->base_weekend_rate,
             'status'                => $payload->status,
             'updated_by'            => $userId,
+            'is_featured'           => $payload->is_featured,
         ]));
     }
 }

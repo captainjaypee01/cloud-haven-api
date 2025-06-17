@@ -28,6 +28,7 @@ class RoomFactory extends Factory
             'allows_day_use' => fake()->boolean(),
             'base_weekday_rate' => fake()->numberBetween(10000, 16000),
             'base_weekend_rate' => fake()->numberBetween(10000, 16000),
+            'is_featured'   => fake()->numberBetween(0, 1),
         ];
     }
     public function configure()

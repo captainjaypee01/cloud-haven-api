@@ -81,6 +81,9 @@ class RoomService implements RoomServiceInterface
         return $this->statusUpdater->handle($room, $newStatus, $userId);
     }
 
+    /**
+     * Get public rooms
+     */
     public function listPublicRooms(array $filters)
     {
         
@@ -90,10 +93,15 @@ class RoomService implements RoomServiceInterface
             perPage: $filters['per_page'] ?? 10
         );
     }
+
+    /**
+     * Get room by Slug
+     */
     public function showBySlug(string $slug): Room
     {
         return $this->query->getBySlug($slug);
     }
+
     /**
      * Get the available room
      */
@@ -109,4 +117,18 @@ class RoomService implements RoomServiceInterface
     {
         return $this->query->availableUnits($roomId, $start, $end);
     }
+    
+    /**
+     * Get public rooms
+     */
+    public function listFeaturedRooms(array $filters)
+    {
+        
+        return $this->query->get(
+            filters: $filters,
+            sort: $filters['sort'] ?? null,
+            perPage: $filters['per_page'] ?? 10
+        );
+    }
+
 }
