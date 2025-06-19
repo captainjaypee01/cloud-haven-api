@@ -24,6 +24,7 @@ class PublicRoomResource extends JsonResource
             'max_guests'            => $this->max_guests,
             'extra_guests'          => 2,
             'price'                 => $this->base_weekday_rate,
+            'extra_guest_fee'       => 1700,
             // 'weekdayRate'           => $this->base_weekday_rate,
             // 'weekendRate'           > $this->base_weekend_rate,
             // 'images'        => ImageResource::collection(
