@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Services;
 
-interface MealPriceServiceInterace
+interface MealPriceServiceInterface
 {
     public function getMealPrices();
 

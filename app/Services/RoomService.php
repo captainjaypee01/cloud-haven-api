@@ -115,7 +115,7 @@ class RoomService implements RoomServiceInterface
      */
     public function availableUnits(int $roomId, string $start, string $end): int
     {
-        return $this->query->availableUnits($roomId, $start, $end);
+        return $this->query->getAvailableUnits($roomId, $start, $end);
     }
     
     /**

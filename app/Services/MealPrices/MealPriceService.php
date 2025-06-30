@@ -1,10 +1,10 @@
 <?php
 namespace App\Services\MealPrices;
 
-use App\Contracts\Services\MealPriceServiceInterace;
+use App\Contracts\Services\MealPriceServiceInterface;
 use App\Models\MealPrice;
 
-class MealPriceService implements MealPriceServiceInterace
+class MealPriceService implements MealPriceServiceInterface
 {
     public function getMealPrices()
     {

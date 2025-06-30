@@ -16,6 +16,7 @@ class UpdateRoom extends Data
         public string   $status,       // available|unavailable|archived
         public float    $base_weekday_rate,
         public float    $base_weekend_rate,
+        public float    $price_per_night,
         public ?int     $is_featured = 0,
     ) {}
 }

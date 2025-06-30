@@ -22,6 +22,7 @@ class RoomResource extends JsonResource
             'max_guests'        => $this->max_guests,
             'extra_guest_fee'   => $this->extra_guest_fee,
             'status'            => $this->status,
+            'price'             => $this->price_per_night,
             // 'images'            => ImageResource::collection($this->images),
             // 'amenities'         => AmenityResource::collection($this->amenities),
             'created_at'        => $this->created_at->toDateTimeString(),

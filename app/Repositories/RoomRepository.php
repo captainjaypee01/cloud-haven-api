@@ -3,14 +3,18 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\RoomRepositoryInterface;
+use App\Contracts\Services\BookingLockServiceInterface;
 use App\Models\BookingRoom;
 use App\Models\ReservationLock;
 use App\Models\Room;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class RoomRepository implements RoomRepositoryInterface
 {
+
+    public function __construct(private readonly BookingLockServiceInterface $lockService) {}
     public function get(
         array $filters,
         ?string $sort = null,
@@ -54,26 +58,42 @@ class RoomRepository implements RoomRepositoryInterface
         return Room::with('amenities')->where('slug', $slug)->firstOrFail();
     }
 
-    public function availableUnits(int $roomId, string $start, string $end): int
+    public function getAvailableUnits(int $roomId, string $startDate, string $endDate): int
     {
         $room = Room::findOrFail($roomId);
 
-        $booked = BookingRoom::where('room_id', $roomId)
-            ->whereHas(
-                'booking',
-                fn($q) =>
-                $q->where('status', '!=', 'cancelled')
-                    ->where('start_date', '<', $end)
-                    ->where('end_date', '>', $start)
-            )->sum('quantity');
+        // Calculate units booked (from DB bookings)
+        $bookedUnits = DB::table('booking_rooms')
+            ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
+            ->where('booking_rooms.room_id', $roomId)
+            ->whereIn('bookings.status', ['confirmed', 'deposit'])
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->where('bookings.check_in_date', '<', $endDate)
+                    ->where('bookings.check_out_date', '>', $startDate);
+            })
+            ->count(); // Each booking_room row is one unit
 
-        $locked = ReservationLock::where('room_id', $roomId)
-            ->where('expires_at', '>', now())
-            ->where('start_date', '<', $end)
-            ->where('end_date', '>', $start)
-            ->sum('quantity');
+        $pendingBookingIds = DB::table('bookings')
+            ->where('status', 'pending')
+            ->pluck('id');
+        $lockedUnits = 0;
+        foreach ($pendingBookingIds as $bookingId) {
+            $lock = $this->lockService->get($bookingId);
+            if (!$lock) continue;
+            foreach ($lock['rooms'] as $lockedRoom) {
+                if (
+                    $lockedRoom['room_id'] == $roomId &&
+                    $lock['check_in_date'] < $endDate &&
+                    $lock['check_out_date'] > $startDate
+                ) {
+                    $lockedUnits += $lockedRoom['quantity'];
+                }
+            }
+        }
 
-        return max($room->quantity - $booked - $locked, 0);
+        $available = $room->quantity - $bookedUnits - $lockedUnits;
+
+        return max(0, $available);
     }
 
     public function findAvailableRooms(string $start, string $end): mixed
@@ -81,7 +101,7 @@ class RoomRepository implements RoomRepositoryInterface
         $rooms = Room::all();
         return $rooms->filter(
             fn($room) =>
-            $this->availableUnits($room->id, $start, $end) > 0
+            $this->getAvailableUnits($room->id, $start, $end) > 0
         )->values();
     }
 

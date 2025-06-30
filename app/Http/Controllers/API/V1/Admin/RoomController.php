@@ -53,6 +53,7 @@ class RoomController extends Controller
     public function store(StoreRoomRequest $request): ItemResponse|ErrorResponse
     {
         try {
+            \Log::info($request->validated());
             $data = $this->roomService->create($request->validated(), $request->user()->id);
         } catch (Exception $e) {
             Log::error($e->getMessage());

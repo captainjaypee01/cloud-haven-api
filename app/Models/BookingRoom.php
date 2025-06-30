@@ -13,6 +13,9 @@ class BookingRoom extends Model
         'room_id',
         'quantity',
         'price_per_night',
+        'adults',
+        'children',
+        'total_guests',
     ];
 
     public function booking(): BelongsTo

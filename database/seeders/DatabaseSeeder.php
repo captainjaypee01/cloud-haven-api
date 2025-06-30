@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(AmenitySeeder::class);
+        $this->call(MealPriceSeeder::class);
 
         User::factory(2)->admin()->create();
         User::factory(8)->guest()->create();

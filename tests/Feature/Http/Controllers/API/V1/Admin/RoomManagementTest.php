@@ -128,6 +128,7 @@ describe('Admin Room Management', function () {
                 'allows_day_use'        => false,
                 'base_weekday_rate'     => 0,
                 'base_weekend_rate'     => 0,
+                'price_per_night'       => 10,
                 'status'                => "archived",
             ];
             actingAs($this->admin)
@@ -141,6 +142,7 @@ describe('Admin Room Management', function () {
                     'quantity',
                     'max_guests',
                     'extra_guest_fee',
+                    'price',
                     'status',
                     'created_at',
                     'updated_at',
@@ -163,6 +165,7 @@ describe('Admin Room Management', function () {
                  'status',
                  'base_weekday_rate',
                  'base_weekend_rate',
+                 'price_per_night'
              ]);
         });
     });
@@ -199,6 +202,7 @@ describe('Admin Room Management', function () {
                 'allows_day_use'        => false,
                 'base_weekday_rate'     => 10,
                 'base_weekend_rate'     => 10,
+                'price_per_night'       => 10,
                 'status'                => "available",
             ];
             actingAs($this->admin)
@@ -234,6 +238,7 @@ describe('Admin Room Management', function () {
                  'status',
                  'base_weekday_rate',
                  'base_weekend_rate',
+                 'price_per_night'
              ]);
         });
 
@@ -247,6 +252,7 @@ describe('Admin Room Management', function () {
                 'allows_day_use'        => false,
                 'base_weekday_rate'     => 10,
                 'base_weekend_rate'     => 10,
+                'price_per_night'       => 10,
                 'status'                => "unavailable",
             ];
             actingAs($this->admin)

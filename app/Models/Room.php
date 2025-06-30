@@ -14,7 +14,7 @@ class Room extends Model
 {
     use HasFactory, HasSlug;
 
-    protected $fillable = ['name', 'slug', 'short_description', 'description', 'max_guests', 'extra_guest_fee', 'quantity', 'allows_day_use', 'base_weekend_rate', 'base_weekday_rate', 'status', 'updated_by', 'created_by'];
+    protected $fillable = ['name', 'slug', 'short_description', 'description', 'max_guests', 'extra_guest_fee', 'quantity', 'allows_day_use', 'base_weekend_rate', 'base_weekday_rate', 'price_per_night', 'status', 'updated_by', 'created_by'];
 
     protected function status(): Attribute
     {

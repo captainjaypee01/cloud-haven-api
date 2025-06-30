@@ -19,6 +19,7 @@ final class CreateRoomAction implements CreateRoomContract
             'extra_guest_fee'       => $payload->extra_guest_fee,
             'base_weekday_rate'     => $payload->base_weekday_rate,
             'base_weekend_rate'     => $payload->base_weekend_rate,
+            'price_per_night'       => $payload->price_per_night,
             'status'                => $payload->status,
             'created_by'            => $userId,
             'is_featured'           => $payload->is_featured,

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignUlid('booking_id')->constrained();
+            $table->foreignId('booking_id')->constrained();
             $table->string('gateway');
             $table->double('amount');
             $table->enum('status', ['pending', 'paid', 'failed']);

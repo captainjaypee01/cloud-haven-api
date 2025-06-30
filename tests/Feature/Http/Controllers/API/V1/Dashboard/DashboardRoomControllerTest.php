@@ -26,7 +26,8 @@ describe('Public API - Room Management', function () {
                 'name',
                 'short_description',
                 'long_description',
-                'guests',
+                'max_guests',
+                'extra_guests',
                 'price',
                 'amenities',
             ]);

@@ -12,25 +12,31 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('bookings', function (Blueprint $table) {
-            $table->ulid('id')->primary();
-            $table->foreignId('user_id')->nullable()->constrained();
-            $table->string('reference_number', 10)->unique(); // add reference number, adjust length as needed
+            $table->id();
+            $table->bigInteger('user_id')->nullable();
+            $table->string('reference_number', 20)->unique(); // add reference number, adjust length as needed
             $table->date('check_in_date');
             $table->time('check_in_time');
             $table->date('check_out_date');
             $table->time('check_out_time');
             $table->string('guest_name')->nullable();
+            $table->string('guest_email')->nullable();
+            $table->string('guest_phone')->nullable();
+            $table->string('special_requests')->nullable();
+            $table->integer('adults');
+            $table->integer('children')->default(0);
             $table->integer('total_guests');
             $table->foreignId('promo_id')->nullable()->constrained();
             $table->double('total_price'); // Precision for money
             $table->double('discount_amount')->default(0);
             $table->double('final_price');
             $table->enum('status', ['pending', 'confirmed', 'deposit', 'cancelled']);
+            $table->timestamp('reserved_until')->nullable();
             $table->timestamp('downpayment_at')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
-            $table->softDeletes(); 
-            
+            $table->softDeletes();
+
             // Add indexes to bookings migration
             $table->index('reference_number');
             $table->index('status');
@@ -39,10 +45,12 @@ return new class extends Migration
 
         Schema::create('booking_rooms', function (Blueprint $table) {
             $table->id();
-            $table->foreignUlid('booking_id')->constrained();
+            $table->foreignId('booking_id')->constrained();
             $table->foreignId('room_id')->constrained();
-            $table->integer('quantity');
             $table->double('price_per_night');
+            $table->integer('adults')->default(1);
+            $table->integer('children')->default(0);
+            $table->integer('total_guests')->default(1);
             $table->timestamps();
             $table->softDeletes();
         });

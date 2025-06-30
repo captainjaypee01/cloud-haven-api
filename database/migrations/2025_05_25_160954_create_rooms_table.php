@@ -23,6 +23,7 @@ return new class extends Migration
             $table->boolean('allows_day_use')->nullable()->default(false);
             $table->double('base_weekday_rate');
             $table->double('base_weekend_rate');
+            $table->double('price_per_night');
             $table->tinyInteger('is_featured')->default(0);
             $table->tinyInteger('status')->default(1); // 1= available, 0= unavailable, 2= archived
             $table->foreignId('updated_by')->nullable()->constrained('users', 'id', 'idx_user_update')->nullOnDelete();

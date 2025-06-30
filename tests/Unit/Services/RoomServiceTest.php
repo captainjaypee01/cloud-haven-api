@@ -83,6 +83,7 @@ describe('Room Service Test', function () {
             'allows_day_use'        => false,
             'base_weekday_rate'     => 0,
             'base_weekend_rate'     => 0,
+            'price_per_night'       => 0,
             'status'                => "archived",
         ];
 
@@ -114,6 +115,7 @@ describe('Room Service Test', function () {
             'allows_day_use'        => false,
             'base_weekday_rate'     => 10,
             'base_weekend_rate'     => 10,
+            'price_per_night'       => 10,
             'status'                => "available",
         ];
 
@@ -188,7 +190,8 @@ describe('Room Service Test', function () {
             false,
             'available',
             100.0,
-            150.0
+            150.0,
+            150
         );
 
         $this->dtoFactory->shouldReceive('newRoom')

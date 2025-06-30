@@ -1,9 +1,10 @@
 <?php
+
 namespace App\Contracts\Services;
 
-use App\Models\Booking;
+use App\DTO\Bookings\GuestData;
 
 interface BookingServiceInterface
 {
-    public function create(array $data): Booking;
+    public function createBooking(array $roomData, GuestData $guest, ?int $userId = null);
 }

@@ -41,7 +41,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Contracts\Amenities\UpdateAmenityContract::class, \App\Services\Amenities\Actions\UpdateAmenityAction::class);
         $this->app->bind(\App\Contracts\Amenities\DeleteAmenityContract::class, \App\Services\Amenities\Actions\DeleteAmenityAction::class);
 
-        $this->app->bind(\App\Contracts\Services\MealPriceServiceInterace::class, \App\Services\MealPrices\MealPriceService::class);
+        $this->app->bind(\App\Contracts\Services\MealPriceServiceInterface::class, \App\Services\MealPrices\MealPriceService::class);
+        
+        $this->app->bind(\App\Contracts\Services\BookingLockServiceInterface::class, \App\Services\Bookings\BookingLockService::class);
+        $this->app->bind(\App\Contracts\Services\BookingServiceInterface::class, \App\Services\Bookings\BookingService::class);
     }
 
     /**
