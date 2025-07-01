@@ -44,7 +44,7 @@ class Booking extends Model
     {
         static::creating(function ($model) {
             if (!$model->reference_number) {
-                // Example: CH-202507-8KD3QZ
+                // Example: NTDL-202507-8KD3QZ
                 $prefix = 'NTDL';
                 $date = now()->format('ymd');
                 $rand = Str::upper(Str::random(6));

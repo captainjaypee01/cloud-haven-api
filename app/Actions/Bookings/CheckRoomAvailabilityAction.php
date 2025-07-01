@@ -4,6 +4,7 @@ namespace App\Actions\Bookings;
 
 use App\Contracts\Repositories\RoomRepositoryInterface;
 use App\Data\BookingRoomData;
+use App\Exceptions\RoomNotAvailableException;
 
 class CheckRoomAvailabilityAction
 {
@@ -25,7 +26,7 @@ class CheckRoomAvailabilityAction
         foreach ($roomCounts as $room_id => $count) {
             $available = $this->roomRepo->getAvailableUnits($room_id, $check_in_date, $check_out_date);
             if ($count > $available) {
-                throw new \Exception('Room not available');
+                throw new RoomNotAvailableException('Room not available for your selected dates or quantity.');
             }
         }
     }

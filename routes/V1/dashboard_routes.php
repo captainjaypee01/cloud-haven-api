@@ -11,4 +11,6 @@ Route::prefix('/')->namespace('App\Http\Controllers\Api\V1\Dashboard')
         Route::get('clerk/test', fn() => 'Clerk Middleware Check Dashboard | ' . auth()->user()->clerk_id); // routes/api.php
 
         Route::get('/meal-prices', 'MealPriceController@getMealPrices');
+
+        Route::post('/bookings', 'BookingController@store');
     });

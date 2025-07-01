@@ -15,8 +15,8 @@ class BookingData extends Data
         public string $guest_email,
         public ?string $guest_phone,
         public ?string $special_requests,
-        public int $adults,
-        public int $children,
+        public int $total_adults,
+        public int $total_children,
         public ?int $promo_id = null,
     ) {}
 }

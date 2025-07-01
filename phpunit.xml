@@ -30,5 +30,6 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="CLERK_WEBHOOK_SECRET" value="test_secret"/>
+        <env name="REDIS_CLIENT" value="predis"/>
     </php>
 </phpunit>
