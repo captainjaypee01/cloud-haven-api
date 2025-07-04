@@ -15,19 +15,39 @@ class PublicRoomCollection extends ResourceCollection
      */
     public function toArray(Request $request): array
     {
-        // 'data' is auto-wrapped, but you can add meta or links here
+        // If paginated (LengthAwarePaginator or Paginator)
+        if ($this->resource instanceof \Illuminate\Pagination\AbstractPaginator) {
+            return [
+                'data' => $this->collection,
+                'meta' => [
+                    'total'        => $this->total(),
+                    'count'        => $this->count(),
+                    'per_page'     => $this->perPage(),
+                    'current_page' => $this->currentPage(),
+                    'total_pages'  => $this->lastPage(),
+                ],
+                'links' => [
+                    'self' => $request->fullUrl(),
+                ],
+            ];
+        }
+
+        // If NOT paginated (plain Collection)
         return [
             'data' => $this->collection,
             'meta' => [
-                'total'        => $this->total(),
-                'count'        => $this->count(),
-                'per_page'     => $this->perPage(),
-                'current_page' => $this->currentPage(),
-                'total_pages'  => $this->lastPage(),
+                'count' => $this->collection->count(),
             ],
             'links' => [
                 'self' => $request->fullUrl(),
             ],
+        ];
+    }
+
+    public function with($request)
+    {
+        return [
+            'server_time' => now()->toDateTimeString(),
         ];
     }
 }

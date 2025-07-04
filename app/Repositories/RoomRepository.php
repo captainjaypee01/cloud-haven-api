@@ -66,7 +66,7 @@ class RoomRepository implements RoomRepositoryInterface
         $bookedUnits = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
             ->where('booking_rooms.room_id', $roomId)
-            ->whereIn('bookings.status', ['confirmed', 'downpayment'])
+            ->whereIn('bookings.status', ['paid', 'downpayment'])
             ->where(function ($q) use ($startDate, $endDate) {
                 $q->where('bookings.check_in_date', '<', $endDate)
                     ->where('bookings.check_out_date', '>', $startDate);
@@ -108,5 +108,13 @@ class RoomRepository implements RoomRepositoryInterface
     public function getFeaturedRooms(): Collection
     {
         return Room::with('amenities')->where('is_featured', 1)->take(4)->get();
+    }
+
+    public function listRoomsWithAvailability(string $start, string $end)
+    {
+        return Room::with('amenities')->get()->map(function ($room) use ($start, $end) {
+            $room->available_count = $this->getAvailableUnits($room->id, $start, $end);
+            return $room;
+        });
     }
 }

@@ -42,7 +42,6 @@ class PaymentController extends Controller
             );
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
-            logger()->error($e); // or dump($e);
             throw $e;
         }
 
@@ -58,8 +57,6 @@ class PaymentController extends Controller
             }
         }
 
-
-        Log::error([$result->errorCode, $status, $result->success]);
         return new PaymentResponse(
             success: $result->success,
             errorCode: $result->errorCode,

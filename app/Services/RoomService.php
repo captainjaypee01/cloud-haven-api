@@ -86,12 +86,19 @@ class RoomService implements RoomServiceInterface
      */
     public function listPublicRooms(array $filters)
     {
-        
         return $this->query->get(
             filters: $filters,
             sort: $filters['sort'] ?? null,
             perPage: $filters['per_page'] ?? 10
         );
+    }
+
+    /**
+     * Get List Rooms with Availability
+     */
+    public function listRoomsWithAvailability(string $start, string $end)
+    {
+        return $this->query->listRoomsWithAvailability($start, $end);
     }
 
     /**
@@ -117,18 +124,17 @@ class RoomService implements RoomServiceInterface
     {
         return $this->query->getAvailableUnits($roomId, $start, $end);
     }
-    
+
     /**
      * Get public rooms
      */
     public function listFeaturedRooms(array $filters)
     {
-        
+
         return $this->query->get(
             filters: $filters,
             sort: $filters['sort'] ?? null,
             perPage: $filters['per_page'] ?? 10
         );
     }
-
 }

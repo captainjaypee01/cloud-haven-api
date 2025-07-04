@@ -24,9 +24,14 @@ class RoomController extends Controller
      */
     public function index(Request $request): CollectionResponse
     {
+        $checkIn = $request->query('check_in');
+        $checkOut = $request->query('check_out');
+        if ($checkIn && $checkOut) {
+            $rooms = $this->roomService->listRoomsWithAvailability($checkIn, $checkOut);
+            return new CollectionResponse(new PublicRoomCollection($rooms), JsonResponse::HTTP_OK);
+        }
         $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page']);
         $paginator = $this->roomService->listPublicRooms($filters);
-        // sleep(2);
         return new CollectionResponse(new PublicRoomCollection($paginator), JsonResponse::HTTP_OK);
     }
 
@@ -42,7 +47,7 @@ class RoomController extends Controller
         }
         return new ItemResponse(new PublicRoomResource($data));
     }
-    
+
     /**
      * Display the featured rooms.
      */

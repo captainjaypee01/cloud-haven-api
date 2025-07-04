@@ -28,6 +28,7 @@ class PublicRoomResource extends JsonResource
             'price'                 => $this->price_per_night,
             'view'                  => $viewList[array_rand($viewList)],
             'floor'                 => $floorList[array_rand($viewList)],
+            'available_count'       => $this->available_count ?? null,
             // 'weekdayRate'           => $this->base_weekday_rate,
             // 'weekendRate'           > $this->base_weekend_rate,
             // 'images'        => ImageResource::collection(

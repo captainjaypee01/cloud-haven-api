@@ -13,4 +13,5 @@ interface RoomRepositoryInterface extends RootRepositoryInterface
     public function getAvailableUnits(int $roomId, string $start, string $end): int;
     public function findAvailableRooms(string $start, string $end): mixed;
     public function getFeaturedRooms(): Collection;
+    public function listRoomsWithAvailability(string $start, string $end);
 }
