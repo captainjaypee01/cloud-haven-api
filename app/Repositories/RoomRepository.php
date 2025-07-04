@@ -66,7 +66,7 @@ class RoomRepository implements RoomRepositoryInterface
         $bookedUnits = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
             ->where('booking_rooms.room_id', $roomId)
-            ->whereIn('bookings.status', ['confirmed', 'deposit'])
+            ->whereIn('bookings.status', ['confirmed', 'downpayment'])
             ->where(function ($q) use ($startDate, $endDate) {
                 $q->where('bookings.check_in_date', '<', $endDate)
                     ->where('bookings.check_out_date', '>', $startDate);

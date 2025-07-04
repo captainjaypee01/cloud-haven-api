@@ -30,7 +30,9 @@ return new class extends Migration
             $table->double('total_price'); // Precision for money
             $table->double('discount_amount')->default(0);
             $table->double('final_price');
-            $table->enum('status', ['pending', 'confirmed', 'deposit', 'cancelled']);
+            $table->enum('status', ['pending', 'paid', 'downpayment', 'cancelled', 'failed']);
+            $table->unsignedTinyInteger('failed_payment_attempts')->default(0);
+            $table->timestamp('last_payment_failed_at')->nullable();
             $table->timestamp('reserved_until')->nullable();
             $table->timestamp('downpayment_at')->nullable();
             $table->timestamp('paid_at')->nullable();

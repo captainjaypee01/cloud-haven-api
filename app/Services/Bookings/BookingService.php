@@ -9,6 +9,7 @@ use App\Actions\Bookings\SetBookingLockAction;
 use App\Contracts\Services\BookingServiceInterface;
 use App\Dto\Bookings\BookingData;
 use App\DTO\Bookings\BookingRoomData;
+use App\Models\Booking;
 use Illuminate\Support\Facades\DB;
 
 class BookingService implements BookingServiceInterface
@@ -17,7 +18,7 @@ class BookingService implements BookingServiceInterface
         private CheckRoomAvailabilityAction $checkAvailability,
         private CalculateBookingTotalAction $calcTotal,
         private CreateBookingEntitiesAction $createEntities,
-        private SetBookingLockAction $setLock
+        private SetBookingLockAction $setLock,
     ) {}
     public function createBooking(BookingData $bookingData, ?int $userId = null)
     {
@@ -51,5 +52,29 @@ class BookingService implements BookingServiceInterface
 
             return $booking;
         });
+    }
+
+    public function markPaid(Booking $booking): void
+    {
+        // Sum all successful payments
+        $paidAmount = $booking->payments()->where('status', 'paid')->sum('amount');
+        $finalPrice = $booking->final_price;
+        // Get DP percent from config, fallback to 0.5 if not set
+        $dpPercent = config('booking.downpayment_percent', 0.5);
+        $dpAmount = $finalPrice * $dpPercent;
+
+        if ($paidAmount >= $finalPrice) {
+            $booking->update(['status' => 'paid', 'paid_at' => now()]);
+        } elseif ($paidAmount >= $dpAmount) {
+            $booking->update(['status' => 'downpayment', 'downpayment_at' => now()]);
+        } else {
+            $booking->update(['status' => 'pending']);
+        }
+    }
+
+    public function markPaymentFailed(Booking $booking): void
+    {
+        $booking->increment('failed_payment_attempts');
+        $booking->update(['last_payment_failed_at' => now()]);
     }
 }

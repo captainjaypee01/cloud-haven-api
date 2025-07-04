@@ -39,7 +39,7 @@ class BookingFactory extends Factory
             'total_price' => 1000,
             'discount_amount' => 0,
             'final_price' => 1000,
-            'status' => 'pending',
+            'status' => $this->faker->randomElement(['pending', 'downpayment', 'paid']),
             'reserved_until' => $now->copy()->addMinutes(15),
             'downpayment_at' => null,
             'paid_at' => null,

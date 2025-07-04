@@ -13,4 +13,6 @@ Route::prefix('/')->namespace('App\Http\Controllers\Api\V1\Dashboard')
         Route::get('/meal-prices', 'MealPriceController@getMealPrices');
 
         Route::post('/bookings', 'BookingController@store');
+
+        Route::post('/bookings/{bookingId}/pay', 'PaymentController@pay');
     });

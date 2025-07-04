@@ -40,6 +40,11 @@ class Booking extends Model
         return $this->hasMany(BookingRoom::class);
     }
 
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     protected static function booted()
     {
         static::creating(function ($model) {
