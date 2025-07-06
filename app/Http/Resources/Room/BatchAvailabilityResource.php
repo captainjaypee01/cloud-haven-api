@@ -15,10 +15,11 @@ class BatchAvailabilityResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'room_id'         => $this['room_id'],
-            'requested_count' => $this['requested_count'],
-            'available'       => $this['available'],
-            'available_count' => $this['available_count'],
+            'room_id'           => $this['room_id'],
+            'requested_count'   => $this['requested_count'],
+            'available'         => $this['available'],
+            'available_count'   => $this['available_count'],
+            'room_name'         => $this['room_name'],
         ];
     }
 }

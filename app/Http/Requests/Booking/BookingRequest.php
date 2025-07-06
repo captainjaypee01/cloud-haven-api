@@ -27,7 +27,7 @@ class BookingRequest extends FormRequest
             'check_out_date' => 'required|date|after:check_in_date',
             'check_out_time' => 'sometimes',
             'rooms' => 'required|array|min:1',
-            'rooms.*.room_id' => 'required|integer|exists:rooms,id',
+            'rooms.*.room_id' => 'required|string|exists:rooms,slug',
             'rooms.*.adults' => 'required|integer|min:0',
             'rooms.*.children' => 'required|integer|min:0',
             'guest_name' => 'required|string',

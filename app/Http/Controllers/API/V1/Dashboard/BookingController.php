@@ -21,7 +21,7 @@ class BookingController extends Controller
     public function store(BookingRequest $request)
     {
         $validated = $request->validated();
-        $bookingData   = BookingData::from($validated);
+        $bookingData = BookingData::from($validated);
 
         try {
             $result = $this->bookingService->createBooking(

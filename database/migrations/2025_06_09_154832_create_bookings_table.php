@@ -29,6 +29,8 @@ return new class extends Migration
             $table->foreignId('promo_id')->nullable()->constrained();
             $table->double('total_price'); // Precision for money
             $table->double('discount_amount')->default(0);
+            $table->enum('payment_option', ['downpayment', 'full'])->nullable();
+            $table->double('downpayment_amount')->nullable();
             $table->double('final_price');
             $table->enum('status', ['pending', 'paid', 'downpayment', 'cancelled', 'failed']);
             $table->unsignedTinyInteger('failed_payment_attempts')->default(0);
