@@ -15,6 +15,10 @@ class RoomAvailabilityController extends Controller
 
     public function batchCheck(Request $request)
     {
+        $request->validate([
+            'check_in'  => 'required',
+            'check_out'  => 'required',
+        ]);
         $checkIn = $request->input('check_in');
         $checkOut = $request->input('check_out');
         $items = $request->input('items', []);

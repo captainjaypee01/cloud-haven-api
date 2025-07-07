@@ -12,7 +12,7 @@ class CalculateBookingTotalAction
     public function execute(array $bookingRoomArr, string $check_in_date, string $check_out_date, int $adults, int $children): array
     {
         $roomIds = array_unique(array_map(fn($r) => $r->room_id, $bookingRoomArr));
-        $rooms = Room::whereIn('id', $roomIds)->get()->keyBy('id');
+        $rooms = Room::whereIn('slug', $roomIds)->get()->keyBy('slug');
 
         $totalRoom = 0;
         // $nights = (new \DateTime($check_in_date))->diff(new \DateTime($check_out_date))->days;

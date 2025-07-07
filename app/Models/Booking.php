@@ -30,9 +30,18 @@ class Booking extends Model
         'promo_id',
         'total_price',
         'discount_amount',
+        'payment_option',
+        'downpayment_amount',
         'final_price',
         'status',
-        'reserved_until'
+        'failed_payment_attempts',
+        'last_payment_failed_at',
+        'reserved_until',
+        'downpayment_at',
+        'paid_at',
+        'created_at',
+        'updated_at',
+        'deleted_at'
     ];
 
     public function bookingRooms()

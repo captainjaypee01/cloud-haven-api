@@ -24,7 +24,8 @@ class CheckRoomAvailabilityAction
             $roomCounts[$roomData->room_id] = ($roomCounts[$roomData->room_id] ?? 0) + 1;
         }
         foreach ($roomCounts as $room_id => $count) {
-            $available = $this->roomRepo->getAvailableUnits($room_id, $check_in_date, $check_out_date);
+            $room = $this->roomRepo->getBySlug($room_id);
+            $available = $this->roomRepo->getAvailableUnits($room->id, $check_in_date, $check_out_date);
             if ($count > $available) {
                 throw new RoomNotAvailableException('Room not available for your selected dates or quantity.');
             }

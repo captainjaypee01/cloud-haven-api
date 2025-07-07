@@ -57,6 +57,8 @@ return new class extends Migration
             $table->integer('total_guests')->default(1);
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['booking_id', 'room_id']); 
         });
     }
 
