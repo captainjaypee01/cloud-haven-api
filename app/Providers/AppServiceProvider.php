@@ -50,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Contracts\Services\PaymentGatewayInterface::class, \App\Actions\Payments\SimulatePaymentAction::class); // For simulation
         $this->app->bind(\App\Contracts\Services\PaymentServiceInterface::class, \App\Services\Payments\PaymentService::class);
         $this->app->bind(\App\Contracts\Repositories\PaymentRepositoryInterface::class, \App\Repositories\PaymentRepository::class);
+
+        $this->app->bind(\App\Contracts\Repositories\BookingRepositoryInterface::class, \App\Repositories\BookingRepository::class);
     }
 
     /**

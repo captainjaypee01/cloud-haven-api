@@ -7,7 +7,7 @@ use Spatie\LaravelData\Data;
 class PaymentRequestDTO extends Data
 {
     public function __construct(
-        public int $bookingId,
+        public string $referenceNumber,
         public float $amount,
         public string $provider,
         public ?string $outcome = null

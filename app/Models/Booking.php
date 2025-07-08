@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -44,6 +45,19 @@ class Booking extends Model
         'deleted_at'
     ];
 
+    protected $appends = ['local_created_at'];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'datetime:Y-m-d H:i:s',
+        ];
+    }
     public function bookingRooms()
     {
         return $this->hasMany(BookingRoom::class);
@@ -71,5 +85,13 @@ class Booking extends Model
                 $model->reference_number = $ref;
             }
         });
+    }
+
+    public function getLocalCreatedAtAttribute()
+    {
+        $userTimezone = "Asia/Singapore";
+        return Carbon::parse($this->created_at)
+            ->setTimezone($userTimezone)
+            ->format('Y-m-d H:i:s');
     }
 }

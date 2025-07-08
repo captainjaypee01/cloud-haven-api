@@ -6,6 +6,7 @@ use App\Actions\Bookings\CalculateBookingTotalAction;
 use App\Actions\Bookings\CheckRoomAvailabilityAction;
 use App\Actions\Bookings\CreateBookingEntitiesAction;
 use App\Actions\Bookings\SetBookingLockAction;
+use App\Contracts\Repositories\BookingRepositoryInterface;
 use App\Contracts\Services\BookingServiceInterface;
 use App\Dto\Bookings\BookingData;
 use App\DTO\Bookings\BookingRoomData;
@@ -19,6 +20,7 @@ class BookingService implements BookingServiceInterface
         private CalculateBookingTotalAction $calcTotal,
         private CreateBookingEntitiesAction $createEntities,
         private SetBookingLockAction $setLock,
+        private BookingRepositoryInterface $bookingRepo,
     ) {}
     public function createBooking(BookingData $bookingData, ?int $userId = null)
     {
@@ -54,6 +56,11 @@ class BookingService implements BookingServiceInterface
         });
     }
 
+    public function showByReferenceNumber(string $referenceNumber): Booking
+    {
+        return $this->bookingRepo->getByReferenceNumber($referenceNumber);
+    }
+
     public function markPaid(Booking $booking): void
     {
         // Sum all successful payments
@@ -62,7 +69,7 @@ class BookingService implements BookingServiceInterface
         // Get DP percent from config, fallback to 0.5 if not set
         $dpPercent = config('booking.downpayment_percent', 0.5);
         $dpAmount = $finalPrice * $dpPercent;
-
+        \Log::info([$paidAmount, $dpAmount, $finalPrice, $paidAmount >= $dpAmount, $paidAmount >= $finalPrice]);
         if ($paidAmount >= $finalPrice) {
             $booking->update(['status' => 'paid', 'paid_at' => now()]);
         } elseif ($paidAmount >= $dpAmount) {

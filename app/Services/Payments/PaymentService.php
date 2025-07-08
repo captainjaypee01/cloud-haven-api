@@ -2,6 +2,7 @@
 
 namespace App\Services\Payments;
 
+use App\Contracts\Repositories\BookingRepositoryInterface;
 use App\Contracts\Repositories\PaymentRepositoryInterface;
 use App\Contracts\Services\BookingLockServiceInterface;
 use App\Contracts\Services\BookingServiceInterface;
@@ -18,12 +19,13 @@ class PaymentService implements PaymentServiceInterface
         private PaymentGatewayInterface $gateway,
         private BookingServiceInterface $bookingService,
         private PaymentRepositoryInterface $paymentRepo,
-        private BookingLockServiceInterface $bookingLockService
+        private BookingLockServiceInterface $bookingLockService,
+        private BookingRepositoryInterface $bookingRepo,
     ) {}
 
     public function execute(PaymentRequestDTO $dto): PaymentResultDTO
     {
-        $booking = Booking::findOrFail($dto->bookingId);
+        $booking = $this->bookingRepo->getByReferenceNumber($dto->referenceNumber);
 
         // Allow payment if 'pending' or 'downpaymnet'
         // Block only if 'paid', 'cancelled', or 'failed'

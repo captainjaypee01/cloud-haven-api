@@ -21,6 +21,19 @@ class PublicBookingResource extends JsonResource
             'final_price' => $this->final_price,
             'downpayment_percent' => $downpaymentPercent,
             'downpayment_amount' => $downpaymentAmount,
+            'created_at' => $this->local_created_at,
+            'payments'  => $this->payments
+                ->where('status', 'paid')
+                ->sortByDesc('created_at')  // latest payment first
+                ->values() // reindex keys (important for JSON)
+                ->map(function ($payment) {
+                    return [
+                        'amount' => $payment->amount,
+                        'status' => $payment->status,
+                        'paid_at' => $payment->local_created_at,
+                        // add any other payment fields you need
+                    ];
+                }),
             'pay_now_options' => [
                 [
                     'label'     => 'Downpayment',

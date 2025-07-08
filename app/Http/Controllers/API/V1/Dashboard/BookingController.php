@@ -11,6 +11,7 @@ use App\Http\Resources\Booking\PublicBookingResource;
 use App\Http\Responses\ErrorResponse;
 use App\Http\Responses\ItemResponse;
 use App\Models\Booking;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
@@ -35,5 +36,15 @@ class BookingController extends Controller
         }
 
         return new ItemResponse(new PublicBookingResource($booking), JsonResponse::HTTP_CREATED);
+    }
+
+    public function showByReferenceNumber($referenceNumber)
+    {
+        try {
+            $data = $this->bookingService->showByReferenceNumber($referenceNumber);
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking not found.');
+        }
+        return new ItemResponse(new PublicBookingResource($data));
     }
 }

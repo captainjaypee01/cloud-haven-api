@@ -15,7 +15,7 @@ class PaymentController extends Controller
 {
     public function __construct(private PaymentServiceInterface $paymentService) {}
 
-    public function pay(Request $request, $bookingId)
+    public function pay(Request $request, $referenceNumber)
     {
         $validated = $request->validate([
             'amount' => 'required|numeric',
@@ -24,7 +24,7 @@ class PaymentController extends Controller
         ]);
 
         $dto = new PaymentRequestDTO(
-            bookingId: $bookingId,
+            referenceNumber: $referenceNumber,
             amount: $validated['amount'],
             provider: $validated['provider'],
             outcome: $validated['outcome'] ?? null

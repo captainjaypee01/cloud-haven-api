@@ -25,7 +25,7 @@ describe('PaymentService', function () {
         $this->bookingService->shouldReceive('markPaid')->once();
         $this->repo->shouldReceive('create')->once();
         $this->bookingLockService->shouldReceive('delete')->once();
-        $dto = new PaymentRequestDTO($booking->id, 10000, 'simulation', 'success');
+        $dto = new PaymentRequestDTO($booking->reference_number, 10000, 'simulation', 'success');
         $result = $this->service->execute($dto);
         expect($result->success)->toBeTrue();
     });
@@ -37,7 +37,7 @@ describe('PaymentService', function () {
         $this->bookingService->shouldReceive('markPaymentFailed')->once();
         $this->repo->shouldReceive('create')->once();
         $this->bookingLockService->shouldReceive('delete')->once();
-        $dto = new PaymentRequestDTO($booking->id, 10000, 'simulation', 'fail');
+        $dto = new PaymentRequestDTO($booking->reference_number, 10000, 'simulation', 'fail');
         $result = $this->service->execute($dto);
         expect($result->success)->toBeFalse();
     });
@@ -46,7 +46,7 @@ describe('PaymentService', function () {
         $booking = Booking::factory()->create(['final_price' => 10000]);
         $this->gateway->shouldReceive('execute')->once()->andThrow(new Exception('Gateway error'));
         $this->bookingLockService->shouldReceive('delete')->once();
-        $dto = new PaymentRequestDTO($booking->id, 10000, 'simulation', 'success');
+        $dto = new PaymentRequestDTO($booking->reference_number, 10000, 'simulation', 'success');
         $result = $this->service->execute($dto);
         expect($result->success)->toBeFalse();
         expect($result->errorCode)->toBe('EXCEPTION');
@@ -54,7 +54,7 @@ describe('PaymentService', function () {
 
     it('does not allow payment if already paid', function () {
         $booking = Booking::factory()->create(['status' => 'paid', 'final_price' => 10000]);
-        $dto = new PaymentRequestDTO($booking->id, 10000, 'simulation', 'success');
+        $dto = new PaymentRequestDTO($booking->reference_number, 10000, 'simulation', 'success');
         $result = $this->service->execute($dto);
         expect($result->success)->toBeFalse();
         expect($result->errorCode)->toBe('ALREADY_PAID');
@@ -63,7 +63,7 @@ describe('PaymentService', function () {
     it('blocks payment if status is cancelled or failed', function () {
         foreach (['cancelled', 'failed'] as $status) {
             $booking = Booking::factory()->create(['status' => $status, 'final_price' => 10000]);
-            $dto = new PaymentRequestDTO($booking->id, 10000, 'simulation', 'success');
+            $dto = new PaymentRequestDTO($booking->reference_number, 10000, 'simulation', 'success');
             $result = $this->service->execute($dto);
             expect($result->success)->toBeFalse();
             expect($result->errorCode)->toBe('INVALID_STATUS');
@@ -77,7 +77,7 @@ describe('PaymentService', function () {
             $this->bookingService->shouldReceive('markPaid')->once();
             $this->repo->shouldReceive('create')->once();
             $this->bookingLockService->shouldReceive('delete')->once();
-            $dto = new PaymentRequestDTO($booking->id, 10000, 'simulation', 'success');
+            $dto = new PaymentRequestDTO($booking->reference_number, 10000, 'simulation', 'success');
             $result = $this->service->execute($dto);
             expect($result->success)->toBeTrue();
         }
@@ -94,7 +94,7 @@ describe('PaymentService', function () {
         $this->bookingService->shouldReceive('markPaid')->once();
         $this->repo->shouldReceive('create')->once();
         $this->bookingLockService->shouldReceive('delete')->once();
-        $dto = new PaymentRequestDTO($booking->id, 10000, 'simulation', 'success');
+        $dto = new PaymentRequestDTO($booking->reference_number, 10000, 'simulation', 'success');
         $result = $this->service->execute($dto);
         expect($result->success)->toBeTrue();
     });
