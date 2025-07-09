@@ -1,14 +1,15 @@
 <?php
 
 use App\Http\Controllers\Webhook\ClerkWebhookController;
+use App\Mail\BookingConfirmation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 // routes/api.php
 Route::prefix('v1')->group(function () {
     // Public routes
     Route::get('/', fn() => 'Welcome to Cloud Haven API V1');
-
     Route::prefix('webhooks')->namespace('App\Http\Controllers\Webhook')
         ->group(function () {
             Route::post('clerk', ClerkWebhookController::class)->name('webhook.clerk');
