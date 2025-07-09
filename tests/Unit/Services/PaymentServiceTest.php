@@ -1,5 +1,6 @@
 <?php
 
+use App\Contracts\Repositories\BookingRepositoryInterface;
 use App\Contracts\Repositories\PaymentRepositoryInterface;
 use App\Contracts\Services\BookingLockServiceInterface;
 use App\Contracts\Services\BookingServiceInterface;
@@ -16,7 +17,8 @@ describe('PaymentService', function () {
         $this->bookingService = mock(BookingServiceInterface::class);
         $this->repo = mock(PaymentRepositoryInterface::class);
         $this->bookingLockService = mock(BookingLockServiceInterface::class);
-        $this->service = new PaymentService($this->gateway, $this->bookingService, $this->repo, $this->bookingLockService);
+        $this->bookingRepo = mock(BookingRepositoryInterface::class);
+        $this->service = new PaymentService($this->gateway, $this->bookingService, $this->repo, $this->bookingLockService, $this->bookingRepo);
     });
 
     it('processes a successful payment, marks booking as paid/downpayment, creates payment record, and cleans up lock', function () {

@@ -7,6 +7,7 @@ test('a room model can be instantiated with attributes', function () {
         'name' => 'Test Room',
         'description' => 'Test Description',
         'max_guests' => 5,
+        'extra_guests' => 2,
         'extra_guest_fee' => 1000,
         'quantity' => 2,
         'allows_day_use' => true,

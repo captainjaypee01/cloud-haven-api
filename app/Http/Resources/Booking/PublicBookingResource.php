@@ -23,7 +23,7 @@ class PublicBookingResource extends JsonResource
             'downpayment_amount' => $downpaymentAmount,
             'created_at' => $this->local_created_at,
             'payments'  => $this->payments
-                ->where('status', 'paid')
+                // ->where('status', 'paid')
                 ->sortByDesc('created_at')  // latest payment first
                 ->values() // reindex keys (important for JSON)
                 ->map(function ($payment) {

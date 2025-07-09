@@ -24,7 +24,7 @@ class PublicRoomResource extends JsonResource
             'short_description'     => $this->short_description,
             'long_description'      => $this->description,
             'max_guests'            => $this->max_guests,
-            'extra_guests'          => 2,
+            'extra_guests'          => $this->extra_guests ?? 2,
             'price'                 => $this->price_per_night,
             'view'                  => $viewList[array_rand($viewList)],
             'floor'                 => $floorList[array_rand($viewList)],

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('short_description')->nullable();
             $table->text('description')->nullable();
             $table->integer('max_guests');
+            $table->integer('extra_guests')->default(2);
             $table->double('extra_guest_fee')->nullable()->default(0.00);
             $table->integer('quantity')->default(1);
             $table->boolean('allows_day_use')->nullable()->default(false);
