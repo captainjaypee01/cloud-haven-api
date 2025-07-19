@@ -12,6 +12,8 @@ use App\Dto\Bookings\BookingData;
 use App\DTO\Bookings\BookingRoomData;
 use App\Models\Booking;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class BookingService implements BookingServiceInterface
 {
@@ -26,7 +28,7 @@ class BookingService implements BookingServiceInterface
     {
         $bookingRoomArr = array_map(fn($rd) => (object) $rd, $bookingData->rooms);
 
-        return DB::transaction(function () use ($bookingData, $bookingRoomArr, $userId) {
+        $booking = DB::transaction(function () use ($bookingData, $bookingRoomArr, $userId) {
             // 1. Check availability for all requested rooms
             $this->checkAvailability->execute(
                 $bookingRoomArr,
@@ -52,8 +54,12 @@ class BookingService implements BookingServiceInterface
                 $bookingData->check_out_date
             );
 
-            return $booking;
+            return $booking->refresh();
         });
+        
+        Mail::to($bookingData->guest_email)->queue(new \App\Mail\BookingReservation($booking));
+
+        return $booking;
     }
 
     public function showByReferenceNumber(string $referenceNumber): Booking
@@ -69,7 +75,7 @@ class BookingService implements BookingServiceInterface
         // Get DP percent from config, fallback to 0.5 if not set
         $dpPercent = config('booking.downpayment_percent', 0.5);
         $dpAmount = $finalPrice * $dpPercent;
-        \Log::info([$paidAmount, $dpAmount, $finalPrice, $paidAmount >= $dpAmount, $paidAmount >= $finalPrice]);
+        Log::info([$paidAmount, $dpAmount, $finalPrice, $paidAmount >= $dpAmount, $paidAmount >= $finalPrice]);
         if ($paidAmount >= $finalPrice) {
             $booking->update(['status' => 'paid', 'paid_at' => now()]);
         } elseif ($paidAmount >= $dpAmount) {

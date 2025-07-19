@@ -13,13 +13,14 @@ class BookingConfirmation extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $booking;
+    public $booking, $downpayment;
     /**
      * Create a new message instance.
      */
-    public function __construct($booking)
+    public function __construct($booking, $downpayment)
     {
         $this->booking = $booking;
+        $this->downpayment = $downpayment;
     }
 
     /**
@@ -39,7 +40,10 @@ class BookingConfirmation extends Mailable
     {
         return new Content(
             markdown: 'emails.booking_confirmation',
-            with: ['booking' => $this->booking],
+            with: [
+                'booking' => $this->booking,
+                'downpayment' => $this->downpayment,
+            ],
         );
     }
 

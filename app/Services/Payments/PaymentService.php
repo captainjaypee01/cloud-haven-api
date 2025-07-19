@@ -12,6 +12,8 @@ use App\DTO\Payments\PaymentRequestDTO;
 use App\DTO\Payments\PaymentResultDTO;
 use App\Models\Booking;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class PaymentService implements PaymentServiceInterface
 {
@@ -57,7 +59,9 @@ class PaymentService implements PaymentServiceInterface
             // Do NOT change booking status on failed payment unless you want to track attempts
 
             DB::commit();
-
+            $booking = $booking->refresh();
+            $downpayment = $booking->payments()->where('status', 'paid')->sum('amount');
+            Mail::to($booking->guest_email)->queue(new \App\Mail\BookingConfirmation($booking, $downpayment));
             return new PaymentResultDTO(
                 $result->success,
                 $result->errorCode,
@@ -67,7 +71,7 @@ class PaymentService implements PaymentServiceInterface
             );
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::info($e->getMessage());
+            Log::info($e->getMessage());
             return new PaymentResultDTO(false, 'EXCEPTION', $e->getMessage());
         } finally {
             $this->bookingLockService->delete($booking->id);
