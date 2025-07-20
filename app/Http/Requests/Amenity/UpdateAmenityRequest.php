@@ -47,6 +47,9 @@ class UpdateAmenityRequest extends FormRequest
     {
         return [
             'name'  => ['required', 'string', Rule::unique('amenities')->ignore($this->amenity)],
+            'description' => 'sometimes',
+            'icon' => 'nullable|string',
+            'price' => 'nullable|numeric',
         ];
     }
 }
