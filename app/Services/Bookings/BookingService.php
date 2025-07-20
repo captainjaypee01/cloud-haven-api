@@ -11,6 +11,7 @@ use App\Contracts\Services\BookingServiceInterface;
 use App\Dto\Bookings\BookingData;
 use App\DTO\Bookings\BookingRoomData;
 use App\Models\Booking;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -24,6 +25,28 @@ class BookingService implements BookingServiceInterface
         private SetBookingLockAction $setLock,
         private BookingRepositoryInterface $bookingRepo,
     ) {}
+
+    /**
+     * List paginated rooms (all statuses or filtered).
+     */
+    public function list(array $filters): LengthAwarePaginator
+    {
+
+        return $this->bookingRepo->get(
+            filters: $filters,
+            sort: $filters['sort'] ?? null,
+            perPage: $filters['per_page'] ?? 10
+        );
+    }
+
+    /**
+     * Show one Room by ID (throws ModelNotFoundException if missing).
+     */
+    public function show(int $id): Booking
+    {
+        return $this->bookingRepo->getId($id);
+    }
+    
     public function createBooking(BookingData $bookingData, ?int $userId = null)
     {
         $bookingRoomArr = array_map(fn($rd) => (object) $rd, $bookingData->rooms);
@@ -56,7 +79,7 @@ class BookingService implements BookingServiceInterface
 
             return $booking->refresh();
         });
-        
+
         Mail::to($bookingData->guest_email)->queue(new \App\Mail\BookingReservation($booking));
 
         return $booking;

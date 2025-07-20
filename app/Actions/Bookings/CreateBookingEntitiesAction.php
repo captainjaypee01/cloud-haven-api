@@ -27,6 +27,7 @@ class CreateBookingEntitiesAction
             'total_guests' => $bookingData->total_adults + $bookingData->total_children,
             'promo_id' => $bookingData->promo_id,
             'total_price' => $totals['total_room'],
+            'meal_price' => $totals['meal_total'],
             'discount_amount' => 0,
             'final_price' => $totals['final_price'],
             'status' => 'pending',

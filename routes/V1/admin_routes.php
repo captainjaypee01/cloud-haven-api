@@ -10,4 +10,5 @@ Route::prefix('admin')->namespace('App\Http\Controllers\Api\V1\Admin')
         Route::apiResource('rooms', 'RoomController');
         Route::apiResource('users', 'UserController');
         Route::apiResource('amenities', 'AmenityController');
+        Route::apiResource('bookings', 'BookingController');
     });

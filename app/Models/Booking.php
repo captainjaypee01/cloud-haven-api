@@ -30,6 +30,7 @@ class Booking extends Model
         'total_guests',
         'promo_id',
         'total_price',
+        'meal_price',
         'discount_amount',
         'payment_option',
         'downpayment_amount',
@@ -45,7 +46,7 @@ class Booking extends Model
         'deleted_at'
     ];
 
-    protected $appends = ['local_created_at'];
+    protected $appends = ['local_created_at', 'local_updated_at', 'local_downpayment_at', 'local_paid_at', 'local_reserved_until'];
 
     /**
      * Get the attributes that should be cast.
@@ -91,6 +92,38 @@ class Booking extends Model
     {
         $userTimezone = "Asia/Singapore";
         return Carbon::parse($this->created_at)
+            ->setTimezone($userTimezone)
+            ->format('Y-m-d H:i:s');
+    }
+
+    public function getLocalUpdatedAtAttribute()
+    {
+        $userTimezone = "Asia/Singapore";
+        return Carbon::parse($this->updated_at)
+            ->setTimezone($userTimezone)
+            ->format('Y-m-d H:i:s');
+    }
+    
+    public function getLocalDownpaymentAtAttribute()
+    {
+        $userTimezone = "Asia/Singapore";
+        return Carbon::parse($this->downpayment_at)
+            ->setTimezone($userTimezone)
+            ->format('Y-m-d H:i:s');
+    }
+    
+    public function getLocalPaidAtAttribute()
+    {
+        $userTimezone = "Asia/Singapore";
+        return Carbon::parse($this->paid_at)
+            ->setTimezone($userTimezone)
+            ->format('Y-m-d H:i:s');
+    }
+    
+    public function getLocalReservedUntilAttribute()
+    {
+        $userTimezone = "Asia/Singapore";
+        return Carbon::parse($this->reserved_until)
             ->setTimezone($userTimezone)
             ->format('Y-m-d H:i:s');
     }

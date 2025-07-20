@@ -27,7 +27,8 @@ return new class extends Migration
             $table->integer('children')->default(0);
             $table->integer('total_guests');
             $table->foreignId('promo_id')->nullable()->constrained();
-            $table->double('total_price'); // Precision for money
+            $table->double('total_price'); // Price for Rooms
+            $table->double('meal_price')->default(0); // Price for Meals
             $table->double('discount_amount')->default(0);
             $table->enum('payment_option', ['downpayment', 'full'])->nullable();
             $table->double('downpayment_amount')->nullable();
