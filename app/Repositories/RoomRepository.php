@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\RoomRepositoryInterface;
 use App\Contracts\Services\BookingLockServiceInterface;
+use App\Enums\RoomStatusEnum;
 use App\Models\BookingRoom;
 use App\Models\ReservationLock;
 use App\Models\Room;
@@ -24,7 +25,8 @@ class RoomRepository implements RoomRepositoryInterface
 
         // Filter by status
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            if($filters['status'] != 'all')
+                $query->where('status', RoomStatusEnum::fromLabel($filters['status'])->value);
         }
 
         // Filter by featured
@@ -40,6 +42,7 @@ class RoomRepository implements RoomRepositoryInterface
         // Sorting
         if ($sort) {
             [$field, $dir] = explode('|', $sort);
+            if($field == "price") $field = "price_per_night";
             $query->orderBy($field, $dir);
         } else {
             $query->orderBy('id', 'asc');

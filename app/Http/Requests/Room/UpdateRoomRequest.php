@@ -50,11 +50,11 @@ class UpdateRoomRequest extends FormRequest
         return [
             'name'                  => 'required|string|max:255',
             'description'           => 'nullable|string',
+            'short_description'     => 'nullable|string',
             'quantity'              => 'required|integer|min:1',
             'max_guests'            => 'required|integer|min:1',
             'extra_guests'          => 'sometimes',
             'allows_day_use'        => 'required|boolean',
-            'extra_guest_fee'       => 'required|numeric|min:0',
             'base_weekday_rate'     => 'required|numeric|min:0',
             'base_weekend_rate'     => 'required|numeric|min:0',
             'price_per_night'       => 'required|numeric|min:0',

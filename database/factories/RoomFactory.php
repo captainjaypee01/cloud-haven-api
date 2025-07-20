@@ -24,7 +24,7 @@ class RoomFactory extends Factory
             'description' => fake()->text(),
             'max_guests' => fake()->numberBetween(1, 8),
             'extra_guests' => fake()->numberBetween(1, 3),
-            'extra_guest_fee' => 1000,
+            'extra_guest_fee' => 0,
             'quantity' => fake()->randomNumber(1),
             'allows_day_use' => fake()->boolean(),
             'base_weekday_rate' => fake()->numberBetween(10000, 16000),

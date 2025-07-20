@@ -81,7 +81,6 @@ describe('Admin Room Management', function () {
                     'description',
                     'quantity',
                     'max_guests',
-                    'extra_guest_fee',
                     'status',
                     'created_at',
                     'updated_at',
@@ -125,7 +124,6 @@ describe('Admin Room Management', function () {
                 'quantity'              => 2,
                 'max_guests'            => 20,
                 'extra_guests'          => 2,
-                'extra_guest_fee'       => 2,
                 'allows_day_use'        => false,
                 'base_weekday_rate'     => 0,
                 'base_weekend_rate'     => 0,
@@ -142,7 +140,6 @@ describe('Admin Room Management', function () {
                     'description',
                     'quantity',
                     'max_guests',
-                    'extra_guest_fee',
                     'price',
                     'status',
                     'created_at',
@@ -162,7 +159,6 @@ describe('Admin Room Management', function () {
                 ->assertUnprocessable()
                 ->assertJsonValidationErrors([
                  'quantity',
-                 'extra_guest_fee',
                  'status',
                  'base_weekday_rate',
                  'base_weekend_rate',
@@ -200,7 +196,6 @@ describe('Admin Room Management', function () {
                 'quantity'              => 4,
                 'max_guests'            => 10,
                 'extra_guests'          => 3,
-                'extra_guest_fee'       => 22,
                 'allows_day_use'        => false,
                 'base_weekday_rate'     => 10,
                 'base_weekend_rate'     => 10,
@@ -217,7 +212,6 @@ describe('Admin Room Management', function () {
                     'description',
                     'quantity',
                     'max_guests',
-                    'extra_guest_fee',
                     'status',
                     'created_at',
                     'updated_at',
@@ -236,7 +230,6 @@ describe('Admin Room Management', function () {
                 ->assertUnprocessable()
                 ->assertJsonValidationErrors([
                  'quantity',
-                 'extra_guest_fee',
                  'status',
                  'base_weekday_rate',
                  'base_weekend_rate',
@@ -251,7 +244,6 @@ describe('Admin Room Management', function () {
                 'quantity'              => 4,
                 'max_guests'            => 10,
                 'extra_guests'          => 4,
-                'extra_guest_fee'       => 22,
                 'allows_day_use'        => false,
                 'base_weekday_rate'     => 10,
                 'base_weekend_rate'     => 10,
