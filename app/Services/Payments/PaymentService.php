@@ -29,49 +29,74 @@ class PaymentService implements PaymentServiceInterface
     {
         $booking = $this->bookingRepo->getByReferenceNumber($dto->referenceNumber);
 
-        // Allow payment if 'pending' or 'downpaymnet'
-        // Block only if 'paid', 'cancelled', or 'failed'
-        if ($booking->status === 'paid') {
-            return new PaymentResultDTO(false, 'ALREADY_PAID', 'Booking already paid.');
-        }
-        if (in_array($booking->status, ['cancelled', 'failed'])) {
-            return new PaymentResultDTO(false, 'INVALID_STATUS', 'Booking cannot be paid.');
+        if (in_array($booking->status, ['paid', 'cancelled', 'failed'])) {
+            return new PaymentResultDTO(false, 'INVALID_STATUS', 'Booking cannot accept payments.');
         }
 
         DB::beginTransaction();
         try {
-            $result = $this->gateway->execute($dto);
+            if (!$dto->isManual) {
+                $result = $this->gateway->execute($dto);
+                $status = $result->success ? 'paid' : 'failed';
+                $errorCode = $result->errorCode;
+                $errorMessage = $result->errorMessage;
+            } else {
+                $status = $dto->status ?? 'paid'; // Admin manually sets status
+                $result = (object)['success' => $status === 'paid', 'errorCode' => null, 'errorMessage' => null];
+                $errorCode = null;
+                $errorMessage = null;
+            }
 
             $payment = $this->paymentRepo->create([
-                'booking_id'   => $booking->id,
-                'provider'     => $dto->provider,
-                'status'       => $result->success ? 'paid' : 'failed',
-                'amount'       => $dto->amount,
-                'error_code'   => $result->errorCode,
-                'error_message' => $result->errorMessage,
+                'booking_id' => $booking->id,
+                'provider' => $dto->provider,
+                'status' => $status,
+                'amount' => $dto->amount,
+                'transaction_id' => $dto->transactionId,
+                'remarks' => $dto->remarks,
+                'error_code' => $errorCode,
+                'error_message' => $errorMessage,
             ]);
 
-            if ($result->success) {
+            if ($status === 'paid') {
                 $this->bookingService->markPaid($booking);
-            } else {
+            } elseif ($status === 'failed') {
                 $this->bookingService->markPaymentFailed($booking);
             }
-            // Do NOT change booking status on failed payment unless you want to track attempts
 
             DB::commit();
-            $booking = $booking->refresh();
-            $downpayment = $booking->payments()->where('status', 'paid')->sum('amount');
-            Mail::to($booking->guest_email)->queue(new \App\Mail\BookingConfirmation($booking, $downpayment));
+
+            // Always notify via email for successful payments
+            // if ($status === 'paid') {
+            //     $downpayment = $booking->payments()->where('status', 'paid')->sum('amount');
+            //     Mail::to($booking->guest_email)->queue(new \App\Mail\BookingConfirmation($booking, $downpayment));
+            // }
+            // Determine the first successful payment
+            $isFirstSuccessfulPayment = $booking->payments()->where('status', 'paid')->count() === 1;
+            if ($dto->isNotifyGuest) {
+                if ($status === 'paid') {
+                    if ($isFirstSuccessfulPayment) {
+                        Mail::to($booking->guest_email)->queue(new \App\Mail\BookingConfirmation($booking, $payment->amount));
+                        Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentSuccess($booking, $payment));
+                    } else {
+                        Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentSuccess($booking, $payment));
+                    }
+                } elseif ($status === 'failed') {
+                    // Optional PaymentFailed email
+                    Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentFailed($booking, $payment));
+                }
+            }
+
             return new PaymentResultDTO(
                 $result->success,
                 $result->errorCode,
                 $result->errorMessage,
                 $payment,
-                $booking
+                $booking->refresh()
             );
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::info($e->getMessage());
+            Log::error($e->getMessage());
             return new PaymentResultDTO(false, 'EXCEPTION', $e->getMessage());
         } finally {
             $this->bookingLockService->delete($booking->id);

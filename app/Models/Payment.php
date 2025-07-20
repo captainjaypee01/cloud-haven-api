@@ -15,6 +15,7 @@ class Payment extends Model
         'error_code',
         'error_message',
         'transaction_id',
+        'remarks',
         'response_data'
     ];
 

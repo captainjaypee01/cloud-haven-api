@@ -68,6 +68,11 @@ class Booking extends Model
     {
         return $this->hasMany(Payment::class);
     }
+    
+    public function otherCharges()
+    {
+        return $this->hasMany(OtherCharge::class);
+    }
 
     protected static function booted()
     {
@@ -103,7 +108,7 @@ class Booking extends Model
             ->setTimezone($userTimezone)
             ->format('Y-m-d H:i:s');
     }
-    
+
     public function getLocalDownpaymentAtAttribute()
     {
         $userTimezone = "Asia/Singapore";
@@ -111,7 +116,7 @@ class Booking extends Model
             ->setTimezone($userTimezone)
             ->format('Y-m-d H:i:s');
     }
-    
+
     public function getLocalPaidAtAttribute()
     {
         $userTimezone = "Asia/Singapore";
@@ -119,7 +124,7 @@ class Booking extends Model
             ->setTimezone($userTimezone)
             ->format('Y-m-d H:i:s');
     }
-    
+
     public function getLocalReservedUntilAttribute()
     {
         $userTimezone = "Asia/Singapore";

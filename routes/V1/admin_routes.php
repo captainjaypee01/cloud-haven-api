@@ -11,4 +11,10 @@ Route::prefix('admin')->namespace('App\Http\Controllers\Api\V1\Admin')
         Route::apiResource('users', 'UserController');
         Route::apiResource('amenities', 'AmenityController');
         Route::apiResource('bookings', 'BookingController');
+        Route::post('bookings/{booking}/other-charges', 'BookingController@storeOtherCharge');
+        Route::patch('bookings/{booking}/reschedule', 'BookingController@reschedule');
+        Route::delete('bookings/{booking}/other-charges/{charge}', 'OtherChargeController@destroy');
+        // Route::apiResource('payments', 'PaymentController');
+        Route::post('payments/pay', 'PaymentController@pay');
+        Route::put('payments/{payment}', 'PaymentController@update');
     });

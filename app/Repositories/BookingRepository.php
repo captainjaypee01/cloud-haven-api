@@ -45,11 +45,11 @@ class BookingRepository implements BookingRepositoryInterface
     
     public function getId($id): Booking
     {
-        return Booking::with('bookingRooms.room', 'payments')->findOrFail($id);
+        return Booking::with('bookingRooms.room', 'payments', 'otherCharges')->findOrFail($id);
     }
 
     public function getByReferenceNumber(string $referenceNumber): Booking
     {
-        return Booking::with('bookingRooms.room', 'payments')->where('reference_number', $referenceNumber)->firstOrFail();
+        return Booking::with('bookingRooms.room', 'payments', 'otherCharges')->where('reference_number', $referenceNumber)->firstOrFail();
     }
 }

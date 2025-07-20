@@ -11,17 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payments', function (Blueprint $table) {
+        Schema::create('other_charges', function (Blueprint $table) {
             $table->id();
             $table->foreignId('booking_id')->constrained();
-            $table->string('provider'); // or 'provider' for future-proofing
             $table->double('amount');
-            $table->enum('status', ['pending', 'paid', 'cancelled', 'failed']);
-            $table->string('transaction_id')->nullable();
             $table->string('remarks')->nullable();
-            $table->string('error_code')->nullable();
-            $table->text('error_message')->nullable();
-            $table->json('response_data')->nullable(); // stores raw API response
             $table->timestamps();
         });
     }
@@ -31,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payments');
+        Schema::dropIfExists('other_charges');
     }
 };
