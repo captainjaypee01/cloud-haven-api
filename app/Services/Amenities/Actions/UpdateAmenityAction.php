@@ -25,6 +25,7 @@ final class UpdateAmenityAction implements UpdateAmenityContract
                 'description' => $dto->description,
                 'icon' => $dto->icon,
                 'price' => $dto->price,
+                'status' => $dto->status,
             ];
 
             // Filter out unchanged fields

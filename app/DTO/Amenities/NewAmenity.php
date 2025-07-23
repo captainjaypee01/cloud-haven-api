@@ -11,5 +11,6 @@ class NewAmenity extends Data
         public ?string  $description,
         public ?string  $icon,
         public ?float   $price,
+        public ?string  $status,
     ) {}
 }

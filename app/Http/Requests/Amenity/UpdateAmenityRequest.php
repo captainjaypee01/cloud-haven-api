@@ -50,6 +50,7 @@ class UpdateAmenityRequest extends FormRequest
             'description' => 'sometimes',
             'icon' => 'nullable|string',
             'price' => 'nullable|numeric',
+            'status' => 'nullable|string',
         ];
     }
 }

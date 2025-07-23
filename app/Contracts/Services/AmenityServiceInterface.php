@@ -11,4 +11,5 @@ interface AmenityServiceInterface
     public function create(array $data): Amenity;
     public function update(int $amenityId, array $data): Amenity;
     public function delete(int $amenityId): void;
+    public function updateStatus(int $amenityId, string $status);
 }

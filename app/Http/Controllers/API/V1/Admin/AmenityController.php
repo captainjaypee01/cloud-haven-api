@@ -93,4 +93,24 @@ class AmenityController extends Controller
         }
         return new EmptyResponse();
     }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function updateStatus(Request $request, int $id): ItemResponse|ErrorResponse
+    {
+        $validated = $request->validate([
+            'status'    => 'required|string'
+        ]);
+        
+        try {
+            $data = $this->amenityService->updateStatus($id, $validated['status']);
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Amenity not found.');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return new ErrorResponse('Unable to update amenity.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new ItemResponse(new AmenityResource($data), JsonResponse::HTTP_OK);
+    }
 }

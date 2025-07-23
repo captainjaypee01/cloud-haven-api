@@ -10,7 +10,7 @@ class Amenity extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'description', 'icon', 'price'];
+    protected $fillable = ['name', 'description', 'icon', 'price', 'status'];
 
     public function rooms()
     {

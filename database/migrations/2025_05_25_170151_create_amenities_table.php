@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('icon')->nullable();
             $table->double('price')->nullable();
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
             $table->timestamp('deleted_at')->nullable();
         });

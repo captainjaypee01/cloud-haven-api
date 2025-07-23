@@ -11,5 +11,6 @@ class UpdateAmenity extends Data
         public ?string  $description = null,
         public ?string  $icon = null,
         public ?float   $price = null,
+        public ?string  $status = 'active',
     ) {}
 }

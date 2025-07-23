@@ -35,4 +35,10 @@ class AmenityRepository implements AmenityRepositoryInterface
     {
         return Amenity::findOrFail($id);
     }
+
+    public function updateStatus(Amenity $amenity, string $status): Amenity
+    {
+        $amenity->update(['status' => $status]);
+        return $amenity->refresh();
+    }
 }

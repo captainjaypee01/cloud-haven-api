@@ -13,6 +13,7 @@ class AmenityDtoFactory
             description: $data['description'] ?? null,
             icon: $data['icon'] ?? null,
             price: $data['price'] ?? null,
+            status: $data['status'] ?? 'active',
         );
     }
     
@@ -23,6 +24,7 @@ class AmenityDtoFactory
             description: $data['description'] ?? null,
             icon: $data['icon'] ?? null,
             price: $data['price'] ?? null,
+            status: $data['status'] ?? 'active',
         );
     }
 }

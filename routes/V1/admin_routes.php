@@ -8,8 +8,12 @@ Route::prefix('admin')->namespace('App\Http\Controllers\Api\V1\Admin')
         // Admin Routes
         Route::get('clerk/test', fn() => 'Clerk Middleware Check Admin | ' . auth()->user()->clerk_id);
         Route::apiResource('rooms', 'RoomController');
+
         Route::apiResource('users', 'UserController');
+
         Route::apiResource('amenities', 'AmenityController');
+        Route::patch('amenities/{id}/update-status', 'AmenityController@updateStatus');
+
         Route::apiResource('bookings', 'BookingController');
         Route::post('bookings/{booking}/other-charges', 'BookingController@storeOtherCharge');
         Route::patch('bookings/{booking}/reschedule', 'BookingController@reschedule');

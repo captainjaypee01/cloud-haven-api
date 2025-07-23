@@ -49,6 +49,7 @@ class StoreAmenityRequest extends FormRequest
             'description' => 'nullable|string',
             'icon' => 'nullable|string',
             'price' => 'nullable|numeric',
+            'status' => 'nullable|string',
         ];
     }
 }

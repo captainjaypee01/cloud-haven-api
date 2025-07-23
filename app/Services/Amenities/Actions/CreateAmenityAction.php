@@ -25,6 +25,7 @@ final class CreateAmenityAction implements CreateAmenityContract
                         'description'       => $dto->description,
                         'icon'              => $dto->icon,
                         'price'             => $dto->price,
+                        'status'            => $dto->status,
                     ]
                 );
             }

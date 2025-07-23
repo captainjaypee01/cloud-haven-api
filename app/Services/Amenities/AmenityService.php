@@ -78,4 +78,17 @@ class AmenityService implements AmenityServiceInterface
         $amenity = $this->repository->getId($id);
         $this->deleter->handle($amenity);
     }
+
+    /**
+     * To Update the Amenity by Id
+     * 
+     * @param int $id
+     * @param array $data
+     * @return \App\Models\Amenity
+     */
+    public function updateStatus(int $amenityId, string $status): Amenity
+    {
+        $amenity = $this->repository->getId($amenityId);
+        return $this->repository->updateStatus($amenity, $status);
+    }
 }
