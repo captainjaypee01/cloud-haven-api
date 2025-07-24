@@ -47,6 +47,7 @@ class UpdateRoomRequest extends FormRequest
      */
     public function rules(): array
     {
+        $roomId = $this->room;
         return [
             'name'                  => 'required|string|max:255',
             'description'           => 'nullable|string',

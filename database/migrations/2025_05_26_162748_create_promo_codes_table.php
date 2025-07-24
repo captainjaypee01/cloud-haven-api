@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('max_uses')->nullable();
             $table->integer('uses_count')->nullable();
             $table->boolean('active')->default(false);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

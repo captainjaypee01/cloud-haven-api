@@ -21,4 +21,8 @@ Route::prefix('admin')->namespace('App\Http\Controllers\Api\V1\Admin')
         // Route::apiResource('payments', 'PaymentController');
         Route::post('payments/pay', 'PaymentController@pay');
         Route::put('payments/{payment}', 'PaymentController@update');
+
+        Route::patch('promos/bulk-update-status', 'PromoController@bulkUpdateStatus');
+        Route::patch('promos/{id}/update-status', 'PromoController@updateStatus');
+        Route::apiResource('promos', 'PromoController');
     });

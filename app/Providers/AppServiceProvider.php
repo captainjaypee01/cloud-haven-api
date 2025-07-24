@@ -54,13 +54,22 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Contracts\Repositories\PaymentRepositoryInterface::class, \App\Repositories\PaymentRepository::class);
 
         $this->app->bind(\App\Contracts\Repositories\BookingRepositoryInterface::class, \App\Repositories\BookingRepository::class);
+
+        $this->bindPromos();
     }
 
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot(): void {}
+
+    public function bindPromos(): void
     {
-        
+
+        $this->app->bind(\App\Contracts\Repositories\PromoRepositoryInterface::class, \App\Repositories\PromoRepository::class);
+        $this->app->bind(\App\Contracts\Services\PromoServiceInterface::class, \App\Services\Promos\PromoService::class);
+        $this->app->bind(\App\Contracts\Promos\CreatePromoContract::class, \App\Actions\Promos\CreatePromoAction::class);
+        $this->app->bind(\App\Contracts\Promos\UpdatePromoContract::class, \App\Actions\Promos\UpdatePromoAction::class);
+        $this->app->bind(\App\Contracts\Promos\DeletePromoContract::class, \App\Actions\Promos\DeletePromoAction::class);
     }
 }
