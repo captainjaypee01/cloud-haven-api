@@ -56,6 +56,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Contracts\Repositories\BookingRepositoryInterface::class, \App\Repositories\BookingRepository::class);
 
         $this->bindPromos();
+        $this->app->bind(
+            \App\Contracts\Services\DashboardServiceInterface::class,
+            \App\Services\DashboardService::class
+        );
     }
 
     /**
