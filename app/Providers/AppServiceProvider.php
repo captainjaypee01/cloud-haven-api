@@ -43,8 +43,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Contracts\Amenities\UpdateAmenityContract::class, \App\Services\Amenities\Actions\UpdateAmenityAction::class);
         $this->app->bind(\App\Contracts\Amenities\DeleteAmenityContract::class, \App\Services\Amenities\Actions\DeleteAmenityAction::class);
 
-        $this->app->bind(\App\Contracts\Services\MealPriceServiceInterface::class, \App\Services\MealPrices\MealPriceService::class);
-
         $this->app->bind(\App\Contracts\Services\BookingLockServiceInterface::class, \App\Services\Bookings\BookingLockService::class);
         $this->app->bind(\App\Contracts\Services\BookingServiceInterface::class, \App\Services\Bookings\BookingService::class);
 
@@ -55,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(\App\Contracts\Repositories\BookingRepositoryInterface::class, \App\Repositories\BookingRepository::class);
 
+        $this->bindMealPrices();
         $this->bindPromos();
         $this->app->bind(
             \App\Contracts\Services\DashboardServiceInterface::class,
@@ -75,5 +74,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Contracts\Promos\CreatePromoContract::class, \App\Actions\Promos\CreatePromoAction::class);
         $this->app->bind(\App\Contracts\Promos\UpdatePromoContract::class, \App\Actions\Promos\UpdatePromoAction::class);
         $this->app->bind(\App\Contracts\Promos\DeletePromoContract::class, \App\Actions\Promos\DeletePromoAction::class);
+    }
+
+    public function bindMealPrices(): void
+    {
+        $this->app->bind(\App\Contracts\Services\MealPriceServiceInterface::class, \App\Services\MealPrices\MealPriceService::class);
+        $this->app->bind(\App\Contracts\Repositories\MealPriceRepositoryInterface::class, \App\Repositories\MealPriceRepository::class);
+        $this->app->bind(\App\Contracts\MealPrices\CreateMealPriceContract::class, \App\Actions\MealPrices\CreateMealPriceAction::class);
+        $this->app->bind(\App\Contracts\MealPrices\UpdateMealPriceContract::class, \App\Actions\MealPrices\UpdateMealPriceAction::class);
+        $this->app->bind(\App\Contracts\MealPrices\DeleteMealPriceContract::class, \App\Actions\MealPrices\DeleteMealPriceAction::class);
     }
 }

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('min_age')->nullable();
             $table->integer('max_age')->nullable();
             $table->double('price');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

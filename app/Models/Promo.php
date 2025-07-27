@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Promo extends Model
 {
     use HasFactory;
-    // use SoftDeletes; // uncomment if using soft deletes (ensure `deleted_at` in migration)
+    use SoftDeletes; // uncomment if using soft deletes (ensure `deleted_at` in migration)
 
     protected $fillable = [
         'code',
