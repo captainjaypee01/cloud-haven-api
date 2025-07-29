@@ -7,11 +7,16 @@ use App\Contracts\Users\CreateUserContract;
 use App\Contracts\Users\DeleteUserContract;
 use App\Contracts\Users\UpdateUserContract;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Contracts\Users\CreateClerkUserContract;
+use App\Contracts\Users\DeleteClerkUserContract;
 use App\Contracts\Users\SyncLinkedProvidersContract;
+use App\Contracts\Users\UpdateClerkUserContract;
 use App\DTO\Users\UserDtoFactory;
+use App\Mail\SendGeneratedPassword;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class UserService implements UserServiceInterface
@@ -23,6 +28,9 @@ class UserService implements UserServiceInterface
         private   DeleteUserContract          $deleter,
         private   SyncLinkedProvidersContract $syncProviders,
         private   UserDtoFactory              $dtoFactory,
+        private   CreateClerkUserContract     $clerkCreator,
+        private   UpdateClerkUserContract     $clerkUpdater,
+        private   DeleteClerkUserContract     $clerkDeleter,
     ) {}
 
     /**
@@ -70,6 +78,10 @@ class UserService implements UserServiceInterface
      */
     public function createUser(array $data): User
     {
+        $data['password'] = Str::password(12);
+        $clerkUser = $this->clerkCreator->handle($data);
+        $data['id'] = $clerkUser->id;
+
         // Find or create the user using Clerk's ID
         $dto  = $this->dtoFactory->newUser($data);
         $user = $this->creator->handle($dto);
@@ -78,6 +90,13 @@ class UserService implements UserServiceInterface
         $syncDto = $this->dtoFactory->syncProviders($dto->linkedProviders);
         $this->syncProviders->handle($user, $syncDto);
 
+        Mail::to($user->email)->send(
+            new SendGeneratedPassword(
+                $user->first_name,
+                $data['email'],
+                $data['password'] // from the creation process
+            )
+        );
         return $user;
     }
 
@@ -110,6 +129,8 @@ class UserService implements UserServiceInterface
     public function updateById(int $id, array $data): User
     {
         $user = $this->repository->getId($id);
+        $clerkUser = $this->clerkUpdater->handle($user, $data);
+        $data['id'] = $clerkUser->id;
         $dto  = $this->dtoFactory->updateUser($data);
         $updatedUser = $this->updater->handle($user, $dto);
         return $updatedUser;
@@ -147,6 +168,7 @@ class UserService implements UserServiceInterface
     public function deleteById($id): void
     {
         $user = $this->repository->getId($id);
+        $this->clerkDeleter->handle($user);
         $this->deleter->handle($user);
     }
 

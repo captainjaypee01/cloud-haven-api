@@ -29,7 +29,7 @@ class UserController extends Controller
      */
     public function index(Request $request): CollectionResponse
     {
-        $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page']);
+        $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page', 'role']);
         $paginator = $this->userService->list($filters);
         return new CollectionResponse(new UserCollection($paginator), JsonResponse::HTTP_OK);
     }
@@ -44,6 +44,9 @@ class UserController extends Controller
             $data = $this->userService->createUser($request->validated());
         } catch (Exception $e) {
             Log::error($e->getMessage());
+            if($e->getCode() === 422) {
+                return new ErrorResponse($e->getMessage(), 422);
+            }
             return new ErrorResponse('Unable to create a user.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new ItemResponse(new UserResource($data), JsonResponse::HTTP_CREATED);

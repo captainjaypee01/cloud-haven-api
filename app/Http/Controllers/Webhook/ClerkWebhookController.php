@@ -47,7 +47,7 @@ class ClerkWebhookController extends Controller
                         'email'                 => $data['email_addresses'][0]['email_address'],
                         'first_name'            => $data['first_name'],
                         'last_name'             => $data['last_name'],
-                        'role'                  => 'user',
+                        'role'                  => $data['public_metadata']['role'] ?? 'user',
                         'country_code'          => '',
                         'contact_number'        => '',
                         'image_url'             => $data['image_url'],
@@ -59,7 +59,7 @@ class ClerkWebhookController extends Controller
                         $this->userService->createUserByClerk($payload);
                     } else {
                         $user = $this->userService->showByClerkId($data['id']);
-                        $payload['role'] = $user->role ?? 'user';
+                        $payload['role'] = $data['public_metadata']['role'] ?? ($user->role ?? 'user');
                         $this->userService->updateByClerkId($data['id'], $payload);
                     }
                     break;

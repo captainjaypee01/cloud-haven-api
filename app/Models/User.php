@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -56,8 +58,26 @@ class User extends Authenticatable
         ];
     }
 
+    protected $appends = ['local_created_at', 'local_updated_at'];
+
     public function providers(): HasMany
     {
         return $this->hasMany(UserProvider::class);
+    }
+    
+    public function getLocalCreatedAtAttribute()
+    {
+        $userTimezone = "Asia/Singapore";
+        return Carbon::parse($this->created_at)
+            ->setTimezone($userTimezone)
+            ->format('Y-m-d H:i:s');
+    }
+
+    public function getLocalUpdatedAtAttribute()
+    {
+        $userTimezone = "Asia/Singapore";
+        return Carbon::parse($this->updated_at)
+            ->setTimezone($userTimezone)
+            ->format('Y-m-d H:i:s');
     }
 }
