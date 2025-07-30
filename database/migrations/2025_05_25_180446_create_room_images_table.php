@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('images', function (Blueprint $table) {
             $table->id();
+            $table->string('name')->nullable();
             $table->string('image_url', 500)->nullable();
             $table->string('secure_image_url', 500)->nullable();
             $table->string('image_path')->nullable();
@@ -30,6 +31,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('room_id')->constrained()->cascadeOnDelete();
             $table->foreignId('image_id')->constrained()->cascadeOnDelete();
+            $table->unsignedTinyInteger('order')->nullable()->default(0);
         });
     }
 

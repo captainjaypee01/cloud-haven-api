@@ -28,4 +28,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\Api\V1\Admin')
         Route::apiResource('promos', 'PromoController');
         
         Route::apiResource('meal-prices', 'MealPriceController');
+
+        Route::apiResource('images', 'ImageController')->only(['index', 'store', 'destroy']);
+
     });

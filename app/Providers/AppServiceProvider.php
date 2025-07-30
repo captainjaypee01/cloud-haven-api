@@ -45,6 +45,11 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(\App\Contracts\Repositories\BookingRepositoryInterface::class, \App\Repositories\BookingRepository::class);
 
+        $this->app->bind(
+            \App\Contracts\Services\ImageServiceInterface::class,
+            \App\Services\Images\ImageService::class
+        );
+
         $this->bindUsers();
         $this->bindMealPrices();
         $this->bindPromos();

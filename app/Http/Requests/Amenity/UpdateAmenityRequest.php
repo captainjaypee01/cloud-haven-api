@@ -35,7 +35,7 @@ class UpdateAmenityRequest extends FormRequest
     {
         if (is_null($this->user())) return false;
 
-        return $this->user()->role === "admin";
+        return in_array($this->user()->role, ['admin', 'superadmin']);
     }
 
     /**
