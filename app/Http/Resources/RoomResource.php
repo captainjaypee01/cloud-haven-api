@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Image\ImageResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,6 +29,7 @@ class RoomResource extends JsonResource
             'base_weekend_rate'     => $this->base_weekend_rate,
             'price_per_night'       => $this->price_per_night,
             'is_featured'           => $this->is_featured,
+            'images'                => ImageResource::collection($this->images),
             // 'images'            => ImageResource::collection($this->images),
             // 'amenities'         => AmenityResource::collection($this->amenities),
             'created_at'            => $this->created_at->toDateTimeString(),

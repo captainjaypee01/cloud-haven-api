@@ -6,6 +6,8 @@ use App\Services\WebhookVerifier;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+// Use the Configuration class 
+use Cloudinary\Configuration\Configuration as CloudinaryConfiguration;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -62,7 +64,10 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void {}
+    public function boot(): void {
+        
+        CloudinaryConfiguration::instance(config('cloudinary.cloud_url') . "?secure=true");
+    }
 
     public function bindUsers(): void
     {

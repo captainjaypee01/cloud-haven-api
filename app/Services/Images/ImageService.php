@@ -4,8 +4,8 @@ namespace App\Services\Images;
 
 use App\Contracts\Services\ImageServiceInterface;
 use App\Models\Image;
+use Cloudinary\Api\Upload\UploadApi;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ImageService implements ImageServiceInterface
@@ -22,19 +22,25 @@ class ImageService implements ImageServiceInterface
     public function uploadImages(array $files, array $names): array
     {
         $uploaded = [];
+        // Upload the image
+        $uploadApi = new UploadApi();
         foreach ($files as $idx => $file) {
             $name = $names[$idx] ?? $file->getClientOriginalName();
-            $result = $file->storeOnCloudinary();
+            $result = $uploadApi->upload($file->getRealPath(), [
+                'asset_folder' => 'netania',
+                'public_id' => $name,
+                'overwrite' => true,
+            ]);
             $uploaded[] = Image::create([
                 'name'             => $name,
                 'alt_text'         => $name,
-                'image_url'        => $result->getPath(),
-                'secure_image_url' => $result->getSecurePath(),
+                'image_url'        => $result['url'],
+                'secure_image_url' => $result['secure_url'],
                 'image_path'       => null,
                 'provider'         => 'cloudinary',
-                'public_id'        => $result->getPublicId(),
-                'width'            => $result->getWidth(),
-                'height'           => $result->getHeight(),
+                'public_id'        => $result['public_id'],
+                'width'            => $result['width'],
+                'height'           => $result['height'],
                 'order'            => 0,
             ]);
         }
@@ -44,7 +50,8 @@ class ImageService implements ImageServiceInterface
     public function deleteImage(Image $image): void
     {
         if ($image->provider === 'cloudinary' && $image->public_id) {
-            Cloudinary::destroy($image->public_id);
+            $uploadApi = new UploadApi();
+            $uploadApi->destroy($image->public_id);
         }
         $image->delete();
     }

@@ -29,8 +29,16 @@ class PaymentService implements PaymentServiceInterface
     {
         $booking = $this->bookingRepo->getByReferenceNumber($dto->referenceNumber);
 
+        $finalPrice = $booking->final_price;
         if (in_array($booking->status, ['paid', 'cancelled', 'failed'])) {
-            return new PaymentResultDTO(false, 'INVALID_STATUS', 'Booking cannot accept payments.');
+            if ($booking->status === 'paid') {
+                $otherCharges = $booking->otherCharges()->sum('amount');
+                $paidAmount = $booking->payments()->where('status', 'paid')->sum('amount');
+                if (!(($otherCharges + $finalPrice) > $paidAmount))
+                    return new PaymentResultDTO(false, 'INVALID_STATUS', 'Booking cannot accept payments.');
+            } else {
+                return new PaymentResultDTO(false, 'INVALID_STATUS', 'Booking cannot accept payments.');
+            }
         }
 
         DB::beginTransaction();

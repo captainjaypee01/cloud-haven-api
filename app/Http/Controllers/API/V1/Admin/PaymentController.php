@@ -37,13 +37,13 @@ class PaymentController extends Controller
             remarks: $validated['remarks'],
             status: $validated['status'],
             isManual: true,
-            isNotifyGuest: $validated['notify_guest'],
+            isNotifyGuest: $validated['notify_guest'] ?? false,
         );
 
         $result = $this->paymentService->execute($dto);
         // Decide HTTP status based on result
         $status = JsonResponse::HTTP_OK;
-        \Log::info($result);
+
         if (!$result->success) {
             if (in_array($result->errorCode, ['ALREADY_PAID', 'INVALID_STATUS', 'SIM_FAIL'])) {
                 $status = JsonResponse::HTTP_BAD_REQUEST;

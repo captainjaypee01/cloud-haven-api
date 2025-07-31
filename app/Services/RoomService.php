@@ -42,7 +42,17 @@ class RoomService implements RoomServiceInterface
     public function create(array $data, int $userId): Room
     {
         $dto = $this->dtoFactory->newRoom($data);
-        return $this->creator->handle($dto, $userId);
+        $room = $this->creator->handle($dto, $userId);
+        if (!empty($data['image_ids'])) {
+            // Sync images with order
+            $attachData = [];
+            foreach ($data['image_ids'] as $index => $id) {
+                $attachData[$id] = ['order' => $index];
+            }
+            $room->images()->sync($attachData);
+            $room->load('images');
+        }
+        return $room;
     }
 
     /**
@@ -60,7 +70,18 @@ class RoomService implements RoomServiceInterface
     {
         $room = $this->query->getId($roomId);
         $dto = $this->dtoFactory->updateRoom($data);
-        return $this->updater->handle($room, $dto, $userId);
+        $updatedRoom = $this->updater->handle($room, $dto, $userId);
+        if (!empty($data['image_ids'])) {
+            // Sync images with order
+            $attachData = [];
+            foreach ($data['image_ids'] as $index => $id) {
+                $attachData[$id] = ['order' => $index];
+            }
+            $updatedRoom->images()->sync($attachData);
+            $updatedRoom->load('images');
+        }
+
+        return $updatedRoom;
     }
 
     /**

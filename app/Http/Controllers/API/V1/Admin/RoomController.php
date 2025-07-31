@@ -41,6 +41,7 @@ class RoomController extends Controller
     {
         try {
             $data = $this->roomService->show($room);
+            $data->load(['images', 'amenities']);  // include images in result
         } catch (ModelNotFoundException $e) {
             return new ErrorResponse('Room not found.');
         }
@@ -53,7 +54,6 @@ class RoomController extends Controller
     public function store(StoreRoomRequest $request): ItemResponse|ErrorResponse
     {
         try {
-            \Log::info($request->validated());
             $data = $this->roomService->create($request->validated(), $request->user()->id);
         } catch (Exception $e) {
             Log::error($e->getMessage());

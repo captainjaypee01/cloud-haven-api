@@ -59,6 +59,8 @@ class StoreRoomRequest extends FormRequest
             'base_weekend_rate'     => 'required|numeric|min:0',
             'price_per_night'       => 'required|numeric|min:0',
             'status'                => ['required', 'string', Rule::in(RoomStatusEnum::labels())],
+            'image_ids'             => 'sometimes|array',
+            'image_ids.*'           => 'integer|exists:images,id',
         ];
     }
     

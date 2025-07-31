@@ -21,11 +21,16 @@ class RoomRepository implements RoomRepositoryInterface
         ?string $sort = null,
         int $perPage = 10
     ): LengthAwarePaginator {
-        $query = Room::query()->with('amenities');
+        $query = Room::query()->with([
+            'amenities',
+            'images' => function ($q) {
+                $q->orderBy('room_image.order');
+            }
+        ]);
 
         // Filter by status
         if (!empty($filters['status'])) {
-            if($filters['status'] != 'all')
+            if ($filters['status'] != 'all')
                 $query->where('status', RoomStatusEnum::fromLabel($filters['status'])->value);
         }
 
@@ -42,7 +47,7 @@ class RoomRepository implements RoomRepositoryInterface
         // Sorting
         if ($sort) {
             [$field, $dir] = explode('|', $sort);
-            if($field == "price") $field = "price_per_night";
+            if ($field == "price") $field = "price_per_night";
             $query->orderBy($field, $dir);
         } else {
             $query->orderBy('id', 'asc');
