@@ -19,5 +19,7 @@ class UpdateRoom extends Data
         public float    $base_weekend_rate,
         public float    $price_per_night,
         public ?int     $is_featured = 0,
+        public ?array   $image_ids = [],
+        public ?array   $amenity_ids = [],
     ) {}
 }

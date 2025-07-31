@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Amenity\AmenityResource;
 use App\Http\Resources\Image\ImageResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -31,7 +32,7 @@ class RoomResource extends JsonResource
             'is_featured'           => $this->is_featured,
             'images'                => ImageResource::collection($this->images),
             // 'images'            => ImageResource::collection($this->images),
-            // 'amenities'         => AmenityResource::collection($this->amenities),
+            'amenities'             => AmenityResource::collection($this->amenities),
             'created_at'            => $this->created_at->toDateTimeString(),
             'updated_at'            => $this->updated_at->toDateTimeString(),
         ];

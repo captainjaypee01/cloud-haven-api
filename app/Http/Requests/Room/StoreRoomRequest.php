@@ -61,6 +61,8 @@ class StoreRoomRequest extends FormRequest
             'status'                => ['required', 'string', Rule::in(RoomStatusEnum::labels())],
             'image_ids'             => 'sometimes|array',
             'image_ids.*'           => 'integer|exists:images,id',
+            'amenity_ids'           => 'nullable|array',
+            'amenity_ids.*'         => 'exists:amenities,id',
         ];
     }
     
