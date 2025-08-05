@@ -8,6 +8,7 @@ Route::prefix('/')->namespace('App\Http\Controllers\Api\V1\Dashboard')
         /* ---------- Public dashboard (no auth) ---------- */
         Route::get('rooms',            'RoomController@index');
         Route::post('rooms/availability', 'RoomAvailabilityController@batchCheck');
+        Route::get('rooms/featured', 'RoomController@featuredRooms');
 
         Route::get('rooms/{room:slug}', 'RoomController@show');
 

@@ -149,13 +149,8 @@ class RoomService implements RoomServiceInterface
     /**
      * Get public rooms
      */
-    public function listFeaturedRooms(array $filters)
+    public function listFeaturedRooms()
     {
-
-        return $this->query->get(
-            filters: $filters,
-            sort: $filters['sort'] ?? null,
-            perPage: $filters['per_page'] ?? 10
-        );
+        return $this->query->getFeaturedRooms();
     }
 }

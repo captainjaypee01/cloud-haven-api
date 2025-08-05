@@ -115,7 +115,10 @@ class RoomRepository implements RoomRepositoryInterface
 
     public function getFeaturedRooms(): Collection
     {
-        return Room::with('amenities')->where('is_featured', 1)->take(4)->get();
+        return Room::with([
+            'amenities',
+            'images' => fn($q) => $q->orderBy('room_image.order')
+        ])->where('is_featured', 1)->where('status', RoomStatusEnum::AVAILABLE)->take(4)->get();
     }
 
     public function listRoomsWithAvailability(string $start, string $end)

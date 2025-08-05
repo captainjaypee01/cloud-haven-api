@@ -53,9 +53,7 @@ class RoomController extends Controller
      */
     public function featuredRooms(Request $request): CollectionResponse
     {
-        $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page']);
-        $paginator = $this->roomService->listPublicRooms($filters);
-        // sleep(2);
-        return new CollectionResponse(new PublicRoomCollection($paginator), JsonResponse::HTTP_OK);
+        $rooms = $this->roomService->listFeaturedRooms();
+        return new CollectionResponse(new PublicRoomCollection($rooms), JsonResponse::HTTP_OK);
     }
 }
