@@ -22,4 +22,6 @@ Route::prefix('/')->namespace('App\Http\Controllers\Api\V1\Dashboard')
 
         Route::get('/promos/exclusive', 'PromoController@exclusiveOffers');
         Route::get('/promos/{promoCode}', 'PromoController@showByCode');
+
+        Route::get('/reviews/testimonials', 'ReviewController@testimonials');
     });
