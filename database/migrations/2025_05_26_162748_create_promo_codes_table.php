@@ -16,9 +16,14 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->enum('discount_type', ['fixed', 'percentage']);
             $table->double('discount_value');
+            $table->enum('scope', ['room', 'meal', 'total'])->default('total');
+            $table->string('title')->nullable();
+            $table->text('description')->nullable();
+            $table->string('image_url')->nullable();
             $table->timestamp('expires_at')->nullable();
             $table->integer('max_uses')->nullable();
             $table->integer('uses_count')->nullable();
+            $table->boolean('exclusive')->default(false);
             $table->boolean('active')->default(false);
             $table->softDeletes();
             $table->timestamps();

@@ -15,9 +15,14 @@ class Promo extends Model
         'code',
         'discount_type',
         'discount_value',
+        'scope',
+        'title',
+        'description',
+        'image_url',
         'expires_at',
         'max_uses',
         'uses_count',
+        'exclusive',
         'active'
     ];
 

@@ -9,6 +9,7 @@ interface PromoServiceInterface
 {
     public function list(array $filters): LengthAwarePaginator;
     public function show(int $id): Promo;
+    public function showByCode(string $promoCode): Promo;
     public function create(array $data): Promo;
     public function update(int $id, array $data): Promo;
     public function delete(int $id): void;

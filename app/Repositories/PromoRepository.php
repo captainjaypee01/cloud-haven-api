@@ -18,6 +18,10 @@ class PromoRepository implements PromoRepositoryInterface
             $query->where('active', $isActive);
         }
 
+        if (!empty($filters['exclusive'])) {
+            $query->where('exclusive', true);
+        }
+
         // Search by code
         if (!empty($filters['search'])) {
             $query->where('code', 'like', '%' . $filters['search'] . '%');
@@ -37,6 +41,11 @@ class PromoRepository implements PromoRepositoryInterface
     public function getId(int $id): Promo
     {
         return Promo::findOrFail($id);
+    }
+
+    public function getByCode(string $promoCode): Promo
+    {
+        return Promo::where('code', $promoCode)->firstOrFail();
     }
 
     public function updateActive(Promo $promo, bool $active): Promo

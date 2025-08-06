@@ -36,6 +36,11 @@ class PromoService implements PromoServiceInterface
         return $this->promoRepository->getId($id);
     }
 
+    public function showByCode(string $promoCode): Promo
+    {
+        return $this->promoRepository->getByCode($promoCode);
+    }
+
     public function create(array $data): Promo
     {
         $dto = $this->dtoFactory->newPromo($data);

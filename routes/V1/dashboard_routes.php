@@ -19,4 +19,7 @@ Route::prefix('/')->namespace('App\Http\Controllers\Api\V1\Dashboard')
         Route::post('/bookings', 'BookingController@store');
         Route::get('/bookings/ref/{referenceNumber}', 'BookingController@showByReferenceNumber'); // routes/api.php
         Route::post('/bookings/ref/{referenceNumber}/pay', 'PaymentController@pay'); // routes/api.php
+
+        Route::get('/promos/exclusive', 'PromoController@exclusiveOffers');
+        Route::get('/promos/{promoCode}', 'PromoController@showByCode');
     });
