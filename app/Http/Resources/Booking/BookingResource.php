@@ -34,6 +34,7 @@ class BookingResource extends JsonResource
             'downpayment_amount'        => $this->downpayment_amount,
             'final_price'               => $this->final_price,
             'status'                    => $this->status,
+            'is_reviewed'               => $this->is_reviewed,
             'failed_payment_attempts'   => $this->failed_payment_attempts,
             'last_payment_failed_at'    => $this->last_payment_failed_at,
             'local_created_at'          => $this->local_created_at,

@@ -35,6 +35,11 @@ class ReviewController extends Controller
         if ($booking->check_out_date > $today || !in_array($booking->status, ['paid', 'downpayment'])) {
             return new ErrorResponse('Cannot review booking before stay is completed', 400);
         }
+
+        $isBookingReviewDone = Review::where('booking_id', $booking->id)->exists();
+        if($isBookingReviewDone){
+            return new ErrorResponse('The booking has already been reviewed.', 400);
+        }
         // Prevent duplicate reviews for same booking
         // (Could check if any review exists for this booking by this user)
         // ...
@@ -61,6 +66,7 @@ class ReviewController extends Controller
             ]);
         }
 
+        $booking->update(['is_reviewed' => true]);
         return response()->json($createdReviews, 200);
     }
 

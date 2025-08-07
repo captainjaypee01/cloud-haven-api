@@ -36,6 +36,7 @@ class Booking extends Model
         'downpayment_amount',
         'final_price',
         'status',
+        'is_reviewed',
         'failed_payment_attempts',
         'last_payment_failed_at',
         'reserved_until',

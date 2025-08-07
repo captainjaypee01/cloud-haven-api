@@ -19,6 +19,7 @@ return new class extends Migration
             $table->enum('type', ['room', 'resort']);
             $table->tinyInteger('rating');  // 1-5
             $table->text('comment')->nullable();
+            $table->boolean('is_testimonial')->default(false);
             $table->unique(['booking_id', 'room_id', 'type']);
             $table->timestamps();
         });
