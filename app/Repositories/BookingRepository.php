@@ -14,7 +14,7 @@ class BookingRepository implements BookingRepositoryInterface
         ?string $sort = null,
         int $perPage = 10
     ): LengthAwarePaginator {
-        $query = Booking::query()->with('bookingRooms.room', 'payments');
+        $query = Booking::query()->with('bookingRooms.room.images', 'payments');
 
         // Filter by status
         if (!empty($filters['status'])) {
@@ -29,6 +29,11 @@ class BookingRepository implements BookingRepositoryInterface
                     ->orWhere('guest_email', 'like', "%{$filters['search']}%")
                     ->orWhere('reference_number', 'like', "%{$filters['search']}%");
             });
+        }
+
+        // Filter by user
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
         }
 
         // Sorting

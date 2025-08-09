@@ -16,8 +16,35 @@ class PublicBookingResource extends JsonResource
     {
         $downpaymentPercent = config('booking.downpayment_percent', 0.5);
         $downpaymentAmount = round($this->final_price * $downpaymentPercent);
-
-        return array_merge(parent::toArray($request), [
+        $bookingData = [
+            'user'                      => $this->user_id ? true : false,
+            'reference_number'          => $this->reference_number,
+            'check_in_date'             => $this->check_in_date,
+            'check_in_time'             => $this->check_in_time,
+            'check_out_date'             => $this->check_out_date,
+            'check_out_time'             => $this->check_out_time,
+            'guest_name'             => $this->guest_name,
+            'guest_email'             => $this->guest_email,
+            'guest_phone'             => $this->guest_phone,
+            'special_requests'          => $this->special_requests,
+            'adults'          => $this->adults,
+            'children'          => $this->children,
+            'total_guests'          => $this->total_guests,
+            'total_price'          => $this->total_price,
+            'meal_price'          => $this->meal_price,
+            'discount_amount'          => $this->discount_amount,
+            'payment_option'          => $this->payment_option,
+            'downpayment_amount'          => $this->downpayment_amount,
+            'final_price'          => $this->final_price,
+            'status'          => $this->status,
+            'is_reviewed'          => $this->is_reviewed,
+            'failed_payment_attempts'          => $this->failed_payment_attempts,
+            'reserved_until'          => $this->local_reserved_until,
+            'paid_at'          => $this->local_paid_at,
+            'booking_rooms'          => $this->bookingRooms,
+            'other_charges' => $this->otherCharges,
+        ];
+        return array_merge($bookingData, [
             'final_price' => $this->final_price,
             'downpayment_percent' => $downpaymentPercent,
             'downpayment_amount' => $downpaymentAmount,

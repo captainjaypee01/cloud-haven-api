@@ -10,6 +10,7 @@ use App\Contracts\Repositories\BookingRepositoryInterface;
 use App\Contracts\Services\BookingServiceInterface;
 use App\Dto\Bookings\BookingData;
 use App\DTO\Bookings\BookingRoomData;
+use App\Exceptions\BookingAlreadyClaimedException;
 use App\Models\Booking;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,19 @@ class BookingService implements BookingServiceInterface
     public function list(array $filters): LengthAwarePaginator
     {
 
+        return $this->bookingRepo->get(
+            filters: $filters,
+            sort: $filters['sort'] ?? null,
+            perPage: $filters['per_page'] ?? 10
+        );
+    }
+
+    /**
+     * List paginated rooms (all statuses or filtered).
+     */
+    public function listByUser(int $userId, array $filters): LengthAwarePaginator
+    {
+        $filters['user_id'] = $userId;
         return $this->bookingRepo->get(
             filters: $filters,
             sort: $filters['sort'] ?? null,
@@ -112,5 +126,22 @@ class BookingService implements BookingServiceInterface
     {
         $booking->increment('failed_payment_attempts');
         $booking->update(['last_payment_failed_at' => now()]);
+    }
+    
+    public function claimBooking(string $referenceNumber, int $userId): Booking
+    {
+        // Find booking or throw ModelNotFound
+        $booking = $this->bookingRepo->getByReferenceNumber($referenceNumber);
+
+        if ($booking->user_id !== null) {
+            // Already associated with a user, cannot claim
+            throw new BookingAlreadyClaimedException("Booking already claimed by another user.", 422);
+        }
+
+        // Update user_id to assign the booking to the current user
+        $booking->user_id = $userId;
+        $booking->save();  // or $this->bookingRepo->save($booking) if such method exists
+
+        return $booking;
     }
 }
