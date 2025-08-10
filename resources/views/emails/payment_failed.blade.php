@@ -11,7 +11,7 @@
                 <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(60,72,88,.08);border:1px solid #eee;">
                     <tr>
                         <td style="text-align:center;padding:32px 0 12px 0;">
-                            <img src="{{ asset('netania-logo.jpg') }}" style="height:45px;">
+                            <img src="https://res.cloudinary.com/dm3gsotk5/image/upload/v1753969657/netania-logo.jpg" style="height:45px;">
                         </td>
                     </tr>
                     <tr>
@@ -49,7 +49,7 @@
                                     </td>
                                     <td valign="top" align="right">
                                         <strong>Customer Service:</strong><br>
-                                        Phone: 0917-123-4567<br>
+                                        Phone: +63 949-798-9831<br>
                                         Email: <a href="mailto:info@netaniadelaiya.com" style="color:#fff;text-decoration:underline;">info@netaniadelaiya.com</a>
                                     </td>
                                 </tr>
