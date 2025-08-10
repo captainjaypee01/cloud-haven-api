@@ -29,9 +29,10 @@ class BookingReservation extends Mailable
      */
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: 'Booking Reservation',
-        );
+        $resortName = config('resort.name', config('app.name', 'Your Resort'));
+        $ref = $this->booking->reference_number ?? '';
+        $subject = trim(sprintf('%s — Booking Reservation%s', $resortName, $ref ? " ({$ref})" : ''));
+        return new Envelope(subject: $subject);
     }
 
     /**

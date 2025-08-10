@@ -14,13 +14,15 @@ class BookingConfirmation extends Mailable
     use Queueable, SerializesModels;
 
     public $booking, $downpayment;
+    public $payment_method; // optional; pass if you have it
     /**
      * Create a new message instance.
      */
-    public function __construct($booking, $downpayment)
+    public function __construct($booking, $downpayment, $payment_method = null)
     {
         $this->booking = $booking;
         $this->downpayment = $downpayment;
+        $this->payment_method = $payment_method;
     }
 
     /**
@@ -28,9 +30,10 @@ class BookingConfirmation extends Mailable
      */
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: 'Booking Confirmation',
-        );
+        $resortName = config('resort.name', config('app.name', 'Your Resort'));
+        $ref = $this->booking->reference_number ?? '';
+        $subject = trim(sprintf('%s — Booking Confirmed%s', $resortName, $ref ? " ({$ref})" : ''));
+        return new Envelope(subject: $subject);
     }
 
     /**
@@ -43,6 +46,7 @@ class BookingConfirmation extends Mailable
             with: [
                 'booking' => $this->booking,
                 'downpayment' => $this->downpayment,
+                'payment_method' => $this->payment_method,
             ],
         );
     }
