@@ -22,11 +22,16 @@ final class UpdatePromoAction implements UpdatePromoContract
             // Prepare updated fields
             $updateData = [
                 'code'           => $dto->code,
+                'title'          => $dto->title,
+                'description'    => $dto->description,
+                'scope'          => $dto->scope,
                 'discount_type'  => $dto->discount_type,
                 'discount_value' => $dto->discount_value,
                 'expires_at'     => $dto->expires_at,
                 'max_uses'       => $dto->max_uses,
-                'active'         => $dto->active ?? false,
+                'image_url'      => $dto->image_url,
+                'exclusive'      => $dto->exclusive,
+                'active'         => $dto->active,
                 // 'active' not updated here
             ];
             // Filter out unchanged values

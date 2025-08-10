@@ -59,4 +59,28 @@ class PromoRepository implements PromoRepositoryInterface
         // Bulk update active status; returns number of records updated
         return Promo::whereIn('id', $ids)->update(['active' => $active]);
     }
+
+    /**
+     * Update the exclusive flag on a promo.
+     *
+     * @param int  $id
+     * @param bool $exclusive
+     * @return Promo
+     */
+    public function updateExclusive(Promo $promo, bool $exclusive): Promo
+    {
+        $promo->update(['exclusive' => $exclusive]);
+
+        return $promo->refresh();
+    }
+
+    /**
+     * Count the number of promos that are active and marked as exclusive.
+     *
+     * @return int
+     */
+    public function countActiveExclusive(): int
+    {
+        return Promo::where('active', 'active')->where('exclusive', true)->count();
+    }
 }

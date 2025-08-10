@@ -41,13 +41,17 @@ class StorePromoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code'           => 'required|string|max:50|unique:promos,code',  // promo code must be unique
+            'code'           => 'required|string|max:50|unique:promos,code',
+            'title'          => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'scope'          => 'nullable|string|max:100',
             'discount_type'  => ['required', Rule::in(['fixed', 'percentage'])],
-            'discount_value' => 'required|numeric|min:0',  // positive number (if percentage, this is percentage value)
-            'expires_at'     => 'nullable|date',           // valid date/time string
-            'max_uses'       => 'nullable|integer|min:1',  // optional max usage count
-            // 'uses_count' should not be provided by user (managed by system)
-            'active'         => 'sometimes|string',                // optional, default false if not present
+            'discount_value' => 'required|numeric|min:0',
+            'expires_at'     => 'nullable|date',
+            'max_uses'       => 'nullable|integer|min:1',
+            'image_url'      => 'nullable|url',
+            'exclusive'      => 'sometimes|boolean',
+            'active'         => 'sometimes|string',
         ];
     }
 }

@@ -15,4 +15,5 @@ interface PromoServiceInterface
     public function delete(int $id): void;
     public function updateStatus(int $id, string $status): Promo;
     public function bulkUpdateStatus(array $ids, string $status): int;
+    public function updateExclusive(int $id, bool $exclusive): Promo;
 }

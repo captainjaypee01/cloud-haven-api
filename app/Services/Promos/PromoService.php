@@ -9,7 +9,9 @@ use App\Contracts\Promos\UpdatePromoContract;
 use App\Contracts\Promos\DeletePromoContract;
 use App\DTO\Promos\PromoDtoFactory;
 use App\Models\Promo;
+use Exception;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class PromoService implements PromoServiceInterface
@@ -74,5 +76,25 @@ class PromoService implements PromoServiceInterface
     {
         $isActive = ($status === 'active');
         return $this->promoRepository->updateActiveBulk($ids, $isActive);
+    }
+
+    public function updateExclusive(int $id, bool $exclusive): Promo
+    {
+        return DB::transaction(function () use ($id, $exclusive) {
+            // When enabling exclusive, enforce the maximum number of
+            // exclusive offers defined in config.  If the promo is
+            // already exclusive or we are disabling it, no check is
+            // required.
+            $promo = $this->promoRepository->getId($id);
+            if ($exclusive) {
+                $currentCount = $this->promoRepository->countActiveExclusive();
+                $maxAllowed   = (int) config('promos.max_exclusive_active', 3);
+                // Retrieve the promo to check its current exclusive state
+                if (!$promo->exclusive && $currentCount >= $maxAllowed) {
+                    throw new Exception('Maximum number of exclusive promos reached.');
+                }
+            }
+            return $this->promoRepository->updateExclusive($promo, $exclusive);
+        });
     }
 }

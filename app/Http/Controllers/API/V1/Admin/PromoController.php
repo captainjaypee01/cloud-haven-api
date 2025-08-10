@@ -117,4 +117,32 @@ class PromoController extends Controller
         // We can return no content or a count; here just return 204 No Content with success.
         return new EmptyResponse(JsonResponse::HTTP_NO_CONTENT);
     }
+
+    /**
+     * Toggle the exclusive flag on a promo.  If enabling exclusivity
+     * would exceed the maximum allowed, an error message is returned.
+     *
+     * @param Request $request
+     * @param int     $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateExclusive(Request $request, int $id): ErrorResponse|ItemResponse
+    {
+        $exclusive = $request->input('exclusive');
+        // Accept both boolean and string representations of boolean
+        if (!is_bool($exclusive)) {
+            if (is_string($exclusive)) {
+                $exclusive = filter_var($exclusive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            } else {
+                return new ErrorResponse('Unable to update promo codes.', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            }
+        }
+        try {
+            $promo = $this->promoService->updateExclusive($id, (bool) $exclusive);
+            return new ItemResponse(new PromoResource($promo), JsonResponse::HTTP_OK);
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return new ErrorResponse('Unable to update promo codes.', JsonResponse::HTTP_BAD_REQUEST);
+        }
+    }
 }

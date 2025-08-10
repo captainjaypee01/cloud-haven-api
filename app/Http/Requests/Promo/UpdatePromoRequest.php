@@ -46,12 +46,17 @@ class UpdatePromoRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('promos', 'code')->ignore($promoId), // unique code, ignore this promo
+                Rule::unique('promos', 'code')->ignore($promoId),
             ],
+            'title'          => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'scope'          => 'nullable|string|max:100',
             'discount_type'  => ['required', Rule::in(['fixed', 'percentage'])],
             'discount_value' => 'required|numeric|min:0',
             'expires_at'     => 'nullable|date',
             'max_uses'       => 'nullable|integer|min:1',
+            'image_url'      => 'nullable|url',
+            'exclusive'      => 'sometimes|boolean',
             'active'         => 'sometimes|string',
             // We do not expect 'active' or 'uses_count' in a standard update form (manage separately).
         ];

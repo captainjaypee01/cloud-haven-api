@@ -25,6 +25,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\Api\V1\Admin')
 
         Route::patch('promos/bulk-update-status', 'PromoController@bulkUpdateStatus');
         Route::patch('promos/{id}/update-status', 'PromoController@updateStatus');
+        Route::patch('promos/{id}/update-exclusive', 'PromoController@updateExclusive');
         Route::apiResource('promos', 'PromoController');
         
         Route::apiResource('meal-prices', 'MealPriceController');

@@ -19,8 +19,8 @@ class PromoController extends Controller
 
     public function exclusiveOffers(): CollectionResponse
     {
-        // Fetch all active exclusive promos (no pagination for homepage display)
-        $filters = ['status' => 'active', 'exclusive' => true, 'per_page' => 100];
+        $limit  = (int) config('promos.max_exclusive_active', 3);
+        $filters = ['status' => 'active', 'exclusive' => true, 'per_page' => $limit];
         $promos = $this->promoService->list($filters);
         return new CollectionResponse(new PromoCollection($promos), JsonResponse::HTTP_OK);
     }
@@ -44,6 +44,5 @@ class PromoController extends Controller
         } catch (ModelNotFoundException $e) {
             return new ErrorResponse('Promo code not found or inactive.', JsonResponse::HTTP_NOT_FOUND);
         }
-        
     }
 }

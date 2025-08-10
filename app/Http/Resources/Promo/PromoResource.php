@@ -22,6 +22,7 @@ class PromoResource extends JsonResource
                 : null,
             'max_uses'          => $this->max_uses,
             'uses_count'        => $this->uses_count ?? 0,
+            'exclusive'         => (bool) $this->exclusive,
             'created_at'        => $this->created_at->format('Y-m-d H:i:s'),
             // Return status as string to match front-end expectations
             'active'            => $this->active ? 'active' : 'inactive',
