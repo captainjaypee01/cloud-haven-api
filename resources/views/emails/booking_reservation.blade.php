@@ -17,7 +17,18 @@
         }
         $frontendBase = rtrim(($resort['frontend_url'] ?? (config('app.frontend_url') ?? config('app.url'))), '/');
         $resortName = $resort['name'] ?? (config('app.name') ?? 'Your Resort');
-        
+        $roomLines = collect($booking->bookingRooms ?? [])
+        ->filter(fn($br) => !empty($br->room)) // keep only rows with a room
+        ->groupBy(fn($br) => $br->room_id ?? ($br->room->id ?? spl_object_id($br))) // group same room
+        ->map(function ($group) {
+            $first = $group->first();
+            return (object)[
+                'name' => $first->room->name ?? 'Room',
+                'qty'  => $group->sum(fn($x) => (int)($x->quantity ?? 1)),
+            ];
+        })
+        ->sortBy('name')
+        ->values();
     @endphp
     <table width="100%" bgcolor="#fff" cellpadding="0" cellspacing="0" class="container">
         <tr>
@@ -46,13 +57,13 @@
                     </div>
 
                     <!-- Core booking facts (shared) -->
-                    <div class="panel" style="margin-bottom:24px;">
-                    <div class="kv"><strong>Reference Number:</strong> {{ $booking->reference_number }}</div>
-                    <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }} @if(!empty($booking->check_in_time)) at {{ $booking->check_in_time }} @endif</div>
-                    <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }} @if(!empty($booking->check_out_time)) at {{ $booking->check_out_time }} @endif</div>
-                    <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
-                    <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
-                    <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price) }}</div>
+                    <div class="panel" style="margin-bottom:24px;margin-left:16px;margin-right:16px;">
+                        <div class="kv"><strong>Reference Number:</strong> {{ $booking->reference_number }}</div>
+                        <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }} @if(!empty($booking->check_in_time)) at {{ $booking->check_in_time }} @endif</div>
+                        <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }} @if(!empty($booking->check_out_time)) at {{ $booking->check_out_time }} @endif</div>
+                        <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
+                        <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
+                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price) }}</div>
                     </div>
 
                     @if(!empty($booking->bookingRooms) && $booking->bookingRooms->count())
@@ -66,12 +77,16 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($booking->bookingRooms as $bookingRoom)
+                            @forelse($roomLines as $line)
                             <tr>
-                                <td style="padding: 12px 12px">{{ $bookingRoom->room->name ?? 'Room' }}</td>
-                                <td style="padding: 12px 12px" class="left">{{ $bookingRoom->quantity ?? 1 }}</td>
+                                <td style="padding: 12px 12px;border:1px solid #bbb;">{{ $line->name ?? 'Room' }}</td>
+                                <td style="padding: 12px 12px;border:1px solid #bbb;" class="left">{{ $line->qty ?? 1 }}</td>
                             </tr>
-                            @endforeach
+                            @empty
+                                <tr>
+                                <td colspan="2">No rooms found</td>
+                                </tr>
+                            @endforelse
                         </tbody>
                         </table>
                     </div>
@@ -108,11 +123,11 @@
                         <p class="m-0" style="font-size:14px;">Click <strong>Pay Now</strong> to proceed to our secure checkout and choose your preferred payment method.</p>
                     </div></div>
                     </div>
-                    <div class="mt-15">
+                    <div class="mt-15" style="margin:16px 16px;">
                     <a href="{{ $frontendBase . '/booking/' . $booking->reference_number . '/payment' }}" class="badge">Pay Now (Secure Checkout)</a>
                     </div>
 
-                    <div class="mt-15">
+                    <div class="mt-15" style="margin:16px 16px;">
                     <a href="{{ $frontendBase . '/booking/' . $booking->reference_number }}" style="display:inline-block;padding:10px 18px;border:1px solid #bbb;border-radius:6px;color:#000;">View / Manage Reservation</a>
                     </div>
 
@@ -145,25 +160,27 @@
 
                     <!-- Lodging Information -->
                     <div class="section">
-                    <div class="section-title">Lodging Information</div>
-                    <div class="box"><div class="box-inner">
-                        <table width="100%"><tr>
-                        <td style="width:50%;vertical-align:top;">
-                            <p class="m-0"><strong>{{ $resortName }}</strong><br>
-                            {{ $resort['address_line1'] ?? '' }}<br>
-                            {{ $resort['address_line2'] ?? '' }}</p>
-                        </td>
-                        <td style="width:50%;vertical-align:top;">
-                            <p class="m-0">
-                            <strong>Phone:</strong> {{ $resort['phone'] ?? '' }}<br>
-                            <strong>Email:</strong> <a href="mailto:{{ $resort['email'] ?? '' }}">{{ $resort['email'] ?? '' }}</a><br>
-                            @if(!empty($resort['website']))
-                                <strong>Internet:</strong> <a href="{{ $resort['website'] }}" target="_blank">{{ $resort['website'] }}</a>
-                            @endif
-                            </p>
-                        </td>
-                        </tr></table>
-                    </div></div>
+                        <div class="section-title">Lodging Information</div>
+                        <div class="box">
+                            <div class="box-inner">
+                                <table width="100%"><tr>
+                                <td style="width:50%;vertical-align:top;">
+                                    <p class="m-0"><strong>{{ $resortName }}</strong><br>
+                                    {{ $resort['address_line1'] ?? '' }}<br>
+                                    {{ $resort['address_line2'] ?? '' }}</p>
+                                </td>
+                                <td style="width:50%;vertical-align:top;">
+                                    <p class="m-0">
+                                    <strong>Phone:</strong> {{ $resort['phone'] ?? '' }}<br>
+                                    <strong>Email:</strong> <a href="mailto:{{ $resort['email'] ?? '' }}">{{ $resort['email'] ?? '' }}</a><br>
+                                    @if(!empty($resort['website']))
+                                        <strong>Website:</strong> <a href="{{ $resort['website'] }}" target="_blank">{{ $resort['website'] }}</a>
+                                    @endif
+                                    </p>
+                                </td>
+                                </tr></table>
+                            </div>
+                        </div>
                     </div>
 
                     @if(!empty($resort['maps_link']))
@@ -183,12 +200,14 @@
                         <td style="width:50%;vertical-align:top;">
                             <p class="m-0"><strong>Booking #:</strong> {{ $booking->reference_number }}</p>
                             <p class="m-0"><strong>Date:</strong> {{ $fmtDateTime($booking->created_at ?? now()) }}</p>
+                            <p class="m-0"><strong>Total Pax:</strong> {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</p>
+                            <p class="m-0"><strong>Adults:</strong> {{$booking->adults ?? 0}}</p>
                         </td>
                         <td style="width:50%;vertical-align:top;">
                             <p class="m-0"><strong>Arrival:</strong> {{ $fmtDate($booking->check_in_date) }}</p>
                             <p class="m-0"><strong>Departure:</strong> {{ $fmtDate($booking->check_out_date) }}</p>
                             <p class="m-0"><strong>Nights:</strong> {{ $nights }}</p>
-                            <p class="m-0"><strong>Persons:</strong> {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</p>
+                            <p class="m-0"><strong>Children:</strong> {{$booking->children ?? 0}}</p>
                         </td>
                         </tr></table>
                     </div></div>
@@ -198,7 +217,7 @@
                     <div class="section">
                     <div class="section-title">Cancellation Policies</div>
                     <div class="box"><div class="box-inner" style="font-size:13px; line-height:19px;">
-                        <p class="m-0"><strong>Guarantee & Payment Policy</strong><br>{{ ($resort['policy']['guarantee'] ?? 'Full payment is required before the option date or prior to check-in.') }}</p>
+                        <p class="m-0"><strong>Guarantee & Payment Policy</strong><br>{{ ($resort['policy']['guarantee'] ?? 'Full payment or Downpayment is required before the option date or prior to check-in.') }}</p>
                         <ul style="margin:8px 0 0 18px; padding:0;">
                         <li>{{ ($resort['policy']['non_refundable'] ?? 'All paid bookings are non-refundable.') }}</li>
                         <li>{{ ($resort['policy']['no_show'] ?? 'Guests will be charged the full amount in the event of a No Show.') }}</li>

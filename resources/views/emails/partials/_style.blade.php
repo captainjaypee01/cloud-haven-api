@@ -4,12 +4,12 @@
     a { color:#000; text-decoration:none; }
     img { border:0; display:block; }
     /***** layout *****/
-    .container { width: 100%; background:#fff; }
-    .card { width:600px; max-width:100%; background:#fff; border:1px solid #eee; border-radius:8px; box-shadow:0 2px 6px rgba(60,72,88,.08); }
+    .container { width: 100%; background:#fff;}
+    .card { width:600px; max-width:100%; background:#fff; border:1px solid #eee; padding: 8px; border-radius:8px; box-shadow:0 2px 6px rgba(60,72,88,.08); }
     .header-logo { text-align:center; padding:24px 0 8px 0; }
     .hr { border:0; height:1px; background:#ddd; margin:8px 32px 24px 32px; }
     .content { padding:0 32px 24px 32px; color:#000; }
-    .section { padding:16px 0; }
+    .section { padding:16px 16px; }
     
     /***** section shells *****/
     .section-title { background:#f2f2f2; padding:12px 14px; font-weight:700; font-size:16px; color:#000; border:1px solid #e2e2e2; border-bottom:none; border-radius:8px 8px 0 0; }
