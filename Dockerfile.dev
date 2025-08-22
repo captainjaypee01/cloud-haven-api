@@ -1,20 +1,21 @@
-FROM php:8.3-apache
+FROM php:8.4-apache
 WORKDIR /var/www/html
 
-# system deps + composer
-RUN apt-get update \
- && apt-get install -y git unzip libzip-dev \
- && docker-php-ext-install pdo_mysql \
- && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
- && a2enmod rewrite \
- && sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
- && sed -ri -e 's!<Directory /var/www/>!<Directory /var/www/html/public/>!g' /etc/apache2/apache2.conf \
- && sed -ri -e 's!AllowOverride None!AllowOverride All!g' /etc/apache2/apache2.conf
 
-# code mounted at runtime; just ensure dirs exist
-RUN mkdir -p storage bootstrap/cache \
- && chown -R www-data:www-data storage bootstrap/cache
+# System deps + Composer
+RUN apt-get update && apt-get install -y git unzip libzip-dev \
+&& docker-php-ext-install pdo_mysql \
+&& curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+&& a2enmod rewrite \
+&& sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
+&& sed -ri -e 's!<Directory /var/www/>!<Directory /var/www/html/public/>!g' /etc/apache2/apache2.conf \
+&& sed -ri -e 's!AllowOverride None!AllowOverride All!g' /etc/apache2/apache2.conf
+
+
+# code is bind-mounted at runtime; ensure dirs exist
+RUN mkdir -p storage bootstrap/cache && chown -R www-data:www-data storage bootstrap/cache
+
 
 EXPOSE 80
-# install deps on container start (uses mounted composer.json)
+# Install PHP deps on container start (uses mounted composer.json)
 CMD ["bash", "-lc", "composer install && apache2-foreground"]
