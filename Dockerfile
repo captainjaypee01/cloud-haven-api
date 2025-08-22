@@ -1,8 +1,13 @@
-# ---- Composer deps baked in (no dev deps) ----
+# ---- Composer deps baked in (no dev deps, no scripts) ----
   FROM composer:2 AS vendor
   WORKDIR /app
   COPY composer.json composer.lock ./
-  RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+  RUN composer install \
+  --no-dev \
+  --prefer-dist \
+  --no-interaction \
+  --no-progress \
+  --no-scripts
   
   
   # ---- Runtime (PHP 8.4 + Apache) ----
@@ -23,7 +28,7 @@
   COPY --from=vendor /app/vendor /var/www/html/vendor
   
   
-  # Storage permissions (adjust as needed)
+  # Storage permissions
   RUN chown -R www-data:www-data storage bootstrap/cache
   
   
