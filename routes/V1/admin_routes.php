@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('admin')->namespace('App\Http\Controllers\Api\V1\Admin')
+Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
     ->middleware(['clerk.auth:api', 'role:admin'])
     ->group(function () {
         // Admin Routes

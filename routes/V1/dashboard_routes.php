@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('/')->namespace('App\Http\Controllers\Api\V1\Dashboard')
+Route::prefix('/')->namespace('App\Http\Controllers\API\V1\Dashboard')
     // ->middleware(['clerk.auth:api', 'role:user,admin'])
     ->group(function () {
         /* ---------- Public dashboard (no auth) ---------- */
