@@ -36,8 +36,7 @@ class UpdateRoomRequest extends FormRequest
     public function authorize(): bool
     {
         if (is_null($this->user())) return false;
-
-        return $this->user()->role === "admin";
+        return in_array($this->user()->role, config('roles.superadmin_roles'));
     }
 
     /**

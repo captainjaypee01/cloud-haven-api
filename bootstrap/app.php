@@ -1,9 +1,14 @@
 <?php
 
+use App\Http\Responses\ErrorResponse;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Symfony\Component\Finder\Exception\AccessDeniedException as ExceptionAccessDeniedException;
+use Symfony\Component\HttpFoundation\File\Exception\AccessDeniedException;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -47,6 +52,19 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
+        $exceptions->respond(function (Response $response) {
+            if ($response->getStatusCode() === 419) {
+                return new ErrorResponse('The page expired, please try again.', 419);
+            }
+            if ($response->getStatusCode() === 403) {
+                return new ErrorResponse('This action is unauthorized.', 403);
+            }
+            if ($response->getStatusCode() === 401) {
+                return new ErrorResponse('This action is unauthenticated.', 401);
+            }
+     
+            return $response;
+        });
     })
     ->withSchedule(function (Schedule $schedule) {
 

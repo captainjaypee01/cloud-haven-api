@@ -34,7 +34,7 @@ class StoreAmenityRequest extends FormRequest
     {
         if (is_null($this->user())) return false;
 
-        return in_array($this->user()->role, ['admin', 'superadmin']);
+        return in_array($this->user()->role, config('roles.superadmin_roles'));
     }
 
     /**

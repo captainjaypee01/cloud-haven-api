@@ -35,7 +35,7 @@ class UpdatePromoRequest extends FormRequest
     {
         if (is_null($this->user())) return false;
 
-        return $this->user()->role === "admin";
+        return in_array($this->user()->role, config('roles.superadmin_roles'));
     }
 
     public function rules(): array
