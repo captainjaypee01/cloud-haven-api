@@ -24,6 +24,7 @@ final class CreateClerkUserAction implements CreateClerkUserContract
             ],
             firstName: $data['first_name'] ?? null,
             lastName: $data['last_name'] ?? null,
+            publicMetadata: ['role' => $data['role']],
             privateMetadata: ['role' => $data['role']],
             password: $data['password'],
         );
