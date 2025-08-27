@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\V1\Admin;
 
 use App\Contracts\Services\PaymentServiceInterface;
+use App\Contracts\Services\BookingServiceInterface;
 use App\DTO\Payments\PaymentRequestDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\EmptyResponse;
@@ -11,11 +12,15 @@ use App\Models\Payment;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class PaymentController extends Controller
 {
-    public function __construct(private PaymentServiceInterface $paymentService) {}
+    public function __construct(
+        private PaymentServiceInterface $paymentService,
+        private BookingServiceInterface $bookingService
+    ) {}
 
     public function pay(Request $request)
     {
@@ -75,8 +80,45 @@ class PaymentController extends Controller
             'notify_guest' => 'sometimes|boolean',
         ]);
 
+        // Store the old status to detect changes
+        $oldStatus = $payment->status;
+        $newStatus = $validated['status'];
+        $notifyGuest = $validated['notify_guest'] ?? true;
+
+        // Update the payment
         $payment->update($validated);
         $payment->refresh();
+
+        // Load the booking for status calculations and emails
+        $booking = $payment->booking;
+
+        // Handle status change logic and emails
+        if ($oldStatus !== $newStatus && $notifyGuest) {
+            if ($oldStatus === 'pending' && $newStatus === 'paid') {
+                // Payment confirmed: recalculate booking status and send confirmation
+                $this->bookingService->markPaid($booking);
+                
+                // Send payment success email
+                Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentSuccess($booking, $payment));
+                
+                // Check if this completes the downpayment or full payment
+                $isFirstSuccessfulPayment = $booking->payments()->where('status', 'paid')->count() === 1;
+                if ($isFirstSuccessfulPayment) {
+                    Mail::to($booking->guest_email)->queue(new \App\Mail\BookingConfirmation($booking, $payment->amount));
+                }
+                
+            } elseif ($oldStatus === 'paid' && $newStatus === 'pending') {
+                // Payment reverted: recalculate booking status and send problem notification
+                $this->bookingService->markPaid($booking); // This will recalculate based on remaining paid payments
+                
+                // Send payment problem email
+                Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentProblem($booking, $payment));
+                
+            } elseif ($newStatus === 'failed') {
+                // Payment failed: send failure notification
+                Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentFailed($booking, $payment));
+            }
+        }
 
         return new EmptyResponse();
     }

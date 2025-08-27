@@ -24,7 +24,7 @@ return new class extends Migration
             $table->tinyInteger('order')->nullable()->default(0);
             $table->string('alt_text')->nullable();
             $table->timestamps();
-            $table->timestamp('deleted_at');
+            $table->timestamp('deleted_at')->nullable();
         });
 
         Schema::create('room_image', function (Blueprint $table) {

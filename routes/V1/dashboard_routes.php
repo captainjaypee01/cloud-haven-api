@@ -12,13 +12,14 @@ Route::prefix('/')->namespace('App\Http\Controllers\API\V1\Dashboard')
 
         Route::get('rooms/{room:slug}', 'RoomController@show');
 
-        Route::get('clerk/test', fn() => 'Clerk Middleware Check Dashboard | ' . auth()->user()->clerk_id); // routes/api.php
+        Route::get('clerk/test', fn() => 'Clerk Middleware Check Dashboard'); // routes/api.php
 
         Route::get('/meal-prices', 'MealPriceController@getMealPrices');
 
         Route::post('/bookings', 'BookingController@store');
         Route::get('/bookings/ref/{referenceNumber}', 'BookingController@showByReferenceNumber'); // routes/api.php
         Route::post('/bookings/ref/{referenceNumber}/pay', 'PaymentController@pay'); // routes/api.php
+        Route::post('/bookings/ref/{referenceNumber}/pay/upload-proof', 'PaymentController@uploadProof');
 
         Route::get('/promos/exclusive', 'PromoController@exclusiveOffers');
         Route::get('/promos/{promoCode}', 'PromoController@showByCode');
