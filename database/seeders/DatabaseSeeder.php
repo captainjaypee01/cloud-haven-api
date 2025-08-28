@@ -2,10 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Amenity;
-use App\Models\Room;
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -15,18 +11,22 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(AmenitySeeder::class);
-        $this->call(MealPriceSeeder::class);
+        // Production-safe seeders (always run)
+        $this->call([
+            RoomSeeder::class,
+            AmenitySeeder::class,
+            PromoSeeder::class,
+            MealPriceSeeder::class,
+        ]);
 
-        User::factory(2)->admin()->create();
-        User::factory(8)->guest()->create();
-        Room::factory(6)->available()->create();
-        Room::factory(2)->unavailable()->create();
-        Room::factory(2)->archived()->create();
-
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        // Development/staging seeders (only run in non-production environments)
+        if (app()->environment(['local', 'dev', 'development', 'staging', 'uat'])) {
+            $this->call([
+                BookingSeeder::class,
+                ReviewSeeder::class,
+            ]);
+        } else {
+            $this->command->info('Skipping BookingSeeder and ReviewSeeder in production environment');
+        }
     }
 }

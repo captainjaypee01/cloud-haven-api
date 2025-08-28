@@ -60,6 +60,12 @@ class Booking extends Model
             'created_at' => 'datetime:Y-m-d H:i:s',
         ];
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function bookingRooms()
     {
         return $this->hasMany(BookingRoom::class);

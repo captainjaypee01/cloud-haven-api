@@ -27,12 +27,13 @@ class UserFactory extends Factory
             'clerk_id' => fake()->uuid(),
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
-            'country_code' => fake()->countryCode(),
-            'contact_number' => fake()->phoneNumber(),
+            'country_code' => 'PH',
+            'contact_number' => '+63-' . fake()->numerify('9##-###-####'),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => fake()->password(),
-            'remember_token' => fake()->windowsPlatformToken(),
+            'password' => static::$password ??= Hash::make('password'),
+            'remember_token' => Str::random(10),
+            'role' => 'user',
         ];
     }
 
