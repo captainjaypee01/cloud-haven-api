@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API\V1\Dashboard;
 
 use App\Contracts\Services\BookingServiceInterface;
-use App\Dto\Bookings\BookingData;
+use App\DTO\Bookings\BookingData;
 use App\Exceptions\RoomNotAvailableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\BookingRequest;

@@ -2,7 +2,7 @@
 
 namespace App\Actions\Bookings;
 
-use App\Dto\Bookings\BookingData;
+use App\DTO\Bookings\BookingData;
 use App\Models\Booking;
 use App\Models\BookingRoom;
 use App\Models\Promo;

@@ -1,5 +1,5 @@
 <?php
-namespace App\Dto\Bookings;
+namespace App\DTO\Bookings;
 
 use Spatie\LaravelData\Data;
 

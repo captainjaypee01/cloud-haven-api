@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Services;
 
-use App\Dto\Bookings\BookingData;
+use App\DTO\Bookings\BookingData;
 use App\Models\Booking;
 use Illuminate\Pagination\LengthAwarePaginator;
 

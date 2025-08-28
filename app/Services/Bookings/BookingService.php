@@ -8,7 +8,7 @@ use App\Actions\Bookings\CreateBookingEntitiesAction;
 use App\Actions\Bookings\SetBookingLockAction;
 use App\Contracts\Repositories\BookingRepositoryInterface;
 use App\Contracts\Services\BookingServiceInterface;
-use App\Dto\Bookings\BookingData;
+use App\DTO\Bookings\BookingData;
 use App\DTO\Bookings\BookingRoomData;
 use App\Exceptions\BookingAlreadyClaimedException;
 use App\Models\Booking;
