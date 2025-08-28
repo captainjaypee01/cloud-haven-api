@@ -10,9 +10,11 @@ use App\Models\Promo;
 use App\Models\Room;
 use App\Models\User;
 use Carbon\Carbon;
-
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+
+// Import the fake helper function
+use function fake;
 
 class BookingSeeder extends Seeder
 {
