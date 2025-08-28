@@ -7,8 +7,7 @@ use App\Models\BookingRoom;
 use App\Models\Review;
 use Illuminate\Database\Seeder;
 
-// Import the fake helper function
-use function fake;
+// No need to import fake() - use fully qualified name
 
 class ReviewSeeder extends Seeder
 {
@@ -56,7 +55,7 @@ class ReviewSeeder extends Seeder
             }
 
             // Optionally create a room review (40-60% chance)
-            if (fake()->boolean(50)) {
+            if (\fake()->boolean(50)) {
                 $roomReview = $this->createRoomReview($booking);
                 if ($roomReview) {
                     $reviewsForBooking++;
@@ -153,7 +152,7 @@ class ReviewSeeder extends Seeder
     private function generateRating(): int
     {
         // Ratings distribution: 5★ (55%), 4★ (30%), 3★ (10%), 2★ (4%), 1★ (1%)
-        $rand = fake()->randomFloat(null, 0, 100);
+        $rand = \fake()->randomFloat(null, 0, 100);
         
         if ($rand <= 55) return 5;
         if ($rand <= 85) return 4;
@@ -193,9 +192,9 @@ class ReviewSeeder extends Seeder
         ];
 
         return match ($rating) {
-            5, 4 => fake()->randomElement($positiveComments),
-            3 => fake()->randomElement($neutralComments),
-            2, 1 => fake()->randomElement($negativeComments),
+            5, 4 => \fake()->randomElement($positiveComments),
+            3 => \fake()->randomElement($neutralComments),
+            2, 1 => \fake()->randomElement($negativeComments),
         };
     }
 
@@ -228,9 +227,9 @@ class ReviewSeeder extends Seeder
         ];
 
         return match ($rating) {
-            5, 4 => fake()->randomElement($positiveComments),
-            3 => fake()->randomElement($neutralComments),
-            2, 1 => fake()->randomElement($negativeComments),
+            5, 4 => \fake()->randomElement($positiveComments),
+            3 => \fake()->randomElement($neutralComments),
+            2, 1 => \fake()->randomElement($negativeComments),
         };
     }
 
@@ -246,7 +245,7 @@ class ReviewSeeder extends Seeder
         $testimonialsCreated = 0;
         
         foreach ($highRatingReviews as $review) {
-            if (fake()->boolean(15)) { // 15% chance
+            if (\fake()->boolean(15)) { // 15% chance
                 $review->update(['is_testimonial' => true]);
                 $testimonialsCreated++;
             }

@@ -13,8 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
-// Import the fake helper function
-use function fake;
+// No need to import fake() - use fully qualified name
 
 class BookingSeeder extends Seeder
 {
@@ -96,14 +95,14 @@ class BookingSeeder extends Seeder
             
             for ($i = 0; $i < $usersToCreate; $i++) {
                 User::create([
-                    'first_name' => fake()->firstName(),
-                    'last_name' => fake()->lastName(),
-                    'email' => fake()->unique()->safeEmail(),
+                    'first_name' => \fake()->firstName(),
+                    'last_name' => \fake()->lastName(),
+                    'email' => \fake()->unique()->safeEmail(),
                     'password' => 'password123',
                     'role' => 'user',
                     'email_verified_at' => now(),
                     'country_code' => 'PH',
-                    'contact_number' => '+63-' . fake()->numerify('9##-###-####'),
+                    'contact_number' => '+63-' . \fake()->numerify('9##-###-####'),
                 ]);
             }
 
@@ -122,14 +121,14 @@ class BookingSeeder extends Seeder
 
         // Generate bookings
         while ($bookingsCreated < 800) { // Target around 800 bookings
-            $checkInDate = $startDate->copy()->addDays(fake()->numberBetween(0, $startDate->diffInDays($endDate)));
+            $checkInDate = $startDate->copy()->addDays(\fake()->numberBetween(0, $startDate->diffInDays($endDate)));
             
             // Don't create bookings in Nov/Dec
             if ($checkInDate->month >= 11) {
                 continue;
             }
 
-            $stayDuration = fake()->numberBetween(1, 7); // 1-7 nights
+            $stayDuration = \fake()->numberBetween(1, 7); // 1-7 nights
             $checkOutDate = $checkInDate->copy()->addDays($stayDuration);
 
             // Ensure checkout is not in Nov/Dec
@@ -169,15 +168,15 @@ class BookingSeeder extends Seeder
     private function selectRooms(): array
     {
         $roomIds = $this->rooms->keys()->toArray();
-        $numRoomTypes = fake()->randomFloat() < 0.85 ? 1 : 2; // 85% single room type, 15% two types
+        $numRoomTypes = \fake()->randomFloat() < 0.85 ? 1 : 2; // 85% single room type, 15% two types
         
-        $selectedRoomIds = fake()->randomElements($roomIds, $numRoomTypes);
+        $selectedRoomIds = \fake()->randomElements($roomIds, $numRoomTypes);
         $selectedRooms = [];
 
         foreach ($selectedRoomIds as $roomId) {
             $room = $this->rooms[$roomId];
             $maxQuantity = min($room->quantity, 3); // Don't book more than 3 of same type
-            $requestedQuantity = fake()->numberBetween(1, $maxQuantity);
+            $requestedQuantity = \fake()->numberBetween(1, $maxQuantity);
             
             $selectedRooms[] = [
                 'room_id' => $roomId,
@@ -242,7 +241,7 @@ class BookingSeeder extends Seeder
         $nights = $checkIn->diffInDays($checkOut);
         
         // Determine if this is a guest booking (15-25% chance)
-        $isGuestBooking = fake()->randomFloat() < 0.20; // 20% guest bookings
+        $isGuestBooking = \fake()->randomFloat() < 0.20; // 20% guest bookings
         $user = $isGuestBooking ? null : $this->users->random();
 
         // Calculate guest counts
@@ -251,8 +250,8 @@ class BookingSeeder extends Seeder
             $room = $roomSelection['room'];
             $totalCapacity += $room->max_guests * $roomSelection['quantity'];
         }
-        $adults = fake()->numberBetween(1, min($totalCapacity, 8));
-        $children = fake()->numberBetween(0, max(0, min($totalCapacity - $adults, 4)));
+        $adults = \fake()->numberBetween(1, min($totalCapacity, 8));
+        $children = \fake()->numberBetween(0, max(0, min($totalCapacity - $adults, 4)));
         $totalGuests = $adults + $children;
 
         // Calculate room pricing
@@ -281,7 +280,7 @@ class BookingSeeder extends Seeder
         $amountDue = $finalPrice - $discountAmount;
 
         // Determine payment option and status
-        $paymentOption = fake()->randomElement(['full', 'downpayment', 'full', 'downpayment', 'full']); // 60% full, 40% downpayment
+        $paymentOption = \fake()->randomElement(['full', 'downpayment', 'full', 'downpayment', 'full']); // 60% full, 40% downpayment
         $status = $this->determineBookingStatus();
         
         $downpaymentAmount = null;
@@ -289,17 +288,17 @@ class BookingSeeder extends Seeder
         $downpaymentAt = null;
 
         if ($status === 'paid') {
-            $paidAt = $checkIn->copy()->subDays(fake()->numberBetween(1, 30));
+            $paidAt = $checkIn->copy()->subDays(\fake()->numberBetween(1, 30));
         } elseif ($status === 'downpayment') {
-            $downpaymentAmount = $amountDue * fake()->numberBetween(30, 60) / 100;
-            $downpaymentAt = $checkIn->copy()->subDays(fake()->numberBetween(1, 30));
+            $downpaymentAmount = $amountDue * \fake()->numberBetween(30, 60) / 100;
+            $downpaymentAt = $checkIn->copy()->subDays(\fake()->numberBetween(1, 30));
             $paymentOption = 'downpayment';
         }
 
         // Always include guest details (even for registered users as contact person may differ)
-        $guestName = fake()->name();
-        $guestEmail = fake()->safeEmail();
-        $guestPhone = '+63-' . fake()->numerify('9##-###-####');
+        $guestName = \fake()->name();
+        $guestEmail = \fake()->safeEmail();
+        $guestPhone = '+63-' . \fake()->numerify('9##-###-####');
 
         // Create booking
         $booking = Booking::create([
@@ -311,7 +310,7 @@ class BookingSeeder extends Seeder
             'guest_name' => $guestName,
             'guest_email' => $guestEmail,
             'guest_phone' => $guestPhone,
-            'special_requests' => fake()->optional(0.3)->sentence(),
+            'special_requests' => \fake()->optional(0.3)->sentence(),
             'adults' => $adults,
             'children' => $children,
             'total_guests' => $totalGuests,
@@ -323,9 +322,9 @@ class BookingSeeder extends Seeder
             'downpayment_amount' => $downpaymentAmount,
             'final_price' => $finalPrice,
             'status' => $status,
-            'failed_payment_attempts' => $status === 'failed' ? fake()->numberBetween(1, 3) : 0,
-            'last_payment_failed_at' => $status === 'failed' ? now()->subDays(fake()->numberBetween(1, 7)) : null,
-            'reserved_until' => $status === 'pending' ? now()->addHours(fake()->numberBetween(1, 24)) : null,
+            'failed_payment_attempts' => $status === 'failed' ? \fake()->numberBetween(1, 3) : 0,
+            'last_payment_failed_at' => $status === 'failed' ? now()->subDays(\fake()->numberBetween(1, 7)) : null,
+            'reserved_until' => $status === 'pending' ? now()->addHours(\fake()->numberBetween(1, 24)) : null,
             'downpayment_at' => $downpaymentAt,
             'paid_at' => $paidAt,
             'is_reviewed' => false,
@@ -351,7 +350,7 @@ class BookingSeeder extends Seeder
             $this->createPayment($booking, $amountDue, $downpaymentAmount, $status);
         } elseif (in_array($status, ['failed', 'cancelled'])) {
             // Some failed/cancelled bookings might have a failed payment record
-            if (fake()->boolean(40)) {
+            if (\fake()->boolean(40)) {
                 $this->createPayment($booking, $amountDue, $downpaymentAmount, 'failed');
             }
         }
@@ -361,7 +360,7 @@ class BookingSeeder extends Seeder
 
     private function calculateMealPrice(int $adults, int $children, int $nights): float
     {
-        $mealChoice = fake()->randomFloat();
+        $mealChoice = \fake()->randomFloat();
         
         if ($mealChoice < 0.25) {
             return 0; // No meals
@@ -371,7 +370,7 @@ class BookingSeeder extends Seeder
             return 0; // No meal prices available
         }
 
-        $nightsWithMeals = $mealChoice < 0.60 ? $nights : fake()->numberBetween(1, $nights); // 60% all nights, 15% partial nights
+        $nightsWithMeals = $mealChoice < 0.60 ? $nights : \fake()->numberBetween(1, $nights); // 60% all nights, 15% partial nights
         
         $adultPrice = $this->mealPrices->get('adult')?->first()?->price ?? 0;
         $childPrice = $this->mealPrices->get('child')?->first()?->price ?? 0;
@@ -390,7 +389,7 @@ class BookingSeeder extends Seeder
         }
 
         // 40% chance of applying a promo
-        if (fake()->randomFloat() > 0.40) {
+        if (\fake()->randomFloat() > 0.40) {
             return null;
         }
 
@@ -447,7 +446,7 @@ class BookingSeeder extends Seeder
 
     private function determineBookingStatus(): string
     {
-        $rand = fake()->randomFloat();
+        $rand = \fake()->randomFloat();
         
         if ($rand < 0.65) return 'paid';
         if ($rand < 0.85) return 'downpayment';
@@ -470,7 +469,7 @@ class BookingSeeder extends Seeder
 
         Payment::create([
             'booking_id' => $booking->id,
-            'provider' => fake()->randomElement($providers),
+            'provider' => \fake()->randomElement($providers),
             'amount' => $paymentAmount,
             'status' => $paymentStatus,
             'transaction_id' => $paymentStatus === 'paid' ? 'TXN-' . Str::random(12) : null,
