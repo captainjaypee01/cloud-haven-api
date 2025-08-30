@@ -11,6 +11,7 @@ Route::prefix('/')->namespace('App\Http\Controllers\API\V1\Dashboard')
         Route::get('rooms/featured', 'RoomController@featuredRooms');
 
         Route::get('rooms/{room:slug}', 'RoomController@show');
+        Route::get('rooms/{roomSlug}/availability', 'RoomController@checkAvailability');
 
         Route::get('clerk/test', fn() => 'Clerk Middleware Check Dashboard'); // routes/api.php
 

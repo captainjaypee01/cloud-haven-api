@@ -6,6 +6,7 @@ use App\Contracts\Services\RoomServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Room\PublicRoomCollection;
 use App\Http\Resources\Room\PublicRoomResource;
+use App\Http\Resources\Room\RoomAvailabilityResource;
 use App\Http\Responses\CollectionResponse;
 use App\Http\Responses\ErrorResponse;
 use App\Http\Responses\ItemResponse;
@@ -55,5 +56,35 @@ class RoomController extends Controller
     {
         $rooms = $this->roomService->listFeaturedRooms();
         return new CollectionResponse(new PublicRoomCollection($rooms), JsonResponse::HTTP_OK);
+    }
+
+    /**
+     * Check availability for a specific room.
+     */
+    public function checkAvailability(Request $request, $roomSlug): ItemResponse|ErrorResponse
+    {
+        $request->validate([
+            'check_in' => 'required|date',
+            'check_out' => 'required|date|after:check_in',
+        ]);
+
+        try {
+            $room = $this->roomService->showBySlug($roomSlug);
+            $availableUnits = $this->roomService->availableUnits(
+                $room->id,
+                $request->input('check_in'),
+                $request->input('check_out')
+            );
+
+            return new ItemResponse(new RoomAvailabilityResource([
+                'room_type_id' => $room->slug,
+                'room_name' => $room->name,
+                'available_units' => $availableUnits,
+                'check_in' => $request->input('check_in'),
+                'check_out' => $request->input('check_out'),
+            ]));
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Room not found.');
+        }
     }
 }
