@@ -43,4 +43,11 @@ return [
         'webhook_secret_key' => env('CLERK_WEBHOOK_SECRET')
     ],
 
+    'mailgun' => [
+        'domain' => env('MAILGUN_DOMAIN'),
+        'secret' => env('MAILGUN_SECRET'),
+        'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
+        'scheme' => 'https',
+    ],
+
 ];

@@ -59,3 +59,61 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Mailgun Email Configuration
+
+This application uses Mailgun HTTP API for sending emails with automatic failover to log-based email handling.
+
+### Environment Configuration
+
+Add the following environment variables to your `.env` file:
+
+```env
+# Mail Configuration
+MAIL_MAILER=failover
+MAIL_FROM_ADDRESS="no-reply@netaniadelaiya.com"
+MAIL_FROM_NAME="Cloud Haven"
+
+# Mailgun Configuration
+MAILGUN_DOMAIN="mg.netaniadelaiya.com"
+MAILGUN_SECRET="your-mailgun-api-key-here"
+MAILGUN_ENDPOINT="api.mailgun.net"  # Use "api.eu.mailgun.net" for EU region
+```
+
+### Testing Email Sending
+
+To test email sending in development:
+
+1. Set `MAIL_MAILER=log` in your `.env` file to log emails instead of sending them
+2. Check `storage/logs/laravel.log` to verify email content
+3. For actual Mailgun testing, ensure your API key is valid and DNS is configured
+
+### Production Deployment
+
+After deploying to production:
+
+1. Run `composer install --optimize-autoloader --no-dev`
+2. Clear and optimize Laravel caches:
+   ```bash
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+   ```
+3. Ensure the queue worker is running for processing queued emails:
+   ```bash
+   php artisan queue:work
+   ```
+
+### Rollback Strategy
+
+If you need to rollback to SMTP:
+
+1. Change `MAIL_MAILER=smtp` in `.env`
+2. Configure SMTP settings in `.env`
+3. Clear config cache: `php artisan config:clear`
+
+The failover configuration ensures that if Mailgun is unreachable, emails will be logged instead of causing user-facing errors.
+
+### DMARC Alignment
+
+The application uses DMARC "relaxed" alignment, which allows emails to have a "From" address of `@netaniadelaiya.com` while being signed by the `mg.netaniadelaiya.com` subdomain. This is a standard practice for transactional email services and ensures proper email deliverability.
