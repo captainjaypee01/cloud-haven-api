@@ -10,6 +10,12 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
         Route::get('clerk/test', fn() => 'Clerk Middleware Check Admin | ' . auth()->user()->clerk_id);
         Route::apiResource('rooms', 'RoomController');
 
+        // Room Units
+        Route::get('room-types/{room}/units', 'RoomUnitController@getRoomUnits');
+        Route::get('room-types/{room}/stats', 'RoomUnitController@getRoomStats');
+        Route::post('room-types/{room}/units/generate', 'RoomUnitController@generateUnits');
+        Route::apiResource('room-units', 'RoomUnitController');
+
         Route::apiResource('users', 'UserController')->middleware('role:admin,superadmin');
 
         Route::apiResource('amenities', 'AmenityController')->middleware('role:admin,superadmin');

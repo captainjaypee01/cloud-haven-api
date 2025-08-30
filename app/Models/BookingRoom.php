@@ -11,6 +11,7 @@ class BookingRoom extends Model
     protected $fillable = [
         'booking_id',
         'room_id',
+        'room_unit_id',
         'price_per_night',
         'adults',
         'children',
@@ -24,5 +25,10 @@ class BookingRoom extends Model
     public function room(): BelongsTo
     {
         return $this->belongsTo(Room::class);
+    }
+
+    public function roomUnit(): BelongsTo
+    {
+        return $this->belongsTo(RoomUnit::class);
     }
 }

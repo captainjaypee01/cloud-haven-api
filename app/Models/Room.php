@@ -36,6 +36,16 @@ class Room extends Model
         return $this->belongsToMany(Image::class, 'room_image')->withPivot('order');
     }
 
+    public function roomUnits()
+    {
+        return $this->hasMany(RoomUnit::class);
+    }
+
+    public function availableUnits()
+    {
+        return $this->roomUnits()->available();
+    }
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

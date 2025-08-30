@@ -113,12 +113,30 @@ class BookingService implements BookingServiceInterface
         $dpPercent = config('booking.downpayment_percent', 0.5);
         $dpAmount = $finalPrice * $dpPercent;
         Log::info([$paidAmount, $dpAmount, $finalPrice, $paidAmount >= $dpAmount, $paidAmount >= $finalPrice]);
+        
+        $previousStatus = $booking->status;
+        $newStatus = null;
+        
         if ($paidAmount >= $finalPrice) {
             $booking->update(['status' => 'paid', 'paid_at' => now()]);
+            $newStatus = 'paid';
         } elseif ($paidAmount >= $dpAmount) {
             $booking->update(['status' => 'downpayment', 'downpayment_at' => now()]);
+            $newStatus = 'downpayment';
         } else {
             $booking->update(['status' => 'pending']);
+            $newStatus = 'pending';
+        }
+
+        // If booking just became confirmed (first time reaching downpayment or paid status), assign room units
+        if ($previousStatus === 'pending' && in_array($newStatus, ['downpayment', 'paid'])) {
+            $confirmBookingAction = app(\App\Actions\Bookings\ConfirmBookingAction::class);
+            $allUnitsAssigned = $confirmBookingAction->execute($booking->refresh());
+            
+            if (!$allUnitsAssigned) {
+                Log::warning("Not all room units could be assigned for booking {$booking->reference_number}");
+                // Could potentially send a notification to staff here
+            }
         }
     }
 

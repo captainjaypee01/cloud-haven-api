@@ -99,7 +99,13 @@ class RoomRepository implements RoomRepositoryInterface
             }
         }
 
-        $available = $room->quantity - $bookedUnits - $lockedUnits;
+        // Calculate units in maintenance or blocked status
+        $unavailableUnits = DB::table('room_units')
+            ->where('room_id', $roomId)
+            ->whereIn('status', ['maintenance', 'blocked'])
+            ->count();
+
+        $available = $room->quantity - $bookedUnits - $lockedUnits - $unavailableUnits;
 
         return max(0, $available);
     }

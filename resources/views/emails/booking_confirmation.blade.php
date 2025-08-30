@@ -22,9 +22,17 @@
         ->groupBy(fn($br) => $br->room_id ?? ($br->room->id ?? spl_object_id($br))) // group same room
         ->map(function ($group) {
             $first = $group->first();
+            $roomNumbers = $group->filter(fn($br) => !empty($br->roomUnit?->unit_number))
+                               ->pluck('roomUnit.unit_number')
+                               ->sort()
+                               ->values()
+                               ->toArray();
+            
             return (object)[
                 'name' => $first->room->name ?? 'Room',
                 'qty'  => $group->sum(fn($x) => (int)($x->quantity ?? 1)),
+                'room_numbers' => $roomNumbers,
+                'has_room_numbers' => !empty($roomNumbers),
             ];
         })
         ->sortBy('name')
@@ -72,6 +80,7 @@
                             <tr>
                             <th>Room</th>
                             <th class="right">Qty</th>
+                            <th class="right">Room Number(s)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -79,10 +88,17 @@
                             <tr>
                                 <td style="padding: 12px 12px;border:1px solid #bbb;">{{ $line->name ?? 'Room' }}</td>
                                 <td style="padding: 12px 12px;border:1px solid #bbb;" class="left">{{ $line->qty ?? 1 }}</td>
+                                <td style="padding: 12px 12px;border:1px solid #bbb;" class="left">
+                                    @if($line->has_room_numbers)
+                                        {{ implode(', ', $line->room_numbers) }}
+                                    @else
+                                        <em style="color:#666;">To be assigned</em>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
                                 <tr>
-                                <td colspan="2">No rooms found</td>
+                                <td colspan="3">No rooms found</td>
                                 </tr>
                             @endforelse
                         </tbody>

@@ -41,6 +41,9 @@ class BookingConfirmation extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
+        // Load room unit data for the booking
+        $this->booking->load('bookingRooms.room', 'bookingRooms.roomUnit');
+        
         return new Content(
             markdown: 'emails.booking_confirmation',
             with: [
