@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use App\Contracts\Services\DashboardServiceInterface;
@@ -66,18 +67,25 @@ class DashboardService implements DashboardServiceInterface
         // 4. Bookings for today and tomorrow
         $today = Carbon::today();
         $tomorrow = Carbon::tomorrow();
-        $upcomingBookings = Booking::with('bookingRooms.room')
-            ->whereDate('check_in_date', $today->toDateString())
-            ->orWhereDate('check_in_date', $tomorrow->toDateString())
+        $upcomingBookings = Booking::with('bookingRooms.room', 'payments', 'otherCharges')
+            ->where(function ($query) use ($today, $tomorrow) {
+                $query->whereDate('check_in_date', $today->toDateString())
+                    ->orWhereDate('check_in_date', $tomorrow->toDateString());
+            })
+            ->whereIn('status', ['paid', 'downpayment'])
             ->orderBy('check_in_date')
             ->get();
         $bookingsList = $upcomingBookings->map(function ($booking) {
             return [
-                'id'         => $booking->id,
-                'guest_name' => $booking->guest_name,
-                'rooms'      => $booking->bookingRooms->map(fn($br) => $br->room->name)->all(),
-                'final_price'=> $booking->final_price,
-                'status'     => $booking->status,
+                'id'                    => $booking->id,
+                'guest_name'            => $booking->guest_name,
+                'rooms'                 => $booking->bookingRooms->map(fn($br)          => $br->room->name)->all(),
+                'final_price'           => $booking->final_price,
+                'status'                => $booking->status,
+                'check_in_date'         => $booking->check_in_date,
+                'check_out_date'        => $booking->check_out_date,
+                'payments'              => $booking->payments,
+                'other_charges'         => $booking->otherCharges,
             ];
         })->toArray();
 
