@@ -12,6 +12,9 @@ use App\DTO\Bookings\BookingData;
 use App\DTO\Bookings\BookingRoomData;
 use App\Exceptions\BookingAlreadyClaimedException;
 use App\Models\Booking;
+use App\Models\BookingRoom;
+use App\Models\RoomUnit;
+use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -161,5 +164,174 @@ class BookingService implements BookingServiceInterface
         $booking->save();  // or $this->bookingRepo->save($booking) if such method exists
 
         return $booking;
+    }
+
+    /**
+     * Build calendar dataset for bookings within a given date range.
+     * Uses Eloquent models and relations (no DB facade).
+     * Overlap logic: include bookings where check_in_date < end AND check_out_date > start.
+     */
+    public function getCalendar(array $params): array
+    {
+        $start = data_get($params, 'start');
+        $end = data_get($params, 'end');
+        $statusParam = data_get($params, 'status');
+        $roomTypeId = data_get($params, 'room_type_id');
+
+        if (!$start || !$end) {
+            throw new \InvalidArgumentException('start and end are required (YYYY-MM-DD).');
+        }
+
+        $startDate = Carbon::parse($start)->startOfDay();
+        $endDate = Carbon::parse($end)->endOfDay();
+        if ($startDate->gt($endDate)) {
+            throw new \InvalidArgumentException('start must be before end.');
+        }
+        
+        // Check if this is a day view (same start and end date)
+        $isDayView = $startDate->toDateString() === $endDate->toDateString();
+
+        $statuses = null;
+        if ($statusParam) {
+            $statuses = collect(explode(',', $statusParam))
+                ->map(fn($s) => trim($s))
+                ->filter()->values()->all();
+        }
+
+        // Events: one per booking_room (prefer assigned unit data)
+        $eventRows = BookingRoom::query()
+            ->with([
+                'booking:id,check_in_date,check_out_date,status,guest_name,total_price,final_price,adults,children,total_guests,reference_number,deleted_at',
+                'room:id,name,max_guests',
+                'roomUnit:id,unit_number',
+            ])
+            ->whereHas('booking', function ($q) use ($startDate, $endDate, $statuses, $isDayView) {
+                if ($isDayView) {
+                    // For day view: show bookings that are active on this specific day
+                    // A booking is active if: check_in_date <= selected_date AND check_out_date > selected_date
+                    // This excludes the checkout day from being shown
+                    $q->where('check_in_date', '<=', $startDate->toDateString())
+                      ->where('check_out_date', '>', $startDate->toDateString());
+                } else {
+                    // For month view: show all overlapping bookings (excluding checkout days)
+                    $q->where('check_in_date', '<=', $endDate->toDateString())
+                      ->where('check_out_date', '>', $startDate->toDateString());
+                }
+                
+                if (is_array($statuses) && count($statuses) > 0) {
+                    $q->whereIn('status', $statuses);
+                } else {
+                    $q->whereNotIn('status', ['cancelled', 'failed']);
+                }
+            })
+            ->when($roomTypeId, fn($q) => $q->where('room_id', (int) $roomTypeId))
+            ->get();
+
+        $events = [];
+        foreach ($eventRows as $br) {
+            $booking = $br->booking;
+            if (!$booking) continue;
+            
+            $nights = \Carbon\Carbon::parse($booking->check_in_date)
+                ->diffInDays(\Carbon\Carbon::parse($booking->check_out_date));
+            
+            // Calculate remaining balance
+            $paidAmount = $booking->payments()->where('status', 'paid')->sum('amount');
+            $remainingBalance = max(0, $booking->final_price - $paidAmount);
+            
+            $events[] = [
+                'booking_id' => (int) $booking->id,
+                'reference_number' => $booking->reference_number,
+                'room_type_id' => $br->room?->id,
+                'room_type_name' => $br->room?->name ?? 'Unassigned Room',
+                'room_unit_id' => $br->roomUnit?->id,
+                'room_unit_number' => $br->roomUnit?->unit_number ?? 'TBD',
+                'room_capacity' => $br->room?->max_guests ?? 2,
+                'room_price_per_night' => $br->price_per_night,
+                'guest_name' => $booking->guest_name,
+                'status' => $booking->status,
+                'start' => $booking->check_in_date,
+                'end' => $booking->check_out_date,
+                'nights' => $nights,
+                'total_price' => $booking->total_price,
+                'final_price' => $booking->final_price,
+                'remaining_balance' => $remainingBalance,
+                'adults' => $br->adults,
+                'children' => $br->children,
+                'total_guests' => $br->total_guests,
+                'booking_adults' => $booking->adults,
+                'booking_children' => $booking->children,
+                'booking_total_guests' => $booking->total_guests,
+            ];
+        }
+
+        // Occupancy: count unique bookings per night (not individual rooms)
+        $bookingRows = Booking::query()
+            ->where(function($q) use ($startDate, $endDate, $isDayView) {
+                if ($isDayView) {
+                    // For day view: show bookings that are active on this specific day
+                    // A booking is active if: check_in_date <= selected_date AND check_out_date > selected_date
+                    // This excludes the checkout day from being counted
+                    $q->where('check_in_date', '<=', $startDate->toDateString())
+                      ->where('check_out_date', '>', $startDate->toDateString());
+                } else {
+                    // For month view: show all overlapping bookings (excluding checkout days)
+                    $q->where('check_in_date', '<=', $endDate->toDateString())
+                      ->where('check_out_date', '>', $startDate->toDateString());
+                }
+            })
+            ->whereNotIn('status', ['cancelled', 'failed'])
+            ->when(is_array($statuses) && count($statuses) > 0, fn($q) => $q->whereIn('status', $statuses))
+            ->when($roomTypeId, function($q) use ($roomTypeId) {
+                $q->whereHas('bookingRooms', function($subQ) use ($roomTypeId) {
+                    $subQ->where('room_id', (int) $roomTypeId);
+                });
+            })
+            ->get();
+
+        // Total bookable units (filter by room type if provided)
+        $unitsQuery = RoomUnit::query()->bookable();
+        if ($roomTypeId) $unitsQuery->where('room_id', (int) $roomTypeId);
+        $totalUnits = (int) $unitsQuery->count();
+
+        // Build per-day summary
+        $summaryMap = [];
+        $cursor = $startDate->copy();
+        while ($cursor->lte($endDate)) {
+            $summaryMap[$cursor->toDateString()] = 0;
+            $cursor->addDay();
+        }
+        
+        foreach ($bookingRows as $booking) {
+            $s = Carbon::parse($booking->check_in_date);
+            $e = Carbon::parse($booking->check_out_date);
+            
+            // Count each day the booking spans (excluding checkout day)
+            $startLoop = $s->max($startDate);
+            $endLoop = $e->min($endDate);
+            $day = $startLoop->copy();
+            
+            while ($day->lt($endLoop)) { // Use < instead of <= to exclude checkout day
+                $key = $day->toDateString();
+                if (array_key_exists($key, $summaryMap)) {
+                    $summaryMap[$key] += 1;
+                }
+                $day->addDay();
+            }
+        }
+
+        $summary = [];
+        foreach ($summaryMap as $date => $count) {
+            $summary[] = [
+                'date' => $date,
+                'bookings' => (int) $count,
+                'rooms_left' => max(0, $totalUnits - (int) $count),
+            ];
+        }
+
+        return [
+            'summary' => $summary,
+            'events' => $events,
+        ];
     }
 }

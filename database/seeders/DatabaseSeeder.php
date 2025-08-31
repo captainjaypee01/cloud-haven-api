@@ -22,7 +22,8 @@ class DatabaseSeeder extends Seeder
         // Development/staging seeders (only run in non-production environments)
         if (app()->environment(['local', 'dev', 'development', 'staging', 'uat'])) {
             $this->call([
-                BookingSeeder::class,
+                // BookingSeeder::class, // Commented out in favor of new seeder
+                BookingWithRoomUnitsSeeder::class,
                 ReviewSeeder::class,
             ]);
         } else {

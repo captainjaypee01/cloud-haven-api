@@ -64,13 +64,22 @@ class DashboardService implements DashboardServiceInterface
             }
         }
 
-        // 4. Bookings for today and tomorrow
+        // 4. Bookings for today and tomorrow (including overlapping bookings)
         $today = Carbon::today();
         $tomorrow = Carbon::tomorrow();
         $upcomingBookings = Booking::with('bookingRooms.room', 'payments', 'otherCharges')
             ->where(function ($query) use ($today, $tomorrow) {
-                $query->whereDate('check_in_date', $today->toDateString())
-                    ->orWhereDate('check_in_date', $tomorrow->toDateString());
+                // Bookings that overlap with today or tomorrow
+                // A booking overlaps with a date if:
+                // - check_in_date <= date AND check_out_date > date
+                $query->where(function ($q) use ($today) {
+                    $q->where('check_in_date', '<=', $today->toDateString())
+                      ->where('check_out_date', '>', $today->toDateString());
+                })
+                ->orWhere(function ($q) use ($tomorrow) {
+                    $q->where('check_in_date', '<=', $tomorrow->toDateString())
+                      ->where('check_out_date', '>', $tomorrow->toDateString());
+                });
             })
             ->whereIn('status', ['paid', 'downpayment'])
             ->orderBy('check_in_date')

@@ -16,4 +16,10 @@ interface BookingServiceInterface
     public function markPaid(Booking $booking): void;
     public function markPaymentFailed(Booking $booking): void;
     public function claimBooking(string $referenceNumber, int $userId): Booking;
+    /**
+     * Range-filtered calendar data including per-day summary and timeline events.
+     * Expected params: start (Y-m-d), end (Y-m-d), optional status (comma-separated), room_type_id (int)
+     * Returns array: [ 'summary' => [...], 'events' => [...] ]
+     */
+    public function getCalendar(array $params): array;
 }

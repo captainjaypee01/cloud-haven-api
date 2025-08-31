@@ -131,4 +131,29 @@ class BookingController extends Controller
             return new ErrorResponse("Unable to reschedule", JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    /**
+     * Calendar data endpoint for admin.
+     * GET /v1/admin/bookings/calendar?start=YYYY-MM-DD&end=YYYY-MM-DD[&status=paid,downpayment][&room_type_id=ID]
+     */
+    public function calendar(Request $request)
+    {
+        $validated = $request->validate([
+            'start' => 'required|date_format:Y-m-d',
+            'end' => 'required|date_format:Y-m-d',
+            'status' => 'sometimes|string',
+            'room_type_id' => 'sometimes|integer',
+        ]);
+
+        try {
+            $data = $this->bookingService->getCalendar($validated);
+        } catch (\InvalidArgumentException $e) {
+            return new ErrorResponse($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            Log::error('Calendar endpoint error: ' . $e->getMessage());
+            return new ErrorResponse('Unable to get calendar data', 500);
+        }
+
+        return response()->json($data);
+    }
 }

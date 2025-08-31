@@ -21,6 +21,8 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
         Route::apiResource('amenities', 'AmenityController')->middleware('role:admin,superadmin');
         Route::patch('amenities/{id}/update-status', 'AmenityController@updateStatus')->middleware('role:admin,superadmin');
 
+        // Calendar view for bookings (range filtered)
+        Route::get('bookings/calendar', 'BookingController@calendar');
         Route::apiResource('bookings', 'BookingController')->middleware('role:admin,superadmin');
         Route::post('bookings/{booking}/other-charges', 'BookingController@storeOtherCharge')->middleware('role:admin,superadmin');
         Route::patch('bookings/{booking}/reschedule', 'BookingController@reschedule')->middleware('role:admin,superadmin');
