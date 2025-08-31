@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         // Production-safe seeders (always run)
         $this->call([
             RoomSeeder::class,
+            RoomUnitSeeder::class, // Create room units based on room quantities
             AmenitySeeder::class,
             PromoSeeder::class,
             MealPriceSeeder::class,

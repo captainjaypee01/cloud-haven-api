@@ -54,8 +54,8 @@ class BookingWithRoomUnitsSeeder extends Seeder
         // Load rooms and initialize occupancy map
         $this->rooms = Room::where('status', 1)->get()->keyBy('id');
         
-        // Load room units
-        $this->roomUnits = RoomUnit::where('status', RoomUnitStatusEnum::AVAILABLE)->get()->groupBy('room_id');
+        // Load ALL room units (not just available ones)
+        $this->roomUnits = RoomUnit::all()->groupBy('room_id');
         
         foreach ($this->rooms as $room) {
             $this->occupancyMap[$room->id] = [];
@@ -218,7 +218,8 @@ class BookingWithRoomUnitsSeeder extends Seeder
         
         foreach ($this->roomUnits as $roomId => $units) {
             foreach ($units as $unit) {
-                if ($this->isUnitAvailable($unit->id, $checkIn, $checkOut)) {
+                // Check if unit is available (not under maintenance or blocked) AND not occupied
+                if ($this->isUnitAvailable($unit->id, $checkIn, $checkOut) && $this->isUnitBookable($unit)) {
                     $room = $this->rooms[$roomId];
                     $availableUnits[] = [
                         'room_unit_id' => $unit->id,
@@ -258,6 +259,12 @@ class BookingWithRoomUnitsSeeder extends Seeder
         }
         
         return true;
+    }
+
+    private function isUnitBookable(RoomUnit $unit): bool
+    {
+        // Check if unit is not under maintenance or blocked
+        return !in_array($unit->status, [RoomUnitStatusEnum::MAINTENANCE, RoomUnitStatusEnum::BLOCKED]);
     }
 
     private function createBookingWithRoomUnits(Carbon $checkIn, Carbon $checkOut, array $selectedRoomUnits): ?Booking
