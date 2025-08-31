@@ -163,10 +163,15 @@ class PaymentController extends Controller
             throw $e;
         }
 
-        // Attach proof path to created payment
+        // Attach proof path to created payment and set proof upload tracking
         if ($result->payment && $storedPath) {
-            $result->payment->proof_image_path = $storedPath;
-            $result->payment->save();
+            $result->payment->update([
+                'proof_image_path' => $storedPath,
+                'proof_upload_count' => 1,
+                'proof_status' => 'pending',
+                'proof_last_file_path' => $storedPath,
+                'proof_last_uploaded_at' => now(),
+            ]);
             $result->payment->refresh();
         }
 
