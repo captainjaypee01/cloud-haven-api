@@ -53,6 +53,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Images\ImageService::class
         );
 
+        // Payment Proof Service
+        $this->app->bind(
+            \App\Services\PaymentProofService::class,
+            \App\Services\PaymentProofService::class
+        );
+
         $this->bindUsers();
         $this->bindMealPrices();
         $this->bindPromos();
@@ -66,8 +72,13 @@ class AppServiceProvider extends ServiceProvider
      * Bootstrap any application services.
      */
     public function boot(): void {
-        
         CloudinaryConfiguration::instance(config('cloudinary.cloud_url') . "?secure=true");
+        
+        // Register event listeners
+        Event::listen(
+            \App\Events\PaymentProofUploaded::class,
+            \App\Listeners\SendProofPaymentNotificationListener::class,
+        );
     }
 
     public function bindUsers(): void

@@ -69,18 +69,63 @@ class PaymentController extends Controller
         );
     }
 
-    public function uploadProof(Request $request, $referenceNumber)
+    public function uploadProof(Request $request, $referenceNumber, $paymentId = null)
     {
         $validated = $request->validate([
+            'proof_file' => 'required|file|mimes:jpeg,jpg,png,pdf|max:5120', // 5MB max
+            'transaction_id' => 'nullable|string|max:255',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
+        // Find the booking by reference number
+        $booking = \App\Models\Booking::where('reference_number', $referenceNumber)->firstOrFail();
+        
+        // If paymentId is provided, find specific payment; otherwise create new one (legacy behavior)
+        if ($paymentId) {
+            $payment = \App\Models\Payment::where('id', $paymentId)
+                ->where('booking_id', $booking->id)
+                ->firstOrFail();
+                
+            // Use the new proof upload service with additional data
+            $proofService = app(\App\Services\PaymentProofService::class);
+            $result = $proofService->uploadProof(
+                $payment, 
+                $validated['proof_file'],
+                $validated['transaction_id'] ?? null,
+                $validated['remarks'] ?? null
+            );
+            
+            if (!$result['success']) {
+                $statusCode = match($result['error_code']) {
+                    'proof_upload_limit_reached' => JsonResponse::HTTP_TOO_MANY_REQUESTS,
+                    'upload_failed' => JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
+                    default => JsonResponse::HTTP_BAD_REQUEST
+                };
+
+                return response()->json($result, $statusCode);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Proof of payment uploaded successfully.',
+                'data' => [
+                    'payment' => $result['payment'],
+                    'upload_count' => $result['upload_count'],
+                    'max_uploads' => $result['max_uploads']
+                ]
+            ]);
+        }
+        
+        // Legacy behavior: Create new payment with proof (for backward compatibility)
+        $validated = array_merge($validated, $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'provider' => 'required|string',
             'transaction_id' => 'nullable|string',
             'remarks' => 'nullable|string',
-            'proof' => 'required|image|mimes:jpeg,jpg,png,webp|max:12288',
-        ]);
+        ]));
 
         // Optimize and store the image locally (public disk)
-        $file = $request->file('proof');
+        $file = $request->file('proof_file') ?? $request->file('proof');
         $storedPath = $this->optimizeAndStoreImage($file, $referenceNumber);
 
         // Create a pending payment record via manual flow, then attach proof path

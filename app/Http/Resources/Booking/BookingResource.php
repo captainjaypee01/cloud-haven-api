@@ -43,7 +43,14 @@ class BookingResource extends JsonResource
             'local_paid_at'             => $this->local_paid_at,
             'local_reserved_until'      => $this->local_reserved_until,
             'booking_rooms'             => $this->bookingRooms,
-            'payments'                  => $this->payments,
+            'payments'                  => $this->payments->map(function ($payment) {
+                return array_merge($payment->toArray(), [
+                    'booking' => [
+                        'reference_number' => $this->reference_number,
+                        'id' => $this->id
+                    ]
+                ]);
+            }),
             'other_charges'             => $other_charges,
             'other_charges_list'       => $this->otherCharges,
         ];

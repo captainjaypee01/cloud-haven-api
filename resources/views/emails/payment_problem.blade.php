@@ -30,16 +30,26 @@
                                 @if($payment->transaction_id)
                                     <div style="font-size:15px;margin-bottom:10px;"><strong>Transaction ID:</strong> {{ $payment->transaction_id }}</div>
                                 @endif
-                                <div style="font-size:15px;"><strong>Issue:</strong> Payment verification pending</div>
+                                <div style="font-size:15px;"><strong>Issue:</strong> {{ $rejectionReason ?? 'Payment verification pending' }}</div>
                             </div>
 
-                            <p style="margin-bottom:16px;font-size:15px;">After reviewing your submitted proof of payment, we were unable to verify the transaction in our bank records at this time. This could be due to:</p>
-                            
-                            <ul style="margin-bottom:24px;font-size:15px;color:#666;">
-                                <li>Processing delays by the bank (transactions may take 1-3 business days to reflect)</li>
-                                <li>Incorrect account details or reference number</li>
-                                <li>Technical issues with the payment processing</li>
-                            </ul>
+                            @if(isset($rejectionReason))
+                                <p style="margin-bottom:24px;font-size:15px;">After reviewing your submitted proof of payment, we found the following issue that needs to be addressed:</p>
+                                
+                                <div style="background:#ffebee;border-left:4px solid #f44336;padding:16px 20px;margin-bottom:24px;">
+                                    <p style="margin:0;font-size:15px;color:#d32f2f;">{{ $rejectionReason }}</p>
+                                </div>
+                                
+                                <p style="margin-bottom:16px;font-size:15px;">Please review the issue above and submit a new proof of payment if needed.</p>
+                            @else
+                                <p style="margin-bottom:16px;font-size:15px;">After reviewing your submitted proof of payment, we were unable to verify the transaction in our bank records at this time. This could be due to:</p>
+                                
+                                <ul style="margin-bottom:24px;font-size:15px;color:#666;">
+                                    <li>Processing delays by the bank (transactions may take 1-3 business days to reflect)</li>
+                                    <li>Incorrect account details or reference number</li>
+                                    <li>Technical issues with the payment processing</li>
+                                </ul>
+                            @endif
 
                             <p style="margin-bottom:24px;font-size:15px;"><strong>What happens next?</strong></p>
                             
@@ -57,28 +67,7 @@
                         </td>
                     </tr>
                 </table>
-                <table width="600" cellpadding="0" cellspacing="0" style="background:#0288D1;border-radius:0 0 8px 8px;">
-                    <tr>
-                        <td style="color:#fff;padding:20px 32px;font-size:14px;">
-                            <table width="100%" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td valign="top" align="left" style="padding-bottom:10px;">
-                                        <strong>Follow Us On:</strong>
-                                        <div><a href="https://www.facebook.com/profile.php?id=100064182843841" style="color:#fff;text-decoration:none;">Facebook</a></div>
-                                    </td>
-                                    <td valign="top" align="right">
-                                        <strong>Customer Service:</strong><br>
-                                        Phone: +63 949-798-9831<br>
-                                        Email: <a href="mailto:info@netaniadelaiya.com" style="color:#fff;text-decoration:underline;">info@netaniadelaiya.com</a>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-                <div style="font-size:11px;text-align:center;margin-top:10px;color:#666;">
-                    *** This email notification was sent regarding your booking at {{ config('app.name') }}. ***
-                </div>
+                @include('emails.partials._footer')
             </td>
         </tr>
     </table>

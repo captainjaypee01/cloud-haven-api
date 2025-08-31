@@ -62,6 +62,18 @@ class PublicBookingResource extends JsonResource
                         'transaction_id' => $payment->transaction_id,
                         'remarks' => $payment->remarks,
                         'proof_image_url' => $payment->proof_image_url,
+                        // New proof upload fields
+                        'proof_upload_count' => $payment->proof_upload_count ?? 0,
+                        'proof_upload_generation' => $payment->proof_upload_generation ?? 1,
+                        'proof_status' => $payment->proof_status ?? 'none',
+                        'proof_last_file_path' => $payment->proof_last_file_path,
+                        'proof_rejected_reason' => $payment->proof_rejected_reason,
+                        'proof_last_uploaded_at' => $payment->proof_last_uploaded_at?->format('M d, Y H:i'),
+                        // Include booking reference for fallback route
+                        'booking' => [
+                            'reference_number' => $this->reference_number,
+                            'id' => $this->id
+                        ]
                     ];
                 }),
             'pay_now_options' => [

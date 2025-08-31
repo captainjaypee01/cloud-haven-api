@@ -30,6 +30,10 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
         // Route::apiResource('payments', 'PaymentController');
         Route::post('payments/pay', 'PaymentController@pay')->middleware('role:admin,superadmin');
         Route::put('payments/{payment}', 'PaymentController@update')->middleware('role:admin,superadmin');
+        
+        // Payment proof management
+        Route::patch('payments/{payment}/proof-upload/reset', 'PaymentController@resetProofUploads')->middleware('role:admin,superadmin');
+        Route::patch('payments/{payment}/proof-status', 'PaymentController@updateProofStatus')->middleware('role:admin,superadmin');
 
         Route::patch('promos/bulk-update-status', 'PromoController@bulkUpdateStatus')->middleware('role:admin,superadmin');
         Route::patch('promos/{id}/update-status', 'PromoController@updateStatus')->middleware('role:admin,superadmin');

@@ -18,17 +18,31 @@ class Payment extends Model
         'remarks',
         'response_data',
         'proof_image_path',
+        'proof_upload_count',
+        'proof_upload_generation',
+        'proof_status',
+        'proof_last_file_path',
+        'proof_rejected_reason',
+        'proof_rejected_by',
+        'last_proof_notification_at',
+        'proof_last_uploaded_at',
     ];
 
     protected $appends = ['local_created_at', 'proof_image_url'];
 
     public function getProofImageUrlAttribute()
     {
-        if (!$this->proof_image_path) {
-            return null;
+        // New system: use proof_last_file_path if available
+        if ($this->proof_last_file_path) {
+            return asset('storage/' . ltrim($this->proof_last_file_path, '/'));
         }
-        // Use asset helper to avoid driver-specific URL method
-        return asset('storage/' . ltrim($this->proof_image_path, '/'));
+        
+        // Legacy system: use proof_image_path
+        if ($this->proof_image_path) {
+            return asset('storage/' . ltrim($this->proof_image_path, '/'));
+        }
+        
+        return null;
     }
     public function getLocalCreatedAtAttribute()
     {
@@ -41,5 +55,19 @@ class Payment extends Model
     public function booking()
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function rejectedByUser()
+    {
+        return $this->belongsTo(User::class, 'proof_rejected_by');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'last_proof_notification_at' => 'datetime',
+            'proof_last_uploaded_at' => 'datetime',
+            'response_data' => 'array',
+        ];
     }
 }

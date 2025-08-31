@@ -115,7 +115,7 @@ class BookingService implements BookingServiceInterface
         // Get DP percent from config, fallback to 0.5 if not set
         $dpPercent = config('booking.downpayment_percent', 0.5);
         $dpAmount = $finalPrice * $dpPercent;
-        Log::info([$paidAmount, $dpAmount, $finalPrice, $paidAmount >= $dpAmount, $paidAmount >= $finalPrice]);
+
         
         $previousStatus = $booking->status;
         $newStatus = null;

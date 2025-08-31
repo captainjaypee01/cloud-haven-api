@@ -570,7 +570,7 @@ class BookingWithRoomUnitsSeeder extends Seeder
         Payment::create([
             'booking_id' => $booking->id,
             'amount' => $amount,
-            'provider' => 'bank_transfer', // Only bank transfer for now
+            'provider' => 'bank_bdo', // Only bank transfer for now
             'status' => $paymentStatus,
             'transaction_id' => $paymentStatus === 'paid' ? 'TXN' . Str::random(10) : null,
         ]);

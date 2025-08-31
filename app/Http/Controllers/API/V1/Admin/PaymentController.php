@@ -9,8 +9,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\EmptyResponse;
 use App\Http\Responses\PaymentResponse;
 use App\Models\Payment;
+use App\Services\PaymentProofService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,7 +21,8 @@ class PaymentController extends Controller
 {
     public function __construct(
         private PaymentServiceInterface $paymentService,
-        private BookingServiceInterface $bookingService
+        private BookingServiceInterface $bookingService,
+        private PaymentProofService $paymentProofService
     ) {}
 
     public function pay(Request $request)
@@ -121,5 +124,68 @@ class PaymentController extends Controller
         }
 
         return new EmptyResponse();
+    }
+
+    /**
+     * Reset proof upload count for a payment
+     * PATCH /v1/admin/payments/{payment}/proof-upload/reset
+     */
+    public function resetProofUploads(Request $request, Payment $payment)
+    {
+        $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $adminUser = Auth::user();
+        $result = $this->paymentProofService->resetProofUploads(
+            $payment,
+            $request->input('reason'),
+            $adminUser?->id
+        );
+
+        if (!$result['success']) {
+            return response()->json($result, JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+            'data' => ['payment' => $result['payment']]
+        ]);
+    }
+
+    /**
+     * Update proof status (accept/reject)
+     * PATCH /v1/admin/payments/{payment}/proof-status
+     */
+    public function updateProofStatus(Request $request, Payment $payment)
+    {
+        $request->validate([
+            'status' => 'required|in:accepted,rejected',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $adminUser = Auth::user();
+        $result = $this->paymentProofService->updateProofStatus(
+            $payment,
+            $request->input('status'),
+            $request->input('reason'),
+            $adminUser?->id
+        );
+
+        if (!$result['success']) {
+            $statusCode = match($result['error_code']) {
+                'invalid_status' => JsonResponse::HTTP_BAD_REQUEST,
+                default => JsonResponse::HTTP_INTERNAL_SERVER_ERROR
+            };
+
+            return response()->json($result, $statusCode);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+            'data' => ['payment' => $result['payment']]
+        ]);
     }
 }

@@ -17,4 +17,7 @@ Route::prefix('user')->namespace('App\Http\Controllers\API\V1\User')
         Route::post('/reviews', 'ReviewController@store');
         Route::get('/bookings/user', 'BookingController@listByUser');
         Route::patch('/bookings/ref/{referenceNumber}/claim', 'BookingController@claim');
+        
+        // Payment proof upload
+        Route::post('/payments/{payment}/proof', 'PaymentController@uploadProof');
     });

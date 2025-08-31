@@ -13,6 +13,8 @@ use App\Http\Responses\ItemResponse;
 use App\Models\Booking;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class BookingController extends Controller
@@ -24,11 +26,11 @@ class BookingController extends Controller
         $validated = $request->validated();
         $bookingData = BookingData::from($validated);
 
+        // Get user ID - could be null for guest bookings
+        $userId = Auth::id();
+        
         try {
-            $result = $this->bookingService->createBooking(
-                $bookingData,
-                auth()->id() ?? null
-            );
+            $result = $this->bookingService->createBooking($bookingData, $userId);
             // Load booking_rooms for response if needed
             $booking = $result instanceof Booking ? $result->load('bookingRooms') : $result;
         } catch (RoomNotAvailableException $e) {

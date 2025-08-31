@@ -20,7 +20,10 @@ Route::prefix('/')->namespace('App\Http\Controllers\API\V1\Dashboard')
         Route::post('/bookings', 'BookingController@store');
         Route::get('/bookings/ref/{referenceNumber}', 'BookingController@showByReferenceNumber'); // routes/api.php
         Route::post('/bookings/ref/{referenceNumber}/pay', 'PaymentController@pay'); // routes/api.php
-        Route::post('/bookings/ref/{referenceNumber}/pay/upload-proof', 'PaymentController@uploadProof');
+        Route::post('/bookings/ref/{referenceNumber}/pay/upload-proof', 'PaymentController@uploadProof'); // Legacy route
+        
+        // New proof upload routes for specific payments
+        Route::post('/bookings/ref/{referenceNumber}/payments/{paymentId}/proof', 'PaymentController@uploadProof');
 
         Route::get('/promos/exclusive', 'PromoController@exclusiveOffers');
         Route::get('/promos/{promoCode}', 'PromoController@showByCode');
