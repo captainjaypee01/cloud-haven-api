@@ -22,6 +22,7 @@ describe('ReleaseExpiredBookings command', function () {
         assertDatabaseHas('bookings', [
             'id' => $booking->id,
             'status' => 'cancelled',
+            'cancellation_reason' => config('booking.cancellation_reasons.no_payment_received'),
         ]);
     });
 
@@ -92,6 +93,7 @@ describe('ReleaseExpiredBookings command', function () {
         assertDatabaseHas('bookings', [
             'id' => $booking->id,
             'status' => 'cancelled',
+            'cancellation_reason' => config('booking.cancellation_reasons.rejected_proof_expired'),
         ]);
     });
 

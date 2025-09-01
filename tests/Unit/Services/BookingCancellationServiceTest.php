@@ -70,14 +70,39 @@ describe('BookingCancellationService', function () {
     it('returns available cancellation reasons', function () {
         $reasons = $this->service->getCancellationReasons();
 
+        // Should only return manual admin cancellation reasons (excludes system automatic ones)
         expect($reasons)->toHaveKeys([
-            'no_proof_payment',
-            'proof_rejected_expired',
             'guest_request',
             'invalid_booking',
             'system_error',
+            'operational_issue',
             'other'
         ]);
+        
+        // Should NOT include system automatic reasons
+        expect($reasons)->not->toHaveKey('no_payment_received');
+        expect($reasons)->not->toHaveKey('rejected_proof_expired');
+    });
+
+    it('returns specific cancellation reason by key', function () {
+        $reason = $this->service->getCancellationReason('guest_request');
+        expect($reason)->toBe('Cancelled at guest request');
+        
+        // Returns the key itself if not found
+        $unknownReason = $this->service->getCancellationReason('unknown_key');
+        expect($unknownReason)->toBe('unknown_key');
+    });
+
+    it('returns system automatic cancellation reasons', function () {
+        $systemReasons = $this->service->getSystemCancellationReasons();
+        
+        expect($systemReasons)->toHaveKeys([
+            'no_payment_received',
+            'rejected_proof_expired'
+        ]);
+        
+        expect($systemReasons['no_payment_received'])->toBe('No proof of payment received within the required timeframe');
+        expect($systemReasons['rejected_proof_expired'])->toBe('Proof of payment rejected and grace period expired');
     });
 
     it('correctly identifies cancellable bookings', function () {

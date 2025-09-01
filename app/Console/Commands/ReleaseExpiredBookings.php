@@ -59,11 +59,21 @@ class ReleaseExpiredBookings extends Command
         $count = 0;
         foreach ($expired as $booking) {
             $lockService->delete($booking->id); // Remove Redis lock (safe even if already expired)
+            
+            // Determine cancellation reason based on payment status
+            $hasPayments = $booking->payments()->exists();
+            if (!$hasPayments) {
+                $cancellationReason = config('booking.cancellation_reasons.no_payment_received');
+            } else {
+                $cancellationReason = config('booking.cancellation_reasons.rejected_proof_expired');
+            }
+            
             $booking->status = 'cancelled';
+            $booking->cancellation_reason = $cancellationReason;
             $booking->save();
             
             // Send cancellation email notification (automatic cancellation)
-            Mail::to($booking->guest_email)->queue(new \App\Mail\BookingCancelled($booking, null, false));
+            Mail::to($booking->guest_email)->queue(new \App\Mail\BookingCancelled($booking, $cancellationReason, false));
             
             $count++;
         }

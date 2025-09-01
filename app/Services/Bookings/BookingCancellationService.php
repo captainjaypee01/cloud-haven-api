@@ -100,13 +100,30 @@ class BookingCancellationService
      */
     public function getCancellationReasons(): array
     {
+        $allReasons = config('booking.cancellation_reasons', []);
+        
+        // Return only manual admin cancellation reasons (exclude system automatic ones)
+        return array_filter($allReasons, function($key) {
+            return !in_array($key, ['no_payment_received', 'rejected_proof_expired']);
+        }, ARRAY_FILTER_USE_KEY);
+    }
+    
+    /**
+     * Get a specific cancellation reason text by key
+     */
+    public function getCancellationReason(string $key): string
+    {
+        return config("booking.cancellation_reasons.{$key}", $key);
+    }
+    
+    /**
+     * Get system automatic cancellation reasons
+     */
+    public function getSystemCancellationReasons(): array
+    {
         return [
-            'no_proof_payment' => 'No proof of payment received',
-            'proof_rejected_expired' => 'Proof of payment rejected and grace period expired',
-            'guest_request' => 'Cancelled at guest request',
-            'invalid_booking' => 'Invalid or duplicate booking',
-            'system_error' => 'System error or technical issue',
-            'other' => 'Other reason'
+            'no_payment_received' => config('booking.cancellation_reasons.no_payment_received'),
+            'rejected_proof_expired' => config('booking.cancellation_reasons.rejected_proof_expired'),
         ];
     }
 }

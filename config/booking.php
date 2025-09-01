@@ -5,4 +5,26 @@ return [
     'reservation_hold_duration_hours' => env('BOOKING_RESERVATION_HOLD_HOURS', 2), // Default 2 hours
     'scheduler_interval_minutes' => env('BOOKING_SCHEDULER_INTERVAL_MINUTES', 30), // Default 30 minutes
     'proof_rejection_grace_period_days' => env('BOOKING_PROOF_REJECTION_GRACE_PERIOD_DAYS', 2), // Default 2 days
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Booking Cancellation Reasons
+    |--------------------------------------------------------------------------
+    |
+    | Centralized cancellation reasons used for both manual admin cancellations
+    | and automatic system cancellations.
+    |
+    */
+    'cancellation_reasons' => [
+        // System automatic cancellation reasons
+        'no_payment_received' => 'No proof of payment received within the required timeframe',
+        'rejected_proof_expired' => 'Proof of payment rejected and grace period expired',
+        
+        // Manual admin cancellation reasons
+        'guest_request' => 'Cancelled at guest request',
+        'invalid_booking' => 'Invalid or duplicate booking',
+        'system_error' => 'System error or technical issue',
+        'operational_issue' => 'Operational or facility issue',
+        'other' => 'Other reason'
+    ],
 ];
