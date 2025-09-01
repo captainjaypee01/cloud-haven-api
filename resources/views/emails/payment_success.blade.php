@@ -34,8 +34,9 @@
                             <p style="margin:36px 0 0 0;font-size:14px;">Thank you,<br>The {{ config('app.name') }} Team</p>
                         </td>
                     </tr>
+                    
+                    @include('emails.partials._footer')
                 </table>
-                @include('emails.partials._footer')
             </td>
         </tr>
     </table>

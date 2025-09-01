@@ -66,8 +66,9 @@
                             <p style="margin:36px 0 0 0;font-size:14px;">Thank you for choosing {{ config('app.name') }},<br>The Netania De Laiya Team</p>
                         </td>
                     </tr>
+                    
+                    @include('emails.partials._footer')
                 </table>
-                @include('emails.partials._footer')
             </td>
         </tr>
     </table>

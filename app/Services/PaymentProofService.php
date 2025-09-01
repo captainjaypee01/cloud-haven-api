@@ -189,8 +189,9 @@ class PaymentProofService
             
             if ($guestEmail) {
                 if ($status === 'accepted') {
+                    // Send "Payment Confirmed" email when proof is accepted
                     Mail::to($guestEmail)->queue(new ProofPaymentAcceptedMail($payment));
-                    Log::info("Proof acceptance email queued for payment {$payment->id}");
+                    Log::info("Payment proof accepted email queued for payment {$payment->id}");
                 } else if ($status === 'rejected') {
                     Mail::to($guestEmail)->queue(new ProofPaymentRejectedMail($payment, $reason));
                     Log::info("Proof rejection email queued for payment {$payment->id}");

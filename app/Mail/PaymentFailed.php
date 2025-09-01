@@ -24,9 +24,13 @@ class PaymentFailed extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: 'Payment Failed',
-        );
+        $resortName = config('resort.name', config('app.name', 'Your Resort'));
+        $bookingCode = $this->booking->reference_number ?? 'N/A';
+        $paymentId = $this->payment->id;
+
+        $subject = sprintf('🚫 Payment Failed - #%s — %s (%s)', $paymentId, $resortName, $bookingCode);
+
+        return new Envelope(subject: $subject);
     }
 
     public function content(): Content

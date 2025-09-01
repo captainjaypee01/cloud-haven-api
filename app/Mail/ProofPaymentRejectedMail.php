@@ -35,8 +35,9 @@ class ProofPaymentRejectedMail extends Mailable implements ShouldQueue
     {
         $resortName = config('resort.name', config('app.name', 'Your Resort'));
         $bookingCode = $this->booking->reference_number ?? 'N/A';
+        $paymentId = $this->payment->id;
 
-        $subject = sprintf('[Payment Verification Issue] %s — %s', $bookingCode, $resortName);
+        $subject = sprintf('❌ Payment Rejected - #%s — %s (%s)', $paymentId, $resortName, $bookingCode);
 
         return new Envelope(subject: $subject);
     }

@@ -40,7 +40,7 @@
     @endphp
     <table width="100%" bgcolor="#fff" cellpadding="0" cellspacing="0" class="container">
         <tr>
-        <td align="center" style="padding:32px 0;">
+            <td align="center" style="padding:32px 0;">
 
             @include('emails.partials._style')
             @include('emails.partials._header', ['resort' => $resort])

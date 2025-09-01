@@ -30,8 +30,10 @@ class BookingReservation extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         $resortName = config('resort.name', config('app.name', 'Your Resort'));
-        $ref = $this->booking->reference_number ?? '';
-        $subject = trim(sprintf('%s — Booking Reservation%s', $resortName, $ref ? " ({$ref})" : ''));
+        $bookingCode = $this->booking->reference_number ?? 'N/A';
+
+        $subject = sprintf('[Booking Reservation] — %s (%s)', $resortName, $bookingCode);
+
         return new Envelope(subject: $subject);
     }
 

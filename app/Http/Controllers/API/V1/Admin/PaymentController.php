@@ -98,23 +98,33 @@ class PaymentController extends Controller
         // Handle status change logic and emails
         if ($oldStatus !== $newStatus && $notifyGuest) {
             if ($oldStatus === 'pending' && $newStatus === 'paid') {
-                // Payment confirmed: recalculate booking status and send confirmation
+                // Store previous booking status before updating
+                $previousBookingStatus = $booking->status;
+                
+                // Payment confirmed: recalculate booking status
                 $this->bookingService->markPaid($booking);
                 
-                // Send payment success email
-                Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentSuccess($booking, $payment));
+                // Refresh booking to get updated status
+                $booking->refresh();
                 
-                // Check if this completes the downpayment or full payment
-                $isFirstSuccessfulPayment = $booking->payments()->where('status', 'paid')->count() === 1;
-                if ($isFirstSuccessfulPayment) {
+                // Check if booking was just confirmed for the first time
+                $isFirstTimeBookingConfirmed = $previousBookingStatus === 'pending' && 
+                                             in_array($booking->status, ['downpayment', 'paid']);
+                
+                if ($isFirstTimeBookingConfirmed) {
+                    // First time booking is confirmed - send booking confirmation
                     Mail::to($booking->guest_email)->queue(new \App\Mail\BookingConfirmation($booking, $payment->amount));
+                } else {
+                    // Subsequent payment or booking already confirmed - send payment success only
+                    Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentSuccess($booking, $payment));
                 }
                 
             } elseif ($oldStatus === 'paid' && $newStatus === 'pending') {
                 // Payment reverted: recalculate booking status and send problem notification
                 $this->bookingService->markPaid($booking); // This will recalculate based on remaining paid payments
                 
-                // Send payment problem email
+                // Send payment problem email only if payment was actually confirmed before
+                // (not just proof accepted but payment not yet received)
                 Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentProblem($booking, $payment));
                 
             } elseif ($newStatus === 'failed') {

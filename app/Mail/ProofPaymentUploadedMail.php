@@ -36,12 +36,11 @@ class ProofPaymentUploadedMail extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
-        $subject = sprintf(
-            '[Payment Proof] %s — Payment %d — %s',
-            $this->booking->reference_number,
-            $this->sequenceNumber,
-            $this->booking->guest_name
-        );
+        $resortName = config('resort.name', config('app.name', 'Your Resort'));
+        $bookingCode = $this->booking->reference_number ?? 'N/A';
+        $paymentId = $this->payment->id;
+
+        $subject = sprintf('📤 Proof Uploaded - #%s — %s (%s)', $paymentId, $resortName, $bookingCode);
 
         return new Envelope(subject: $subject);
     }
