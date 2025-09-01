@@ -50,7 +50,7 @@
                         <div class="box-inner">
                         <p class="m-0"><strong>Status:</strong> On Hold (awaiting payment)</p>
                         @if(!empty($booking->reserved_until))
-                            <p class="m-0"><strong>Hold Expires:</strong> {{ $fmtDateTime($booking->reserved_until) }}</p>
+                            <p class="m-0"><strong>Hold Expires:</strong> {{ $fmtDateTime($booking->local_reserved_until) }}</p>
                         @endif
                         </div>
                     </div>
@@ -59,8 +59,8 @@
                     <!-- Core booking facts (shared) -->
                     <div class="panel" style="margin-bottom:24px;margin-left:16px;margin-right:16px;">
                         <div class="kv"><strong>Reference Number:</strong> {{ $booking->reference_number }}</div>
-                        <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }} @if(!empty($booking->check_in_time)) at {{ $booking->check_in_time }} @endif</div>
-                        <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }} @if(!empty($booking->check_out_time)) at {{ $booking->check_out_time }} @endif</div>
+                        <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
+                        <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
                         <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
                         <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price) }}</div>

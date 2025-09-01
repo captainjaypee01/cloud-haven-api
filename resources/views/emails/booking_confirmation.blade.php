@@ -54,8 +54,8 @@
                     <!-- Core booking facts (shared) -->
                     <div class="panel" style="margin-bottom:24px;margin-left:16px;margin-right:16px;">
                         <div class="kv"><strong>Reference Number:</strong> {{ $booking->reference_number }}</div>
-                        <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }} at {{ config('resort.check_in_time') }}</div>
-                        <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }} at {{ config('resort.check_out_time') }}</div>
+                        <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
+                        <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
                         <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
                         <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price) }}</div>
