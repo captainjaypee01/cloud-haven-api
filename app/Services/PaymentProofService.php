@@ -176,10 +176,12 @@ class PaymentProofService
             if ($status === 'rejected') {
                 $updateData['proof_rejected_reason'] = $reason;
                 $updateData['proof_rejected_by'] = $adminUserId;
+                $updateData['proof_rejected_at'] = now();
             } else {
                 // Clear rejection data when accepting
                 $updateData['proof_rejected_reason'] = null;
                 $updateData['proof_rejected_by'] = null;
+                $updateData['proof_rejected_at'] = null;
             }
 
             $payment->update($updateData);

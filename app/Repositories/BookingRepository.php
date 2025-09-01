@@ -14,7 +14,7 @@ class BookingRepository implements BookingRepositoryInterface
         ?string $sort = null,
         int $perPage = 10
     ): LengthAwarePaginator {
-        $query = Booking::query()->with('bookingRooms.room.images', 'payments');
+        $query = Booking::query()->with('bookingRooms.room.images', 'payments', 'cancelledByUser');
 
         // Filter by status
         if (!empty($filters['status'])) {
@@ -50,11 +50,11 @@ class BookingRepository implements BookingRepositoryInterface
     
     public function getId($id): Booking
     {
-        return Booking::with('bookingRooms.room', 'payments', 'otherCharges')->findOrFail($id);
+        return Booking::with('bookingRooms.room', 'payments', 'otherCharges', 'cancelledByUser')->findOrFail($id);
     }
 
     public function getByReferenceNumber(string $referenceNumber): Booking
     {
-        return Booking::with('bookingRooms.room', 'payments', 'otherCharges')->where('reference_number', $referenceNumber)->firstOrFail();
+        return Booking::with('bookingRooms.room', 'payments', 'otherCharges', 'cancelledByUser')->where('reference_number', $referenceNumber)->firstOrFail();
     }
 }

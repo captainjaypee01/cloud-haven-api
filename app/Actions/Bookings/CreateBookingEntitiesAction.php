@@ -61,7 +61,7 @@ class CreateBookingEntitiesAction
             'discount_amount' => $discount,
             'final_price' => $totals['final_price'],
             'status' => 'pending',
-            'reserved_until' => now()->addMinutes(15),
+            'reserved_until' => now()->addHours(config('booking.reservation_hold_duration_hours', 2)),
         ]);
 
         $roomIds = array_unique(array_map(fn($r) => $r->room_id, $roomDataArr));

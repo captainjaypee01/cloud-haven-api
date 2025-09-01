@@ -42,12 +42,15 @@ class Booking extends Model
         'reserved_until',
         'downpayment_at',
         'paid_at',
+        'cancelled_at',
+        'cancelled_by',
+        'cancellation_reason',
         'created_at',
         'updated_at',
         'deleted_at'
     ];
 
-    protected $appends = ['local_created_at', 'local_updated_at', 'local_downpayment_at', 'local_paid_at', 'local_reserved_until'];
+    protected $appends = ['local_created_at', 'local_updated_at', 'local_downpayment_at', 'local_paid_at', 'local_reserved_until', 'local_cancelled_at'];
 
     /**
      * Get the attributes that should be cast.
@@ -58,6 +61,7 @@ class Booking extends Model
     {
         return [
             'created_at' => 'datetime:Y-m-d H:i:s',
+            'cancelled_at' => 'datetime',
         ];
     }
 
@@ -79,6 +83,11 @@ class Booking extends Model
     public function otherCharges()
     {
         return $this->hasMany(OtherCharge::class);
+    }
+
+    public function cancelledByUser()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     protected static function booted()
@@ -136,6 +145,16 @@ class Booking extends Model
     {
         $userTimezone = "Asia/Singapore";
         return Carbon::parse($this->reserved_until)
+            ->setTimezone($userTimezone)
+            ->format('Y-m-d H:i:s');
+    }
+
+    public function getLocalCancelledAtAttribute()
+    {
+        if (!$this->cancelled_at) return null;
+        
+        $userTimezone = "Asia/Singapore";
+        return Carbon::parse($this->cancelled_at)
             ->setTimezone($userTimezone)
             ->format('Y-m-d H:i:s');
     }

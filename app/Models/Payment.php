@@ -25,6 +25,7 @@ class Payment extends Model
         'proof_last_file_path',
         'proof_rejected_reason',
         'proof_rejected_by',
+        'proof_rejected_at',
         'last_proof_notification_at',
         'proof_last_uploaded_at',
     ];

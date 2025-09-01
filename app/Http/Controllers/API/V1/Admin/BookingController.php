@@ -53,7 +53,14 @@ class BookingController extends Controller
     public function show($booking): ItemResponse|ErrorResponse
     {
         try {
-            $data = $this->bookingService->show($booking);
+            // Check if the parameter is a numeric ID or a reference number
+            if (is_numeric($booking)) {
+                // It's a numeric ID
+                $data = $this->bookingService->show((int)$booking);
+            } else {
+                // It's a reference number (contains letters/hyphens)
+                $data = $this->bookingService->showByReferenceNumber($booking);
+            }
         } catch (ModelNotFoundException $e) {
             return new ErrorResponse('Booking not found.');
         }

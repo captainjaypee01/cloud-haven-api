@@ -23,6 +23,12 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
 
         // Calendar view for bookings (range filtered)
         Route::get('bookings/calendar', 'BookingController@calendar');
+        
+        // Booking cancellation management (must be before resource routes)
+        Route::get('bookings/cancellation-reasons', 'BookingCancellationController@getCancellationReasons')->middleware('role:admin,superadmin');
+        Route::post('bookings/{booking}/cancel', 'BookingCancellationController@cancel')->middleware('role:admin,superadmin');
+        Route::get('bookings/{booking}/can-cancel', 'BookingCancellationController@canCancel')->middleware('role:admin,superadmin');
+        
         Route::apiResource('bookings', 'BookingController')->middleware('role:admin,superadmin');
         Route::post('bookings/{booking}/other-charges', 'BookingController@storeOtherCharge')->middleware('role:admin,superadmin');
         Route::patch('bookings/{booking}/reschedule', 'BookingController@reschedule')->middleware('role:admin,superadmin');

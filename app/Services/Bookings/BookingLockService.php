@@ -6,7 +6,14 @@ use Illuminate\Support\Facades\Redis;
 
 class BookingLockService implements BookingLockServiceInterface
 {
-    protected $ttl = 900; // 15 minutes
+    protected $ttl;
+
+    public function __construct()
+    {
+        // Convert hours to seconds, default to 2 hours
+        $hours = config('booking.reservation_hold_duration_hours', 2);
+        $this->ttl = $hours * 3600; // Convert hours to seconds
+    }
 
     public function lock(string $bookingId, array $data): void
     {

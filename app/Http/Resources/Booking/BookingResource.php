@@ -42,6 +42,11 @@ class BookingResource extends JsonResource
             'local_downpayment_at'      => $this->local_downpayment_at,
             'local_paid_at'             => $this->local_paid_at,
             'local_reserved_until'      => $this->local_reserved_until,
+            'cancelled_at'              => $this->cancelled_at,
+            'local_cancelled_at'        => $this->local_cancelled_at,
+            'cancelled_by'              => $this->cancelled_by,
+            'cancelled_by_name'         => $this->cancelledByUser ? ($this->cancelledByUser->first_name . ' ' . $this->cancelledByUser->last_name) : null,
+            'cancellation_reason'       => $this->cancellation_reason,
             'booking_rooms'             => $this->bookingRooms,
             'payments'                  => $this->payments->map(function ($payment) {
                 return array_merge($payment->toArray(), [
