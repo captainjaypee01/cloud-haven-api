@@ -4,7 +4,7 @@ return [
     'logo_url' => env('RESORT_LOGO_URL', 'https://res.cloudinary.com/dm3gsotk5/image/upload/v1753969657/netania-logo.jpg'),
     'cover_url' => env('RESORT_COVER_URL', ''),
     'cover_alt' => env('RESORT_COVER_ALT', 'Resort Cover Photo'),
-    'website' => env('RESORT_WEBSITE', config('app.url')),
+    'website' => env('RESORT_WEBSITE', config('app.frontend_url', config('app.url'))),
     'email' => env('RESORT_EMAIL', 'info@example.com'),
     'phone' => env('RESORT_PHONE', '+63 900 000 0000'),
     'address_line1' => env('RESORT_ADDRESS_LINE1', 'Laiya, San Juan, Batangas'),

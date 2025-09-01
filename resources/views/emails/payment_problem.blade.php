@@ -58,12 +58,12 @@
                             <p style="margin-bottom:24px;font-size:15px;">• We will notify you immediately once the payment is confirmed</p>
 
                             <div style="background:#e3f2fd;border-radius:8px;padding:20px 24px;margin-bottom:24px;">
-                                <p style="margin:0;font-size:15px;"><strong>Need assistance?</strong> Please contact us at <a href="mailto:info@netaniadelaiya.com" style="color:#0288D1;">info@netaniadelaiya.com</a> or call +63 949-798-9831. We're here to help resolve this matter quickly.</p>
+                                <p style="margin:0;font-size:15px;"><strong>Need assistance?</strong> Please contact us at <a href="mailto:{{ config('resort.email', 'info@netaniadelaiya.com') }}" style="color:#0288D1;">{{ config('resort.email', 'info@netaniadelaiya.com') }}</a> or call {{ config('resort.phone', '+63 949-798-9831') }}. We're here to help resolve this matter quickly.</p>
                             </div>
 
                             <p style="margin-bottom:16px;font-size:15px;">We sincerely apologize for any inconvenience this may cause and appreciate your patience as we work to resolve this matter.</p>
 
-                            <p style="margin:36px 0 0 0;font-size:14px;">Thank you for choosing {{ config('app.name') }},<br>The Netania De Laiya Team</p>
+                            <p style="margin:36px 0 0 0;font-size:14px;">Thank you for choosing {{ config('app.name') }},<br>The {{ config('resort.name', 'Netania De Laiya') }} Team</p>
                         </td>
                     </tr>
                     

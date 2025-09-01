@@ -9,7 +9,7 @@
         $resort = config('resort') ?: [];
         $resortName = $resort['name'] ?? (config('app.name') ?? 'Your Resort');
         $fmtDate = function ($date) { if(!$date) return ''; return \Carbon\Carbon::parse($date)->format('M d, Y'); };
-        $fmtDateTime = function ($date) { if(!$date) return ''; return \Carbon\Carbon::parse($date)->format('M d, Y H:i'); };
+        $fmtDateTime = function ($date) { if(!$date) return ''; return \Carbon\Carbon::parse($date)->setTimezone('Asia/Singapore')->format('M d, Y H:i'); };
     @endphp
     <table width="100%" bgcolor="#fff" cellpadding="0" cellspacing="0" class="container">
         <tr>

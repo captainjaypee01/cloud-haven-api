@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Booking Confirmed</title>
+  <meta charset="utf-8">
+  <title>Booking Confirmed</title>
 </head>
 <body>
     @php
         use Carbon\Carbon;
         $resort = config('resort') ?: [];
         $fmtDate = function ($date) { if(!$date) return ''; return Carbon::parse($date)->isoFormat('DD MMM YYYY'); };
-        $fmtDateTime = function ($date) { if(!$date) return ''; return Carbon::parse($date)->isoFormat('DD MMM YYYY HH:mm'); };
+        $fmtDateTime = function ($date) { if(!$date) return ''; return Carbon::parse($date)->setTimezone('Asia/Singapore')->isoFormat('DD MMM YYYY HH:mm'); };
         $fmtMoney = fn($v) => '₱' . number_format((float)$v, 2);
         $nights = 0;
         if (!empty($booking?->check_in_date) && !empty($booking?->check_out_date)) {
@@ -23,10 +23,10 @@
         ->map(function ($group) {
             $first = $group->first();
             $roomNumbers = $group->filter(fn($br) => !empty($br->roomUnit?->unit_number))
-                               ->pluck('roomUnit.unit_number')
-                               ->sort()
-                               ->values()
-                               ->toArray();
+                                ->pluck('roomUnit.unit_number')
+                                ->sort()
+                                ->values()
+                                ->toArray();
             
             return (object)[
                 'name' => $first->room->name ?? 'Room',
@@ -42,14 +42,25 @@
         <tr>
             <td align="center" style="padding:32px 0;">
 
-            @include('emails.partials._style')
-            @include('emails.partials._header', ['resort' => $resort])
+                @include('emails.partials._style')
+                @include('emails.partials._header', ['resort' => $resort])
 
-            <tr>
+                <tr>
                 <td class="content">
                     <p style="margin-bottom:4px;font-size:16px;padding-left:16px;">Hi {{ $booking->guest_name ?? $booking->user->name ?? 'Guest' }},</p>
-                    <p style="margin-bottom:24px;font-size:15px;padding-left:16px;">Thank you for your payment. Your booking is now <strong>confirmed</strong>!</p>
+                    <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">Thank you for your payment. Your booking is now <strong>confirmed</strong>!</p>
                     <p style="margin-bottom:16px;font-size:15px;padding-left:16px;">Here's a summary</p>
+
+                    <!-- Status + Confirmation (CONFIRMATION ONLY) -->
+                    <div class="section" style="padding-top:0;">
+                    <div class="section-title">Booking Status</div>
+                    <div class="box">
+                        <div class="box-inner">
+                        <p class="m-0"><strong>Status:</strong> Confirmed</p>
+                        <p class="m-0"><strong>Payment:</strong> Received</p>
+                        </div>
+                    </div>
+                    </div>
 
                     <!-- Core booking facts (shared) -->
                     <div class="panel" style="margin-bottom:24px;margin-left:16px;margin-right:16px;">
@@ -59,17 +70,6 @@
                         <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
                         <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price) }}</div>
-
-                        @if(isset($downpayment) && $downpayment > 0 && $downpayment < $booking->final_price)
-                            <div class="kv"><strong>Downpayment Paid:</strong> {{ $fmtMoney($downpayment) }}</div>
-                            <div class="kv"><strong>Remaining Balance:</strong> {{ $fmtMoney($booking->final_price - $downpayment) }}</div>
-                        @elseif(isset($downpayment) && $downpayment >= $booking->final_price)
-                            <div class="kv"><strong>Payment Status:</strong> Fully Paid</div>
-                        @endif
-
-                        @isset($payment_method)
-                            <div class="kv"><strong>Payment Method:</strong> {{ $payment_method }}</div>
-                        @endisset
                     </div>
 
                     @if(!empty($booking->bookingRooms) && $booking->bookingRooms->count())
@@ -130,12 +130,6 @@
                     </div>
                     @endif
 
-                    @if(isset($downpayment) && $downpayment > 0 && $downpayment < $booking->final_price)
-                    <div class="mt-15" style="margin:16px 16px;">
-                        <a href="{{ $frontendBase . '/booking/' . $booking->reference_number . '/payment' }}" class="badge">Settle Remaining Balance</a>
-                    </div>
-                    @endif
-
                     <div class="mt-15" style="margin:16px 16px;">
                         <a href="{{ $frontendBase . '/booking/' . $booking->reference_number }}" style="display:inline-block;padding:10px 18px;border:1px solid #bbb;border-radius:6px;color:#000;">View / Manage Reservation</a>
                     </div>
@@ -169,25 +163,27 @@
 
                     <!-- Lodging Information -->
                     <div class="section">
-                    <div class="section-title">Lodging Information</div>
-                    <div class="box"><div class="box-inner">
-                        <table width="100%"><tr>
-                        <td style="width:50%;vertical-align:top;">
-                            <p class="m-0"><strong>{{ $resortName }}</strong><br>
-                            {{ $resort['address_line1'] ?? '' }}<br>
-                            {{ $resort['address_line2'] ?? '' }}</p>
-                        </td>
-                        <td style="width:50%;vertical-align:top;">
-                            <p class="m-0">
-                            <strong>Phone:</strong> {{ $resort['phone'] ?? '' }}<br>
-                            <strong>Email:</strong> <a href="mailto:{{ $resort['email'] ?? '' }}">{{ $resort['email'] ?? '' }}</a><br>
-                            @if(!empty($resort['website']))
-                                <strong>Website:</strong> <a href="{{ $resort['website'] }}" target="_blank">{{ $resort['website'] }}</a>
+                        <div class="section-title">Lodging Information</div>
+                        <div class="box">
+                            <div class="box-inner">
+                                <table width="100%"><tr>
+                                <td style="width:50%;vertical-align:top;">
+                                    <p class="m-0"><strong>{{ $resortName }}</strong><br>
+                                    {{ $resort['address_line1'] ?? '' }}<br>
+                                    {{ $resort['address_line2'] ?? '' }}</p>
+                                </td>
+                                <td style="width:50%;vertical-align:top;">
+                                    <p class="m-0">
+                                    <strong>Phone:</strong> {{ $resort['phone'] ?? '' }}<br>
+                                    <strong>Email:</strong> <a href="mailto:{{ $resort['email'] ?? '' }}">{{ $resort['email'] ?? '' }}</a><br>
+                                                                @if(!empty($resort['website']))
+                                <strong>Website:</strong> <a href="{{ $frontendBase }}" target="_blank">{{ $frontendBase }}</a>
                             @endif
-                            </p>
-                        </td>
-                        </tr></table>
-                    </div></div>
+                                    </p>
+                                </td>
+                                </tr></table>
+                            </div>
+                        </div>
                     </div>
 
                     @if(!empty($resort['maps_link']))
@@ -242,6 +238,7 @@
                     </div>
                     @endif
 
+                    <p class="note">Your booking is now <strong>confirmed</strong>. We look forward to welcoming you!</p>
                     <p style="margin:36px 0 0 0;font-size:14px;">Thank you,<br>The {{ $resortName }} Team</p>
                 </td>
                 </tr>

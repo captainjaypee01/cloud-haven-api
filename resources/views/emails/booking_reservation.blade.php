@@ -9,7 +9,7 @@
         use Carbon\Carbon;
         $resort = config('resort') ?: [];
         $fmtDate = function ($date) { if(!$date) return ''; return Carbon::parse($date)->isoFormat('DD MMM YYYY'); };
-        $fmtDateTime = function ($date) { if(!$date) return ''; return Carbon::parse($date)->isoFormat('DD MMM YYYY HH:mm'); };
+        $fmtDateTime = function ($date) { if(!$date) return ''; return Carbon::parse($date)->setTimezone('Asia/Singapore')->isoFormat('DD MMM YYYY HH:mm'); };
         $fmtMoney = fn($v) => '₱' . number_format((float)$v, 2);
         $nights = 0;
         if (!empty($booking?->check_in_date) && !empty($booking?->check_out_date)) {
@@ -173,9 +173,9 @@
                                     <p class="m-0">
                                     <strong>Phone:</strong> {{ $resort['phone'] ?? '' }}<br>
                                     <strong>Email:</strong> <a href="mailto:{{ $resort['email'] ?? '' }}">{{ $resort['email'] ?? '' }}</a><br>
-                                    @if(!empty($resort['website']))
-                                        <strong>Website:</strong> <a href="{{ $resort['website'] }}" target="_blank">{{ $resort['website'] }}</a>
-                                    @endif
+                                                                @if(!empty($resort['website']))
+                                <strong>Website:</strong> <a href="{{ $frontendBase }}" target="_blank">{{ $frontendBase }}</a>
+                            @endif
                                     </p>
                                 </td>
                                 </tr></table>

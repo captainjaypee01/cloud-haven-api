@@ -4,7 +4,7 @@
   $phone = $resort['phone'] ?? '';
   $email = $resort['email'] ?? '';
   $facebook = $resort['facebook'] ?? '';
-  $website = $resort['website'] ?? '';
+  $website = $resort['frontend_url'] ?? config('app.frontend_url') ?? config('app.url');
   $address1 = $resort['address_line1'] ?? '';
   $address2 = $resort['address_line2'] ?? '';
 @endphp

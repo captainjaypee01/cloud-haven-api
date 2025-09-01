@@ -28,7 +28,7 @@
                                 @if($payment->transaction_id)
                                     <div style="font-size:15px;margin-bottom:10px;"><strong>Transaction ID:</strong> {{ $payment->transaction_id }}</div>
                                 @endif
-                                <div style="font-size:15px;margin-bottom:10px;"><strong>Payment Date:</strong> {{ $payment->created_at->format('F j, Y, g:i a') }}</div>
+                                <div style="font-size:15px;margin-bottom:10px;"><strong>Payment Date:</strong> {{ $payment->created_at->setTimezone('Asia/Singapore')->format('F j, Y, g:i a') }}</div>
                             </div>
 
                             <p style="margin:36px 0 0 0;font-size:14px;">Thank you,<br>The {{ config('app.name') }} Team</p>
