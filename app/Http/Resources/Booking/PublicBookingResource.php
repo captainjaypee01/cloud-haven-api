@@ -59,6 +59,7 @@ class PublicBookingResource extends JsonResource
                         'status' => $payment->status,
                         'paid_at' => $payment->local_created_at,
                         'provider' => $payment->provider,
+                        'provider_display' => __("payment.providers.{$payment->provider}"),
                         'transaction_id' => $payment->transaction_id,
                         'remarks' => $payment->remarks,
                         'proof_image_url' => $payment->proof_image_url,

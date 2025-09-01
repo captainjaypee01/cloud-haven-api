@@ -18,7 +18,7 @@ describe('Proof Status Mailables', function () {
         $this->payment = Payment::create([
             'booking_id' => $this->booking->id,
             'amount' => 1500.00,
-            'provider' => 'bank_bdo',
+            'provider' => 'bank_transfer',
             'transaction_id' => 'TXN789',
             'status' => 'pending'
         ]);

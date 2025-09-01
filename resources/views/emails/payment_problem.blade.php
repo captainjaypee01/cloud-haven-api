@@ -26,7 +26,7 @@
                             <div style="background:#fff3e0;border-left:4px solid #FF9800;padding:20px 24px;margin-bottom:24px;">
                                 <div style="font-size:15px;margin-bottom:10px;"><strong>Booking Reference:</strong> {{ $booking->reference_number }}</div>
                                 <div style="font-size:15px;margin-bottom:10px;"><strong>Payment Amount:</strong> ₱{{ number_format($payment->amount, 2) }}</div>
-                                <div style="font-size:15px;margin-bottom:10px;"><strong>Payment Method:</strong> {{ ucfirst($payment->provider) }}</div>
+                                <div style="font-size:15px;margin-bottom:10px;"><strong>Payment Method:</strong> {{ __("payment.providers.{$payment->provider}") }}</div>
                                 @if($payment->transaction_id)
                                     <div style="font-size:15px;margin-bottom:10px;"><strong>Transaction ID:</strong> {{ $payment->transaction_id }}</div>
                                 @endif

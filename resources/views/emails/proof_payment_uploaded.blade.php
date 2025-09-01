@@ -44,7 +44,7 @@
                                 <div class="box-inner">
                                     <div class="kv"><strong>Payment #:</strong> {{ $sequenceNumber }}</div>
                                     <div class="kv"><strong>Amount:</strong> ₱{{ number_format($payment->amount, 2) }}</div>
-                                    <div class="kv"><strong>Provider:</strong> {{ $payment->provider }}</div>
+                                    <div class="kv"><strong>Provider:</strong> {{ __("payment.providers.{$payment->provider}") }}</div>
                                     <div class="kv"><strong>Upload Count:</strong> {{ $payment->proof_upload_count }}/{{ config('notifications.proof_payment.max_uploads', 3) }}</div>
                                     <div class="kv"><strong>Uploaded:</strong> {{ $fmtDateTime($payment->proof_last_uploaded_at) }}</div>
                                 </div>
