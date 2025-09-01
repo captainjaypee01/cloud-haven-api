@@ -55,6 +55,8 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
     
     'frontend_url' => env('FRONTEND_APP_URL', 'http://localhost'),
+    
+    'force_https' => env('FORCE_HTTPS', false),
 
     /*
     |--------------------------------------------------------------------------

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Payment extends Model
 {
@@ -34,15 +35,29 @@ class Payment extends Model
     {
         // New system: use proof_last_file_path if available
         if ($this->proof_last_file_path) {
-            return asset('storage/' . ltrim($this->proof_last_file_path, '/'));
+            $url = asset('storage/' . ltrim($this->proof_last_file_path, '/'));
+            return $this->ensureHttps($url);
         }
         
         // Legacy system: use proof_image_path
         if ($this->proof_image_path) {
-            return asset('storage/' . ltrim($this->proof_image_path, '/'));
+            $url = asset('storage/' . ltrim($this->proof_image_path, '/'));
+            return $this->ensureHttps($url);
         }
         
         return null;
+    }
+    
+    /**
+     * Ensure URL uses HTTPS in production environments
+     */
+    private function ensureHttps(string $url): string
+    {
+        if (config('app.force_https', false) && str_starts_with($url, 'http://')) {
+            return str_replace('http://', 'https://', $url);
+        }
+        
+        return $url;
     }
     public function getLocalCreatedAtAttribute()
     {
