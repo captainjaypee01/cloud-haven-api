@@ -69,7 +69,7 @@ class PublicBookingResource extends JsonResource
                         'proof_status' => $payment->proof_status ?? 'none',
                         'proof_last_file_path' => $payment->proof_last_file_path,
                         'proof_rejected_reason' => $payment->proof_rejected_reason,
-                        'proof_last_uploaded_at' => $payment->proof_last_uploaded_at?->format('M d, Y H:i'),
+                        'proof_last_uploaded_at' => $payment->proof_last_uploaded_at,
                         // Include booking reference for fallback route
                         'booking' => [
                             'reference_number' => $this->reference_number,
