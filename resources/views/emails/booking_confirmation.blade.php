@@ -38,15 +38,13 @@
         ->sortBy('name')
         ->values();
     @endphp
-    <table width="100%" bgcolor="#fff" cellpadding="0" cellspacing="0" class="container">
-        <tr>
-            <td align="center" style="padding:32px 0;">
-
+    <div class="container">
+        <div class="email-wrapper">
+            <div class="email-content">
                 @include('emails.partials._style')
                 @include('emails.partials._header', ['resort' => $resort])
 
-                <tr>
-                <td class="content">
+                <div class="content">
                     <p style="margin-bottom:4px;font-size:16px;padding-left:16px;">Hi {{ $booking->guest_name ?? $booking->user->name ?? 'Guest' }},</p>
                     <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">Thank you for your payment. Your booking is now <strong>confirmed</strong>!</p>
                     <p style="margin-bottom:16px;font-size:15px;padding-left:16px;">Here's a summary</p>
@@ -238,15 +236,14 @@
                     </div>
                     @endif
 
-                    <p class="note">Your booking is now <strong>confirmed</strong>. We look forward to welcoming you!</p>
-                    <p style="margin:36px 0 0 0;font-size:14px;">Thank you,<br>The {{ $resortName }} Team</p>
-                </td>
-                </tr>
+                    <p class="note" style="padding-left:16px;">Your booking is now <strong>confirmed</strong>. We look forward to welcoming you!</p>
+                    <p style="margin:36px 0 0 0;font-size:14px;padding-left:16px;">Thank you,<br>The {{ $resortName }} Team</p>
+                </div>
 
                 @include('emails.partials._footer', ['resort' => $resort])
 
-            </td>
-        </tr>
-    </table>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

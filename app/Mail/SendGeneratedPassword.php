@@ -33,7 +33,7 @@ class SendGeneratedPassword extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.generated_password',
+            markdown: 'emails.generated_password',
         );
     }
 

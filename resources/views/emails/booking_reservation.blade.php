@@ -30,15 +30,13 @@
         ->sortBy('name')
         ->values();
     @endphp
-    <table width="100%" bgcolor="#fff" cellpadding="0" cellspacing="0" class="container">
-        <tr>
-            <td align="center" style="padding:32px 0;">
-
+    <div class="container">
+        <div class="email-wrapper">
+            <div class="email-content">
                 @include('emails.partials._style')
                 @include('emails.partials._header', ['resort' => $resort])
 
-                <tr>
-                <td class="content">
+                <div class="content">
                     <p style="margin-bottom:4px;font-size:16px;padding-left:16px;">Hi {{ $booking->guest_name ?? $booking->user->name ?? 'Guest' }},</p>
                     <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">Thank you for your reservation. Your booking is currently <strong>on hold</strong> and requires payment to secure the room.</p>
                     <p style="margin-bottom:16px;font-size:15px;padding-left:16px;">Here's a summary</p>
@@ -50,7 +48,7 @@
                         <div class="box-inner">
                         <p class="m-0"><strong>Status:</strong> On Hold (awaiting payment)</p>
                         @if(!empty($booking->reserved_until))
-                            <p class="m-0"><strong>Hold Expires:</strong> {{ $fmtDateTime($booking->local_reserved_until) }}</p>
+                            <p class="m-0"><strong>Hold Expires:</strong> {{ $fmtDateTime($booking->reserved_until) }}</p>
                         @endif
                         </div>
                     </div>
@@ -235,15 +233,14 @@
                     </div>
                     @endif
 
-                    <p class="note">This is <strong>not</strong> a booking confirmation. If payment is not received by the hold expiry above, your reservation will be cancelled.</p>
-                    <p style="margin:36px 0 0 0;font-size:14px;">Thank you,<br>The {{ $resortName }} Team</p>
-                </td>
-                </tr>
+                    <p class="note" style="padding-left:16px;">This is <strong>not</strong> a booking confirmation. If payment is not received by the hold expiry above, your reservation will be cancelled.</p>
+                    <p style="margin:36px 0 0 0;font-size:14px;padding-left:16px;">Thank you,<br>The {{ $resortName }} Team</p>
+                </div>
 
                 @include('emails.partials._footer', ['resort' => $resort])
 
-            </td>
-        </tr>
-    </table>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

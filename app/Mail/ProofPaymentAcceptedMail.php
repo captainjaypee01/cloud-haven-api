@@ -46,7 +46,7 @@ class ProofPaymentAcceptedMail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.payment_success',
+            markdown: 'emails.payment_success',
             with: [
                 'payment' => $this->payment,
                 'booking' => $this->booking,

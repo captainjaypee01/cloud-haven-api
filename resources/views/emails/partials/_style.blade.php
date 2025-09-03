@@ -1,14 +1,18 @@
 <style type="text/css">
     /***** minimal resets *****/
-    body { margin:0; padding:0; background:#fff; font-family: Arial, sans-serif; color:#000; }
+    body { margin:0; padding:0; background:#f5f5f5; font-family: Arial, sans-serif; color:#000; }
     a { color:#000; text-decoration:none; }
-    img { border:0; display:block; }
+    img { border:0; display:block; max-width:100%; height:auto; }
+    
     /***** layout *****/
-    .container { width: 100%; background:#fff;}
-    .card { width:600px; max-width:100%; background:#fff; border:1px solid #eee; padding: 8px; border-radius:8px; box-shadow:0 2px 6px rgba(60,72,88,.08); }
-    .header-logo { text-align:center; padding:24px 0 8px 0; }
-    .hr { border:0; height:1px; background:#ddd; margin:8px 32px 24px 32px; }
-    .content { padding:0 32px 24px 32px; color:#000; }
+    .container { width: 100%; background:#f5f5f5; }
+    .email-wrapper { width: 100%; background:#f5f5f5; padding: 20px 0; }
+    .email-content { width: 700px; max-width: 90%; margin: 0 auto; background:#fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; }
+    
+    .card { width: 100%; max-width: 100%; background:#fff; border: none; padding: 0; border-radius: 0; box-shadow: none; }
+    .header-logo { text-align:center; padding:32px 32px 16px 32px; background: #fff; }
+    .hr { border:0; height:1px; background:#ddd; margin:0 32px 24px 32px; }
+    .content { padding:0 32px 24px 32px; color:#000; background: #fff; }
     .section { padding:16px 16px; }
     
     /***** section shells *****/
@@ -28,8 +32,17 @@
     .panel { background:#fbe9e7; border:1px solid #e2e2e2; border-radius:8px; padding:20px 24px; }
     .badge { display:inline-block; padding:12px 32px; background:#00B8D4; color:#fff; border-radius:6px; font-size:16px; font-weight:700; }
     .note { font-size:13px; color:#b00020; margin-top:16px; }
-    .small { font-size:11px; color:#666; text-align:center; margin-top:10px; }
-    .cover-img { width:100%; max-width:600px; height:auto; border-radius:8px; }
+    .small { font-size:11px; color:#666; text-align:center; margin-top:10px; padding: 16px 32px; background: #fff; }
+    .cover-img { width:100%; max-width:100%; height:auto; border-radius:8px; }
     .m-0 { margin: 0; }
     p.m-0 { margin: 0; }
+    
+    /***** responsive *****/
+    @media only screen and (max-width: 768px) {
+        .email-content { width: 95%; max-width: 95%; }
+        .header-logo { padding: 24px 20px 12px 20px; }
+        .content { padding: 0 20px 20px 20px; }
+        .hr { margin: 0 20px 20px 20px; }
+        .small { padding: 16px 20px; }
+    }
 </style>

@@ -42,7 +42,7 @@ class PaymentProblem extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.payment_problem',
+            markdown: 'emails.payment_problem',
             with: [
                 'booking' => $this->booking,
                 'payment' => $this->payment,

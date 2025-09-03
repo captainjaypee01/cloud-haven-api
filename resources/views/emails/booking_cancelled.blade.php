@@ -33,15 +33,13 @@
         ->sortBy('name')
         ->values();
     @endphp
-    <table width="100%" bgcolor="#fff" cellpadding="0" cellspacing="0" class="container">
-        <tr>
-            <td align="center" style="padding:32px 0;">
-
+    <div class="container">
+        <div class="email-wrapper">
+            <div class="email-content">
                 @include('emails.partials._style')
                 @include('emails.partials._header', ['resort' => $resort])
 
-                <tr>
-                <td class="content">
+                <div class="content">
                     <p style="margin-bottom:4px;font-size:16px;padding-left:16px;">Hi {{ $booking->guest_name ?? $booking->user->name ?? 'Guest' }},</p>
                     @if($isManualCancellation)
                         <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">We regret to inform you that your booking reservation has been <strong>cancelled</strong> by our administrative staff.</p>
@@ -61,7 +59,7 @@
                             <p class="m-0"><strong>Reason:</strong> No proof of payment received within {{ $holdHours }} hour(s)</p>
                         @endif
                         @if(!empty($booking->reserved_until))
-                            <p class="m-0"><strong>Hold Expired:</strong> {{ $fmtDateTime($booking->local_reserved_until) }}</p>
+                            <p class="m-0"><strong>Hold Expired:</strong> {{ $fmtDateTime($booking->reserved_until) }}</p>
                         @endif
                         </div>
                     </div>
@@ -145,15 +143,14 @@
                         </div></div>
                     </div>
 
-                    <p class="note">We apologize for any inconvenience this may have caused and look forward to serving you in the future.</p>
-                    <p style="margin:36px 0 0 0;font-size:14px;">Thank you,<br>The {{ $resortName }} Team</p>
-                </td>
-                </tr>
+                    <p class="note" style="padding-left:16px;">We apologize for any inconvenience this may have caused and look forward to serving you in the future.</p>
+                    <p style="margin:36px 0 0 0;font-size:14px;padding-left:16px;">Thank you,<br>The {{ $resortName }} Team</p>
+                </div>
 
                 @include('emails.partials._footer', ['resort' => $resort])
 
-            </td>
-        </tr>
-    </table>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
