@@ -15,7 +15,19 @@ class DashboardService implements DashboardServiceInterface
         // 1. Overview metrics
         $totalBookings = Booking::count();
         $totalGuests   = Booking::sum('total_guests');
-        $totalRevenue  = Booking::sum('final_price');
+        
+        // Calculate actual revenue from confirmed bookings only
+        $totalRevenue = DB::table('bookings')
+            ->whereIn('status', ['paid', 'downpayment'])
+            ->selectRaw('
+                SUM(CASE 
+                    WHEN status = "paid" THEN final_price 
+                    WHEN status = "downpayment" THEN downpayment_amount 
+                    ELSE 0 
+                END) as revenue
+            ')
+            ->value('revenue') ?? 0;
+        
         $averageRating = null;  // placeholder (no ratings in DB yet)
 
         // 2. Top 5 most booked rooms
@@ -34,8 +46,18 @@ class DashboardService implements DashboardServiceInterface
         // 3. Monthly stats for current year (bookings, guests, revenue per month)
         $year = now()->year;
         $monthlyRaw = DB::table('bookings')
-            ->selectRaw('MONTH(check_in_date) as month, COUNT(*) as bookings, SUM(total_guests) as guests, SUM(final_price) as revenue')
+            ->selectRaw('
+                MONTH(check_in_date) as month, 
+                COUNT(*) as bookings, 
+                SUM(total_guests) as guests, 
+                SUM(CASE 
+                    WHEN status = "paid" THEN final_price 
+                    WHEN status = "downpayment" THEN downpayment_amount 
+                    ELSE 0 
+                END) as revenue
+            ')
             ->whereYear('check_in_date', $year)
+            ->whereIn('status', ['paid', 'downpayment'])
             ->groupBy(DB::raw('MONTH(check_in_date)'))
             ->orderBy(DB::raw('MONTH(check_in_date)'))
             ->get();
@@ -54,7 +76,7 @@ class DashboardService implements DashboardServiceInterface
                     'revenue'  => (float)$entry->revenue,
                 ];
             } else {
-                // no bookings this month
+                // no confirmed bookings this month
                 $monthlyStats[] = [
                     'month'    => $monthName,
                     'bookings' => 0,
