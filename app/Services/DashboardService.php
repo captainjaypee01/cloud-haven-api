@@ -98,6 +98,63 @@ class DashboardService implements DashboardServiceInterface
             ];
         })->toArray();
 
+        // 5. Booking Status Distribution
+        $bookingStatusDistribution = DB::table('bookings')
+            ->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->get()
+            ->map(fn($item) => [
+                'name' => ucfirst($item->status),
+                'value' => (int)$item->count,
+            ])->toArray();
+
+        // 6. Payment Status Distribution
+        $paymentStatusDistribution = DB::table('payments')
+            ->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->get()
+            ->map(fn($item) => [
+                'name' => ucfirst($item->status),
+                'value' => (int)$item->count,
+            ])->toArray();
+
+        // 7. Occupancy Rate Trends (simplified calculation)
+        $occupancyTrends = [];
+        $totalRooms = DB::table('rooms')->count(); // Total available rooms
+        
+        if ($totalRooms > 0) {
+            for ($m = 1; $m <= $currentMonth; $m++) {
+                $monthName = Carbon::createFromDate($year, $m, 1)->format('M');
+                
+                // Calculate occupancy rate for this month
+                // This is a simplified calculation - in reality, you'd need to consider
+                // room units and actual occupancy per day
+                $monthBookings = DB::table('bookings')
+                    ->whereYear('check_in_date', $year)
+                    ->whereMonth('check_in_date', $m)
+                    ->whereIn('status', ['paid', 'downpayment'])
+                    ->count();
+                
+                // Rough occupancy calculation (this could be more sophisticated)
+                $occupancyRate = min(($monthBookings * 2) / ($totalRooms * 30) * 100, 100);
+                
+                $occupancyTrends[] = [
+                    'month' => $monthName,
+                    'occupancy_rate' => round($occupancyRate, 1),
+                ];
+            }
+        }
+
+        // 8. Add expenses and profit margin to monthly stats (placeholder data)
+        // In a real application, you'd have an expenses table
+        foreach ($monthlyStats as &$month) {
+            // Placeholder: assume 30% of revenue goes to expenses
+            $month['expenses'] = $month['revenue'] * 0.3;
+            $month['profit_margin'] = $month['revenue'] > 0 
+                ? round((($month['revenue'] - $month['expenses']) / $month['revenue']) * 100, 1)
+                : 0;
+        }
+
         // Compile all parts into a single response structure
         return [
             'metrics' => [
@@ -109,6 +166,9 @@ class DashboardService implements DashboardServiceInterface
             'top_rooms'         => $topRooms,
             'monthly_stats'     => $monthlyStats,
             'bookings_today_tomorrow' => $bookingsList,
+            'booking_status_distribution' => $bookingStatusDistribution,
+            'payment_status_distribution' => $paymentStatusDistribution,
+            'occupancy_trends' => $occupancyTrends,
         ];
     }
 }
