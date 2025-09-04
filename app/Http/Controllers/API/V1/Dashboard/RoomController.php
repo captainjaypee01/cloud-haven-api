@@ -70,7 +70,7 @@ class RoomController extends Controller
 
         try {
             $room = $this->roomService->showBySlug($roomSlug);
-            $availableUnits = $this->roomService->availableUnits(
+            $availability = $this->roomService->getDetailedAvailability(
                 $room->id,
                 $request->input('check_in'),
                 $request->input('check_out')
@@ -79,7 +79,11 @@ class RoomController extends Controller
             return new ItemResponse(new RoomAvailabilityResource([
                 'room_type_id' => $room->slug,
                 'room_name' => $room->name,
-                'available_units' => $availableUnits,
+                'available_units' => $availability['available'],
+                'pending' => $availability['pending'],
+                'confirmed' => $availability['confirmed'],
+                'maintenance' => $availability['maintenance'],
+                'total_units' => $availability['total_units'],
                 'check_in' => $request->input('check_in'),
                 'check_out' => $request->input('check_out'),
             ]));

@@ -26,14 +26,18 @@ class RoomAvailabilityController extends Controller
         $grouped = collect($items)->groupBy('room_id')->map->count();
         foreach ($grouped as $slug => $requested_count) {
             $room = $this->roomService->showBySlug($slug);
-            $available = $this->roomService->availableUnits($room->id, $checkIn, $checkOut);
-            $canBook = $available >= $requested_count;
+            $availability = $this->roomService->getDetailedAvailability($room->id, $checkIn, $checkOut);
+            $canBook = $availability['available'] >= $requested_count;
             $response[] = [
                 'room_id'           => $slug,
                 'room_name'         => $room->name,
                 'requested_count'   => $requested_count,
                 'available'         => $canBook,
-                'available_count'   => $available,
+                'available_count'   => $availability['available'],
+                'pending'           => $availability['pending'],
+                'confirmed'         => $availability['confirmed'],
+                'maintenance'       => $availability['maintenance'],
+                'total_units'       => $availability['total_units'],
             ];
         }
 

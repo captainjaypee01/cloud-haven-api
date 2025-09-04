@@ -147,6 +147,14 @@ class RoomService implements RoomServiceInterface
     }
 
     /**
+     * Get detailed availability information for a room
+     */
+    public function getDetailedAvailability(int $roomId, string $start, string $end): array
+    {
+        return $this->query->getDetailedAvailability($roomId, $start, $end);
+    }
+
+    /**
      * Get public rooms
      */
     public function listFeaturedRooms()

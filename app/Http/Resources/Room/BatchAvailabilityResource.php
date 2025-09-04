@@ -19,6 +19,10 @@ class BatchAvailabilityResource extends JsonResource
             'requested_count'   => $this['requested_count'],
             'available'         => $this['available'],
             'available_count'   => $this['available_count'],
+            'pending'           => $this['pending'] ?? 0,
+            'confirmed'         => $this['confirmed'] ?? 0,
+            'maintenance'       => $this['maintenance'] ?? 0,
+            'total_units'       => $this['total_units'] ?? 0,
             'room_name'         => $this['room_name'],
         ];
     }
