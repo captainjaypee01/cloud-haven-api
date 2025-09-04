@@ -12,9 +12,9 @@ class DashboardService implements DashboardServiceInterface
 {
     public function getDashboardData(): array
     {
-        // 1. Overview metrics
-        $totalBookings = Booking::count();
-        $totalGuests   = Booking::sum('total_guests');
+        // 1. Overview metrics (only confirmed bookings)
+        $totalBookings = Booking::whereIn('status', ['paid', 'downpayment'])->count();
+        $totalGuests   = Booking::whereIn('status', ['paid', 'downpayment'])->sum('total_guests');
         
         // Calculate actual revenue from confirmed bookings only
         $totalRevenue = DB::table('bookings')
@@ -30,9 +30,11 @@ class DashboardService implements DashboardServiceInterface
         
         $averageRating = null;  // placeholder (no ratings in DB yet)
 
-        // 2. Top 5 most booked rooms
+        // 2. Top 5 most booked rooms (only confirmed bookings)
         $topRoomsQuery = DB::table('booking_rooms')
             ->join('rooms', 'booking_rooms.room_id', '=', 'rooms.id')
+            ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
+            ->whereIn('bookings.status', ['paid', 'downpayment'])
             ->select('rooms.name', DB::raw('COUNT(*) as count'))
             ->groupBy('booking_rooms.room_id', 'rooms.name')
             ->orderByDesc('count')
@@ -43,7 +45,7 @@ class DashboardService implements DashboardServiceInterface
             'count' => $r->count,
         ])->toArray();
 
-        // 3. Monthly stats for current year (bookings, guests, revenue per month)
+        // 3. Monthly stats for current year (only confirmed bookings)
         $year = now()->year;
         $monthlyRaw = DB::table('bookings')
             ->selectRaw('
