@@ -15,6 +15,13 @@ class BookingResource extends JsonResource
     public function toArray(Request $request): array
     {
         $other_charges = $this->otherCharges()->sum('amount');
+        
+        // Calculate remaining balance
+        $totalPaid = $this->payments()->where('status', 'paid')->sum('amount');
+        $actualFinalPrice = $this->final_price - $this->discount_amount;
+        $totalPayable = $actualFinalPrice + $other_charges;
+        $remaining_balance = max(0, $totalPayable - $totalPaid);
+        
         $data = [
             'id'                        => $this->id,
             'reference_number'          => $this->reference_number,
@@ -34,6 +41,9 @@ class BookingResource extends JsonResource
             'discount_amount'           => $this->discount_amount,
             'downpayment_amount'        => $this->downpayment_amount,
             'final_price'               => $this->final_price,
+            'total_paid'                => $totalPaid,
+            'remaining_balance'         => $remaining_balance,
+            'total_payable'             => $totalPayable,
             'status'                    => $this->status,
             'is_reviewed'               => $this->is_reviewed,
             'failed_payment_attempts'   => $this->failed_payment_attempts,
@@ -48,7 +58,15 @@ class BookingResource extends JsonResource
             'cancelled_by'              => $this->cancelled_by,
             'cancelled_by_name'         => $this->cancelledByUser ? ($this->cancelledByUser->first_name . ' ' . $this->cancelledByUser->last_name) : null,
             'cancellation_reason'       => $this->cancellation_reason,
-            'booking_rooms'             => $this->bookingRooms,
+            'booking_rooms'             => $this->bookingRooms->map(function ($bookingRoom) {
+                return array_merge($bookingRoom->toArray(), [
+                    'room_unit' => $bookingRoom->roomUnit ? [
+                        'id' => $bookingRoom->roomUnit->id,
+                        'unit_number' => $bookingRoom->roomUnit->unit_number,
+                        'display_name' => $bookingRoom->roomUnit->display_name,
+                    ] : null,
+                ]);
+            }),
             'payments'                  => $this->payments->map(function ($payment) {
                 return array_merge($payment->toArray(), [
                     'booking' => [

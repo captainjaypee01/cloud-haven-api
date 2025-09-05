@@ -14,7 +14,7 @@ class BookingRepository implements BookingRepositoryInterface
         ?string $sort = null,
         int $perPage = 10
     ): LengthAwarePaginator {
-        $query = Booking::query()->with('bookingRooms.room.images', 'payments', 'cancelledByUser');
+        $query = Booking::query()->with('bookingRooms.room.images', 'bookingRooms.roomUnit', 'payments', 'cancelledByUser');
 
         // Filter by status
         if (!empty($filters['status'])) {
@@ -36,6 +36,22 @@ class BookingRepository implements BookingRepositoryInterface
             $query->where('user_id', $filters['user_id']);
         }
 
+        // Filter by date range - covers bookings that overlap with the specified date
+        if (!empty($filters['date'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('check_in_date', '<=', $filters['date'])
+                  ->where('check_out_date', '>', $filters['date']);
+            });
+        }
+
+        // Filter by date range (from and to)
+        if (!empty($filters['date_from'])) {
+            $query->where('check_out_date', '>', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->where('check_in_date', '<=', $filters['date_to']);
+        }
+
         // Sorting
         if ($sort) {
             [$field, $dir] = explode('|', $sort);
@@ -50,11 +66,11 @@ class BookingRepository implements BookingRepositoryInterface
     
     public function getId($id): Booking
     {
-        return Booking::with('bookingRooms.room', 'payments', 'otherCharges', 'cancelledByUser')->findOrFail($id);
+        return Booking::with('bookingRooms.room', 'bookingRooms.roomUnit', 'payments', 'otherCharges', 'cancelledByUser')->findOrFail($id);
     }
 
     public function getByReferenceNumber(string $referenceNumber): Booking
     {
-        return Booking::with('bookingRooms.room', 'payments', 'otherCharges', 'cancelledByUser')->where('reference_number', $referenceNumber)->firstOrFail();
+        return Booking::with('bookingRooms.room', 'bookingRooms.roomUnit', 'payments', 'otherCharges', 'cancelledByUser')->where('reference_number', $referenceNumber)->firstOrFail();
     }
 }

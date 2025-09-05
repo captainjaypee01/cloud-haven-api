@@ -31,11 +31,10 @@ class BookingService implements BookingServiceInterface
     ) {}
 
     /**
-     * List paginated rooms (all statuses or filtered).
+     * List paginated bookings (all statuses or filtered).
      */
     public function list(array $filters): LengthAwarePaginator
     {
-
         return $this->bookingRepo->get(
             filters: $filters,
             sort: $filters['sort'] ?? null,
@@ -111,16 +110,21 @@ class BookingService implements BookingServiceInterface
     {
         // Sum all successful payments
         $paidAmount = $booking->payments()->where('status', 'paid')->sum('amount');
-        $finalPrice = $booking->final_price;
+        
+        // Calculate the actual final price after discount and including other charges
+        $actualFinalPrice = $booking->final_price - $booking->discount_amount;
+        $otherCharges = $booking->otherCharges()->sum('amount');
+        $totalPayable = $actualFinalPrice + $otherCharges;
+        
         // Get DP percent from config, fallback to 0.5 if not set
         $dpPercent = config('booking.downpayment_percent', 0.5);
-        $dpAmount = $finalPrice * $dpPercent;
+        $dpAmount = $totalPayable * $dpPercent;
 
         
         $previousStatus = $booking->status;
         $newStatus = null;
         
-        if ($paidAmount >= $finalPrice) {
+        if ($paidAmount >= $totalPayable) {
             $booking->update(['status' => 'paid', 'paid_at' => now()]);
             $newStatus = 'paid';
         } elseif ($paidAmount >= $dpAmount) {
