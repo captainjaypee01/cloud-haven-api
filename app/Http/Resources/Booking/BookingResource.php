@@ -30,6 +30,7 @@ class BookingResource extends JsonResource
             'promo_id'                  => $this->promo_id,
             'total_price'               => $this->total_price,
             'meal_price'                => $this->meal_price,
+            'meal_quote_data'           => $this->meal_quote_data,
             'discount_amount'           => $this->discount_amount,
             'downpayment_amount'        => $this->downpayment_amount,
             'final_price'               => $this->final_price,

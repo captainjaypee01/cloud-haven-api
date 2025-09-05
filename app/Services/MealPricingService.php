@@ -80,7 +80,7 @@ class MealPricingService implements MealPricingServiceInterface
         }
         
         $labels = [
-            'inactive' => $program ? $program->inactive_label : 'Free Breakfast'
+            'inactive' => $program ? $program->inactive_label : 'Complimentary Breakfast Only'
         ];
         
         return new MealQuoteDTO(

@@ -67,7 +67,7 @@
                         <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
                         <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
-                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price) }}</div>
+                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0)) }}</div>
                     </div>
 
                     @if(!empty($booking->bookingRooms) && $booking->bookingRooms->count())
@@ -101,6 +101,91 @@
                             @endforelse
                         </tbody>
                         </table>
+                    </div>
+                    @endif
+
+                    @if(!empty($booking->meal_quote_data))
+                    <div class="section">
+                        <div class="section-title">Meal Breakdown</div>
+                        <div class="box">
+                            <div class="box-inner">
+                                @php
+                                    // Handle both string and array formats
+                                    $mealQuoteData = $booking->meal_quote_data;
+                                    if (is_string($mealQuoteData)) {
+                                        $mealQuote = json_decode($mealQuoteData, true) ?: [];
+                                    } else {
+                                        $mealQuote = $mealQuoteData ?: [];
+                                    }
+                                    
+                                    // Only proceed if we have valid data
+                                    if (!empty($mealQuote['nights'])) {
+                                        $buffetNights = collect($mealQuote['nights'])->filter(fn($night) => $night['type'] === 'buffet');
+                                        $freeBreakfastNights = collect($mealQuote['nights'])->filter(fn($night) => $night['type'] === 'free_breakfast');
+                                    } else {
+                                        $buffetNights = collect();
+                                        $freeBreakfastNights = collect();
+                                    }
+                                @endphp
+                                
+                                @if($buffetNights->count() > 0)
+                                <div style="margin-bottom: 16px;">
+                                    <div style="font-weight: bold; margin-bottom: 8px; color: #333;">
+                                        Buffet Meals: {{ $buffetNights->count() }} night{{ $buffetNights->count() > 1 ? 's' : '' }}
+                                    </div>
+                                    @foreach($buffetNights as $night)
+                                        @php
+                                            $startDate = \Carbon\Carbon::parse($night['date']);
+                                            $endDate = \Carbon\Carbon::parse($night['date'])->addDay();
+                                        @endphp
+                                        <div style="margin-bottom: 8px; padding-left: 12px; border-left: 3px solid #e5e7eb;">
+                                            <div style="font-size: 14px; color: #374151; margin-bottom: 4px;">
+                                                <strong>{{ $startDate->format('M j') }} to {{ $endDate->format('M j') }}</strong>
+                                            </div>
+                                            <div style="font-size: 13px; color: #6b7280;">
+                                                Adults: {{ $night['adults'] }} × ₱{{ number_format($night['adult_price'], 2) }} = ₱{{ number_format($night['adults'] * $night['adult_price'], 2) }}
+                                            </div>
+                                            @if($night['children'] > 0)
+                                            <div style="font-size: 13px; color: #6b7280;">
+                                                Children: {{ $night['children'] }} × ₱{{ number_format($night['child_price'], 2) }} = ₱{{ number_format($night['children'] * $night['child_price'], 2) }}
+                                            </div>
+                                            @endif
+                                            <div style="font-size: 13px; color: #111827; font-weight: bold; margin-top: 2px;">
+                                                Total: ₱{{ number_format($night['night_total'], 2) }}
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @endif
+                                
+                                @if($freeBreakfastNights->count() > 0)
+                                <div style="margin-bottom: 16px;">
+                                    <div style="font-weight: bold; margin-bottom: 8px; color: #333;">
+                                        Complimentary Breakfast Only: {{ $freeBreakfastNights->count() }} day{{ $freeBreakfastNights->count() > 1 ? 's' : '' }}
+                                    </div>
+                                    @foreach($freeBreakfastNights as $night)
+                                        @php
+                                            $breakfastDate = \Carbon\Carbon::parse($night['date'])->addDay();
+                                        @endphp
+                                        <div style="margin-bottom: 4px; padding-left: 12px; border-left: 3px solid #d1fae5;">
+                                            <div style="font-size: 13px; color: #6b7280;">
+                                                {{ $breakfastDate->format('M j') }} - Free Breakfast
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @endif
+                                
+                                @if(!empty($mealQuote['meal_subtotal']))
+                                <div style="border-top: 2px solid #e5e7eb; padding-top: 12px; margin-top: 12px;">
+                                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; color: #111827;">
+                                        <span>Total Meal Cost:</span>
+                                        <span>{{ $fmtMoney($mealQuote['meal_subtotal']) }}</span>
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                     @endif
 

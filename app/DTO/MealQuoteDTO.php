@@ -21,6 +21,8 @@ class MealQuoteDTO
             'nights' => array_map(fn($night) => $night->toArray(), $this->nights),
             'meal_subtotal' => round($this->mealSubtotal, 2),
             'labels' => $this->labels,
+            'buffet_nights' => $this->buffetNightsCount(),
+            'free_breakfast_nights' => $this->freeBreakfastNightsCount(),
         ];
     }
 

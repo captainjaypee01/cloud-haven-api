@@ -33,7 +33,7 @@ class MealCalendarService implements MealCalendarServiceInterface
         $availability = [];
         
         $current = $startDate->copy();
-        while ($current->lte($endDate)) {
+        while ($current->lt($endDate)) { // Changed from lte to lt - exclude check-out date
             $availability[$current->format('Y-m-d')] = $program && $this->isProgramActiveOnDate($program, $current) 
                 ? 'buffet' 
                 : 'free_breakfast';
@@ -54,7 +54,7 @@ class MealCalendarService implements MealCalendarServiceInterface
         $availability = [];
         $current = $startDate->copy();
         
-        while ($current->lte($endDate)) {
+        while ($current->lt($endDate)) { // Changed from lte to lt - exclude check-out date
             $availability[$current->format('Y-m-d')] = $this->isProgramActiveOnDate($program, $current) 
                 ? 'buffet' 
                 : 'free_breakfast';

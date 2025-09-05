@@ -45,6 +45,7 @@ class Booking extends Model
         'cancelled_at',
         'cancelled_by',
         'cancellation_reason',
+        'meal_quote_data',
         'created_at',
         'updated_at',
         'deleted_at'
@@ -62,7 +63,35 @@ class Booking extends Model
         return [
             'created_at' => 'datetime:Y-m-d H:i:s',
             'cancelled_at' => 'datetime',
+            'discount_amount' => 'decimal:2',
+            'final_price' => 'decimal:2',
+            'total_price' => 'decimal:2',
+            'meal_price' => 'decimal:2',
+            'downpayment_amount' => 'decimal:2',
         ];
+    }
+
+    /**
+     * Get the meal quote data as an array.
+     */
+    public function getMealQuoteDataAttribute($value)
+    {
+        if (is_string($value)) {
+            return json_decode($value, true) ?: [];
+        }
+        return $value ?: [];
+    }
+
+    /**
+     * Set the meal quote data.
+     */
+    public function setMealQuoteDataAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['meal_quote_data'] = json_encode($value);
+        } else {
+            $this->attributes['meal_quote_data'] = $value;
+        }
     }
 
     public function user()

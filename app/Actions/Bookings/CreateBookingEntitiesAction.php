@@ -62,6 +62,7 @@ class CreateBookingEntitiesAction
             'final_price' => $totals['final_price'],
             'status' => 'pending',
             'reserved_until' => now()->addHours(config('booking.reservation_hold_duration_hours', 2)),
+            'meal_quote_data' => isset($totals['meal_quote']) ? json_encode($totals['meal_quote']->toArray()) : null,
         ]);
 
         $roomIds = array_unique(array_map(fn($r) => $r->room_id, $roomDataArr));

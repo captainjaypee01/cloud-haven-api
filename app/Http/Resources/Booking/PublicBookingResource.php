@@ -15,7 +15,9 @@ class PublicBookingResource extends JsonResource
     public function toArray(Request $request): array
     {
         $downpaymentPercent = config('booking.downpayment_percent', 0.5);
-        $downpaymentAmount = round($this->final_price * $downpaymentPercent);
+        $discountAmount = $this->discount_amount ?? 0;
+        $actualFinalPrice = $this->final_price - $discountAmount;
+        $downpaymentAmount = round($actualFinalPrice * $downpaymentPercent);
         $bookingData = [
             'user'                      => $this->user_id ? true : false,
             'reference_number'          => $this->reference_number,
@@ -32,6 +34,7 @@ class PublicBookingResource extends JsonResource
             'total_guests'          => $this->total_guests,
             'total_price'          => $this->total_price,
             'meal_price'          => $this->meal_price,
+            'meal_quote_data'      => $this->meal_quote_data,
             'discount_amount'          => $this->discount_amount,
             'payment_option'          => $this->payment_option,
             'downpayment_amount'          => $this->downpayment_amount,
@@ -86,7 +89,7 @@ class PublicBookingResource extends JsonResource
                 ],
                 [
                     'label'     => 'Full Payment',
-                    'amount'    => $this->final_price,
+                    'amount'    => $actualFinalPrice,
                     'type'      => 'full',
                     'value'     => 'full',
                 ],
