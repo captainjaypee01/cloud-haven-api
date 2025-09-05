@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             AmenitySeeder::class,
             PromoSeeder::class,
             MealPriceSeeder::class,
+            MealProgramSeeder::class, // New meal pricing system
         ]);
 
         // Development/staging seeders (only run in non-production environments)

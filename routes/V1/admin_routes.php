@@ -48,6 +48,20 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
         
         Route::apiResource('meal-prices', 'MealPriceController')->middleware('role:admin,superadmin');
 
+        // Meal Programs
+        Route::get('meal-programs/{id}/preview', 'MealProgramController@preview')->middleware('role:admin,superadmin');
+        Route::apiResource('meal-programs', 'MealProgramController')->middleware('role:admin,superadmin');
+        
+        // Meal Pricing Tiers
+        Route::post('meal-programs/{programId}/pricing-tiers', 'MealPricingTierController@store')->middleware('role:admin,superadmin');
+        Route::put('meal-programs/{programId}/pricing-tiers/{tierId}', 'MealPricingTierController@update')->middleware('role:admin,superadmin');
+        Route::delete('meal-programs/{programId}/pricing-tiers/{tierId}', 'MealPricingTierController@destroy')->middleware('role:admin,superadmin');
+        
+        // Meal Calendar Overrides
+        Route::post('meal-programs/{programId}/overrides', 'MealCalendarOverrideController@store')->middleware('role:admin,superadmin');
+        Route::put('meal-programs/{programId}/overrides/{overrideId}', 'MealCalendarOverrideController@update')->middleware('role:admin,superadmin');
+        Route::delete('meal-programs/{programId}/overrides/{overrideId}', 'MealCalendarOverrideController@destroy')->middleware('role:admin,superadmin');
+
         Route::apiResource('images', 'ImageController')->only(['index', 'store', 'destroy'])->middleware('role:admin,superadmin');
 
     });
