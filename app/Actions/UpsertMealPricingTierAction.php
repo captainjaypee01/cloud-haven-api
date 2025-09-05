@@ -74,31 +74,58 @@ class UpsertMealPricingTierAction
 
     private function tiersOverlap(MealPricingTierDTO $new, MealPricingTier $existing): bool
     {
-        // If either tier has no dates, they could potentially overlap
-        if (!$new->effectiveFrom && !$new->effectiveTo) {
-            return true; // Open-ended tier overlaps with everything
+        // If both tiers have no dates (null), they overlap
+        if (!$new->effectiveFrom && !$new->effectiveTo && !$existing->effective_from && !$existing->effective_to) {
+            return true;
         }
 
-        if (!$existing->effective_from && !$existing->effective_to) {
-            return true; // Existing open-ended tier
+        // If one tier has no dates and the other has dates, they don't overlap
+        // (null dates means "always effective" and doesn't conflict with specific date ranges)
+        if ((!$new->effectiveFrom && !$new->effectiveTo) && ($existing->effective_from || $existing->effective_to)) {
+            return false;
         }
 
-        // Check for actual date overlaps
+        if ((!$existing->effective_from && !$existing->effective_to) && ($new->effectiveFrom || $new->effectiveTo)) {
+            return false;
+        }
+
+        // If both have dates, check for actual date overlaps
         $newStart = $new->effectiveFrom;
         $newEnd = $new->effectiveTo;
         $existingStart = $existing->effective_from;
         $existingEnd = $existing->effective_to;
 
-        // Handle open-ended ranges
-        if (!$newEnd) {
+        // Handle cases where one or both dates are null
+        if (!$newStart && !$newEnd) {
+            return false; // Already handled above
+        }
+
+        if (!$existingStart && !$existingEnd) {
+            return false; // Already handled above
+        }
+
+        // Handle open-ended ranges (only one date is null)
+        if (!$newEnd && $newStart) {
+            // New tier starts from a date and has no end
             return !$existingEnd || $newStart->lte($existingEnd);
         }
 
-        if (!$existingEnd) {
+        if (!$existingEnd && $existingStart) {
+            // Existing tier starts from a date and has no end
             return !$newEnd || $existingStart->lte($newEnd);
         }
 
-        // Both have end dates, check for overlap
+        if (!$newStart && $newEnd) {
+            // New tier has no start but has an end
+            return !$existingStart || $newEnd->gte($existingStart);
+        }
+
+        if (!$existingStart && $existingEnd) {
+            // Existing tier has no start but has an end
+            return !$newStart || $existingEnd->gte($newStart);
+        }
+
+        // Both have start and end dates, check for overlap
         return $newStart->lte($existingEnd) && $newEnd->gte($existingStart);
     }
 }
