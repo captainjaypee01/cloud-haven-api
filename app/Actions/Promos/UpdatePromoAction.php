@@ -27,12 +27,13 @@ final class UpdatePromoAction implements UpdatePromoContract
                 'scope'          => $dto->scope,
                 'discount_type'  => $dto->discount_type,
                 'discount_value' => $dto->discount_value,
+                'starts_at'      => $dto->starts_at,
+                'ends_at'        => $dto->ends_at,
                 'expires_at'     => $dto->expires_at,
                 'max_uses'       => $dto->max_uses,
                 'image_url'      => $dto->image_url,
                 'exclusive'      => $dto->exclusive,
                 'active'         => $dto->active,
-                // 'active' not updated here
             ];
             // Filter out unchanged values
             $changes = array_filter($updateData, fn($val, $key) => $val !== $promo->$key, ARRAY_FILTER_USE_BOTH);

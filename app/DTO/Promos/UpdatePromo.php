@@ -13,6 +13,8 @@ class UpdatePromo extends Data
         public ?string $scope,
         public string  $discount_type,
         public float   $discount_value,
+        public ?string $starts_at,            // nullable datetime string (Y-m-d H:i:s)
+        public ?string $ends_at,              // nullable datetime string (Y-m-d H:i:s)
         public ?string $expires_at,
         public ?int    $max_uses,
         public ?string $image_url,

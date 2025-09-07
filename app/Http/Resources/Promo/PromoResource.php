@@ -17,6 +17,12 @@ class PromoResource extends JsonResource
             'title'             => $this->title,
             'description'       => $this->description,
             'image_url'         => $this->image_url,
+            'starts_at'         => $this->starts_at
+                ? $this->convertToUserTimezone($this->starts_at)
+                : null,
+            'ends_at'           => $this->ends_at
+                ? $this->convertToUserTimezone($this->ends_at)
+                : null,
             'expires_at'        => $this->expires_at
                 ? $this->expires_at->format('Y-m-d H:i:s')
                 : null,
@@ -27,5 +33,17 @@ class PromoResource extends JsonResource
             // Return status as string to match front-end expectations
             'active'            => $this->active ? 'active' : 'inactive',
         ];
+    }
+
+    /**
+     * Convert UTC datetime to user timezone (Asia/Singapore)
+     *
+     * @param \Carbon\Carbon $datetime
+     * @return string
+     */
+    private function convertToUserTimezone($datetime): string
+    {
+        // Convert from UTC to Asia/Singapore timezone
+        return $datetime->setTimezone('Asia/Singapore')->format('Y-m-d H:i:s');
     }
 }

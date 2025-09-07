@@ -20,6 +20,8 @@ final class CreatePromoAction implements CreatePromoContract
                 'scope'          => $dto->scope,
                 'discount_type'  => $dto->discount_type,
                 'discount_value' => $dto->discount_value,
+                'starts_at'      => $dto->starts_at,
+                'ends_at'        => $dto->ends_at,
                 'expires_at'     => $dto->expires_at,
                 'max_uses'       => $dto->max_uses,
                 'uses_count'     => $dto->uses_count ?? 0,

@@ -19,6 +19,8 @@ class Promo extends Model
         'title',
         'description',
         'image_url',
+        'starts_at',
+        'ends_at',
         'expires_at',
         'max_uses',
         'uses_count',
@@ -28,6 +30,8 @@ class Promo extends Model
 
     protected $casts = [
         'active'     => 'boolean',
+        'starts_at'  => 'datetime',
+        'ends_at'    => 'datetime',
         'expires_at' => 'datetime',
         'created_at' => 'datetime',
     ];
