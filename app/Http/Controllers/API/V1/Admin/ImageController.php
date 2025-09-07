@@ -8,8 +8,12 @@ use App\Http\Requests\Image\StoreImagesRequest;
 use App\Http\Resources\Image\ImageResource;
 use App\Http\Responses\CollectionResponse;
 use App\Http\Responses\EmptyResponse;
+use App\Http\Responses\ErrorResponse;
 use App\Models\Image;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class ImageController extends Controller
 {
@@ -23,10 +27,16 @@ class ImageController extends Controller
 
     public function store(StoreImagesRequest $request)
     {
-        $files = $request->file('files');
-        $names = $request->input('names');
-        $images = $this->imageService->uploadImages($files, $names);
-        return new CollectionResponse(ImageResource::collection($images), 201);
+        try {
+
+            $files = $request->file('files');
+            $names = $request->input('names');
+            $images = $this->imageService->uploadImages($files, $names);
+            return new CollectionResponse(ImageResource::collection($images), 201);
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return new ErrorResponse('Unable to upload images.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     public function destroy(Image $image)
