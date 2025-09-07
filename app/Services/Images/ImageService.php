@@ -22,27 +22,49 @@ class ImageService implements ImageServiceInterface
     public function uploadImages(array $files, array $names): array
     {
         $uploaded = [];
-        // Upload the image
         $uploadApi = new UploadApi();
+        
         foreach ($files as $idx => $file) {
-            $name = $names[$idx] ?? $file->getClientOriginalName();
-            $result = $uploadApi->upload($file->getRealPath(), [
-                'asset_folder' => 'netania',
-                'public_id' => $name,
-                'overwrite' => true,
-            ]);
-            $uploaded[] = Image::create([
-                'name'             => $name,
-                'alt_text'         => $name,
-                'image_url'        => $result['url'],
-                'secure_image_url' => $result['secure_url'],
-                'image_path'       => null,
-                'provider'         => 'cloudinary',
-                'public_id'        => $result['public_id'],
-                'width'            => $result['width'],
-                'height'           => $result['height'],
-                'order'            => 0,
-            ]);
+            try {
+                $name = $names[$idx] ?? $file->getClientOriginalName();
+                
+                \Log::info('Uploading file to Cloudinary', [
+                    'filename' => $name,
+                    'size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType()
+                ]);
+                
+                $result = $uploadApi->upload($file->getRealPath(), [
+                    'asset_folder' => 'netania',
+                    'public_id' => $name,
+                    'overwrite' => true,
+                ]);
+                
+                \Log::info('Cloudinary upload successful', [
+                    'public_id' => $result['public_id'],
+                    'url' => $result['url']
+                ]);
+                
+                $uploaded[] = Image::create([
+                    'name'             => $name,
+                    'alt_text'         => $name,
+                    'image_url'        => $result['url'],
+                    'secure_image_url' => $result['secure_url'],
+                    'image_path'       => null,
+                    'provider'         => 'cloudinary',
+                    'public_id'        => $result['public_id'],
+                    'width'            => $result['width'],
+                    'height'           => $result['height'],
+                    'order'            => 0,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to upload individual file', [
+                    'filename' => $names[$idx] ?? $file->getClientOriginalName(),
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
         }
         return $uploaded;
     }

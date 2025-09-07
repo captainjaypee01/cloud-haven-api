@@ -28,14 +28,30 @@ class ImageController extends Controller
     public function store(StoreImagesRequest $request)
     {
         try {
+            Log::info('Starting image upload process', [
+                'user_id' => auth()->id(),
+                'file_count' => count($request->file('files', [])),
+                'file_sizes' => array_map(fn($file) => $file->getSize(), $request->file('files', []))
+            ]);
 
             $files = $request->file('files');
             $names = $request->input('names');
             $images = $this->imageService->uploadImages($files, $names);
+            
+            Log::info('Image upload completed successfully', [
+                'user_id' => auth()->id(),
+                'uploaded_count' => count($images)
+            ]);
+            
             return new CollectionResponse(ImageResource::collection($images), 201);
         } catch (Exception $e) {
-            Log::error($e->getMessage());
-            return new ErrorResponse('Unable to upload images.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            Log::error('Image upload failed', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file_count' => count($request->file('files', []))
+            ]);
+            return new ErrorResponse('Unable to upload images: ' . $e->getMessage(), JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
