@@ -25,6 +25,7 @@ final class UpdateRoomAction implements UpdateRoomContract
             'status'                => $payload->status,
             'updated_by'            => $userId,
             'is_featured'           => $payload->is_featured,
+            'min_guests'            => $payload->min_guests,
         ]));
     }
 }

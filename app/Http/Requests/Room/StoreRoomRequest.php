@@ -60,6 +60,7 @@ class StoreRoomRequest extends FormRequest
             'price_per_night'       => 'required|numeric|min:0',
             'is_featured'           => 'sometimes|boolean',
             'status'                => ['required', 'string', Rule::in(RoomStatusEnum::labels())],
+            'min_guests'            => 'nullable|integer|min:1',
             'image_ids'             => 'sometimes|array',
             'image_ids.*'           => 'integer|exists:images,id',
             'amenity_ids'           => 'nullable|array',

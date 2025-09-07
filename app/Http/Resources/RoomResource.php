@@ -23,6 +23,7 @@ class RoomResource extends JsonResource
             'short_description'     => $this->short_description,
             'quantity'              => $this->quantity,
             'max_guests'            => $this->max_guests,
+            'min_guests'            => $this->min_guests,
             'extra_guests'          => $this->extra_guests,
             'room_type'             => $this->room_type ?? 'overnight',
             'allows_day_use'        => $this->allows_day_use, // For backward compatibility

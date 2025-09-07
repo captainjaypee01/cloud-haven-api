@@ -25,6 +25,7 @@ final class CreateRoomAction implements CreateRoomContract
             'status'                => $payload->status,
             'created_by'            => $userId,
             'is_featured'           => $payload->is_featured,
+            'min_guests'            => $payload->min_guests,
         ]));
     }
 }
