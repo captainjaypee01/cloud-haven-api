@@ -125,13 +125,24 @@ class BookingService implements BookingServiceInterface
         $newStatus = null;
         
         if ($paidAmount >= $totalPayable) {
-            $booking->update(['status' => 'paid', 'paid_at' => now()]);
+            $booking->update([
+                'status' => 'paid', 
+                'paid_at' => now(),
+                'paid_amount' => $paidAmount
+            ]);
             $newStatus = 'paid';
         } elseif ($paidAmount >= $dpAmount) {
-            $booking->update(['status' => 'downpayment', 'downpayment_at' => now()]);
+            $booking->update([
+                'status' => 'downpayment', 
+                'downpayment_at' => now(),
+                'paid_amount' => $paidAmount
+            ]);
             $newStatus = 'downpayment';
         } else {
-            $booking->update(['status' => 'pending']);
+            $booking->update([
+                'status' => 'pending',
+                'paid_amount' => $paidAmount
+            ]);
             $newStatus = 'pending';
         }
 
@@ -205,7 +216,7 @@ class BookingService implements BookingServiceInterface
         // Events: one per booking_room (prefer assigned unit data)
         $eventRows = BookingRoom::query()
             ->with([
-                'booking:id,check_in_date,check_out_date,status,guest_name,total_price,final_price,adults,children,total_guests,reference_number,deleted_at',
+                'booking:id,check_in_date,check_out_date,status,guest_name,total_price,final_price,adults,children,total_guests,reference_number,booking_type,deleted_at',
                 'room:id,name,max_guests',
                 'roomUnit:id,unit_number',
             ])
@@ -246,6 +257,7 @@ class BookingService implements BookingServiceInterface
             $events[] = [
                 'booking_id' => (int) $booking->id,
                 'reference_number' => $booking->reference_number,
+                'booking_type' => $booking->booking_type ?? 'overnight',
                 'room_type_id' => $br->room?->id,
                 'room_type_name' => $br->room?->name ?? 'Unassigned Room',
                 'room_unit_id' => $br->roomUnit?->id,
@@ -298,11 +310,15 @@ class BookingService implements BookingServiceInterface
         if ($roomTypeId) $unitsQuery->where('room_id', (int) $roomTypeId);
         $totalUnits = (int) $unitsQuery->count();
 
-        // Build per-day summary
+        // Build per-day summary with booking type breakdown
         $summaryMap = [];
         $cursor = $startDate->copy();
         while ($cursor->lte($endDate)) {
-            $summaryMap[$cursor->toDateString()] = 0;
+            $summaryMap[$cursor->toDateString()] = [
+                'total' => 0,
+                'overnight' => 0,
+                'day_tour' => 0
+            ];
             $cursor->addDay();
         }
         
@@ -310,26 +326,38 @@ class BookingService implements BookingServiceInterface
             $s = Carbon::parse($booking->check_in_date);
             $e = Carbon::parse($booking->check_out_date);
             
-            // Count each day the booking spans (excluding checkout day)
-            $startLoop = $s->max($startDate);
-            $endLoop = $e->min($endDate);
-            $day = $startLoop->copy();
-            
-            while ($day->lt($endLoop)) { // Use < instead of <= to exclude checkout day
-                $key = $day->toDateString();
+            // For Day Tours, only count on the single date
+            if ($booking->booking_type === 'day_tour') {
+                $key = $s->toDateString();
                 if (array_key_exists($key, $summaryMap)) {
-                    $summaryMap[$key] += 1;
+                    $summaryMap[$key]['total'] += 1;
+                    $summaryMap[$key]['day_tour'] += 1;
                 }
-                $day->addDay();
+            } else {
+                // For overnight bookings, count each day (excluding checkout day)
+                $startLoop = $s->max($startDate);
+                $endLoop = $e->min($endDate);
+                $day = $startLoop->copy();
+                
+                while ($day->lt($endLoop)) { // Use < instead of <= to exclude checkout day
+                    $key = $day->toDateString();
+                    if (array_key_exists($key, $summaryMap)) {
+                        $summaryMap[$key]['total'] += 1;
+                        $summaryMap[$key]['overnight'] += 1;
+                    }
+                    $day->addDay();
+                }
             }
         }
 
         $summary = [];
-        foreach ($summaryMap as $date => $count) {
+        foreach ($summaryMap as $date => $counts) {
             $summary[] = [
                 'date' => $date,
-                'bookings' => (int) $count,
-                'rooms_left' => max(0, $totalUnits - (int) $count),
+                'bookings' => (int) $counts['total'],
+                'overnight_bookings' => (int) $counts['overnight'],
+                'day_tour_bookings' => (int) $counts['day_tour'],
+                'rooms_left' => max(0, $totalUnits - (int) $counts['total']),
             ];
         }
 

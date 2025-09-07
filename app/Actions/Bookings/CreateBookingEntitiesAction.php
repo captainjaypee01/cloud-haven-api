@@ -13,6 +13,9 @@ class CreateBookingEntitiesAction
 {
     public function execute(BookingData $bookingData, array $roomDataArr, $userId, $totals): Booking
     {
+        // Prevent mixing room types
+        $this->validateRoomTypes($roomDataArr);
+        
         // Before creating the Booking, compute totals and apply promo if present
         $discount = 0;
         if (!empty($bookingData->promo_id)) {
@@ -80,5 +83,40 @@ class CreateBookingEntitiesAction
             ]);
         }
         return $booking;
+    }
+
+    private function validateRoomTypes(array $roomDataArr): void
+    {
+        if (empty($roomDataArr)) {
+            return;
+        }
+
+        // Get room IDs from room data array (they're slugs in this action)
+        $roomSlugs = array_unique(array_map(fn($r) => $r->room_id, $roomDataArr));
+        
+        // Get rooms with their room_type
+        $rooms = Room::whereIn('slug', $roomSlugs)->select('id', 'slug', 'name', 'room_type')->get();
+        
+        // Check if all rooms are the same type
+        $roomTypes = $rooms->pluck('room_type')->unique();
+        
+        if ($roomTypes->count() > 1) {
+            $dayTourRooms = $rooms->where('room_type', 'day_tour');
+            $overnightRooms = $rooms->where('room_type', 'overnight');
+            
+            throw new \InvalidArgumentException(
+                'Cannot mix Day Tour and Overnight accommodations in a single booking. ' .
+                'Day Tour rooms: ' . $dayTourRooms->pluck('name')->implode(', ') . '. ' .
+                'Overnight rooms: ' . $overnightRooms->pluck('name')->implode(', ') . '.'
+            );
+        }
+
+        // Additional check: if all rooms are day_tour, this should be a Day Tour booking
+        if ($roomTypes->first() === 'day_tour') {
+            throw new \InvalidArgumentException(
+                'Day Tour rooms cannot be booked through the regular booking flow. ' .
+                'Please use the Day Tour booking page instead.'
+            );
+        }
     }
 }

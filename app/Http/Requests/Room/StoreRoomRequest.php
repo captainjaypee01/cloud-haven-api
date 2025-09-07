@@ -54,7 +54,7 @@ class StoreRoomRequest extends FormRequest
             'quantity'              => 'required|integer|min:1',
             'max_guests'            => 'required|integer|min:1',
             'extra_guests'          => 'sometimes',
-            'allows_day_use'        => 'required|boolean',
+            'room_type'             => ['required', 'string', Rule::in(['overnight', 'day_tour'])],
             'base_weekday_rate'     => 'required|numeric|min:0',
             'base_weekend_rate'     => 'required|numeric|min:0',
             'price_per_night'       => 'required|numeric|min:0',

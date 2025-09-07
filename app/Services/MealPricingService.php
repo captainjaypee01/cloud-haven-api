@@ -6,6 +6,8 @@ use App\Contracts\Repositories\MealPricingTierRepositoryInterface;
 use App\Contracts\Repositories\MealProgramRepositoryInterface;
 use App\Contracts\Services\MealCalendarServiceInterface;
 use App\Contracts\Services\MealPricingServiceInterface;
+use App\DTO\DayTour\DayTourMealBreakdownDTO;
+use App\DTO\DayTour\DayTourMealLineItemDTO;
 use App\DTO\MealNightDTO;
 use App\DTO\MealQuoteDTO;
 use App\Models\MealProgram;
@@ -110,5 +112,116 @@ class MealPricingService implements MealPricingServiceInterface
     public function getPricingTierForDate(int $programId, Carbon $date): ?MealPricingTier
     {
         return $this->pricingTierRepository->getEffectiveTierForDate($programId, $date);
+    }
+
+    public function quoteDayTourMeals(
+        Carbon $date,
+        int $adults,
+        int $children,
+        bool $includeLunch,
+        bool $includePmSnack,
+        string $pmSnackPolicy
+    ): DayTourMealBreakdownDTO {
+        $program = $this->getActiveMealProgram();
+        
+        // Get property timezone
+        $timezone = config('resort.timezone', 'Asia/Singapore');
+        $localDate = $date->copy()->setTimezone($timezone)->startOfDay();
+        
+        // Check if buffet is active on this date
+        $isBuffetActive = $this->calendarService->isBuffetActiveOn($localDate);
+        
+        $lunch = null;
+        $pmSnack = null;
+        
+        if ($isBuffetActive && $program) {
+            $tier = $this->getPricingTierForDate($program->id, $localDate);
+            
+            if ($tier) {
+                // Handle lunch
+                if ($includeLunch && $tier->adult_lunch_price !== null && $tier->child_lunch_price !== null) {
+                    $lunchTotal = ($adults * $tier->adult_lunch_price) + ($children * $tier->child_lunch_price);
+                    $lunch = new DayTourMealLineItemDTO(
+                        adultPrice: (float) $tier->adult_lunch_price,
+                        childPrice: (float) $tier->child_lunch_price,
+                        adults: $adults,
+                        children: $children,
+                        total: $lunchTotal,
+                        applied: true
+                    );
+                }
+                
+                // Handle PM snack based on policy
+                if ($tier->adult_pm_snack_price !== null && $tier->child_pm_snack_price !== null) {
+                    $shouldIncludeSnack = match($pmSnackPolicy) {
+                        'required' => true, // Always include if required
+                        'optional' => $includePmSnack, // Include if user selected
+                        'hidden' => false // Never include if hidden
+                    };
+                    
+                    $snackTotal = ($adults * $tier->adult_pm_snack_price) + ($children * $tier->child_pm_snack_price);
+                    $pmSnack = new DayTourMealLineItemDTO(
+                        adultPrice: (float) $tier->adult_pm_snack_price,
+                        childPrice: (float) $tier->child_pm_snack_price,
+                        adults: $adults,
+                        children: $children,
+                        total: $snackTotal,
+                        applied: $shouldIncludeSnack
+                    );
+                }
+            }
+        }
+        
+        return new DayTourMealBreakdownDTO(
+            lunch: $lunch,
+            pmSnack: $pmSnack
+        );
+    }
+
+    public function getLunchAndSnackPrices(Carbon $date): array
+    {
+        $program = $this->getActiveMealProgram();
+        
+        if (!$program) {
+            return ['lunch' => null, 'snack' => null];
+        }
+        
+        // Get property timezone
+        $timezone = config('resort.timezone', 'Asia/Singapore');
+        $localDate = $date->copy()->setTimezone($timezone)->startOfDay();
+        
+        // Check if buffet is active on this date
+        $isBuffetActive = $this->calendarService->isBuffetActiveOn($localDate);
+        
+        $tier = $this->getPricingTierForDate($program->id, $localDate);
+        
+        if (!$tier) {
+            return ['lunch' => null, 'snack' => null];
+        }
+        
+        $lunchPrices = null;
+        $snackPrices = null;
+        
+        // Get lunch prices ONLY if buffet is active
+        if ($isBuffetActive && $tier->adult_lunch_price !== null && $tier->child_lunch_price !== null) {
+            $lunchPrices = [
+                'adult' => (float) $tier->adult_lunch_price,
+                'child' => (float) $tier->child_lunch_price
+            ];
+        }
+        
+        // Get snack prices if available (INDEPENDENT of buffet status for Day Tours)
+        // PM Snacks can be available even when buffet lunch is not
+        if ($tier->adult_pm_snack_price !== null && $tier->child_pm_snack_price !== null) {
+            $snackPrices = [
+                'adult' => (float) $tier->adult_pm_snack_price,
+                'child' => (float) $tier->child_pm_snack_price
+            ];
+        }
+        
+        return [
+            'lunch' => $lunchPrices,
+            'snack' => $snackPrices
+        ];
     }
 }

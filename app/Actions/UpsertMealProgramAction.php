@@ -26,6 +26,7 @@ class UpsertMealProgramAction
                 'months' => $dto->months,
                 'weekdays' => $dto->weekdays,
                 'weekend_definition' => $dto->weekendDefinition,
+                'pm_snack_policy' => $dto->pmSnackPolicy,
                 'inactive_label' => $dto->inactiveLabel,
                 'notes' => $dto->notes,
             ];

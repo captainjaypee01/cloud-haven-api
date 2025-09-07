@@ -103,10 +103,15 @@ class RoomService implements RoomServiceInterface
     }
 
     /**
-     * Get public rooms
+     * Get public rooms (overnight only by default)
      */
     public function listPublicRooms(array $filters)
     {
+        // Ensure we only show overnight rooms for public listings unless explicitly requested
+        if (!isset($filters['room_type'])) {
+            $filters['room_type'] = 'overnight';
+        }
+        
         return $this->query->get(
             filters: $filters,
             sort: $filters['sort'] ?? null,

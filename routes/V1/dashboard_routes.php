@@ -29,6 +29,13 @@ Route::prefix('/')->namespace('App\Http\Controllers\API\V1\Dashboard')
         // New proof upload routes for specific payments
         Route::post('/bookings/ref/{referenceNumber}/payments/{paymentId}/proof', 'PaymentController@uploadProof');
 
+        // Day Tour routes
+        Route::get('/day-tours/availability', 'DayTourAvailabilityController@getAvailability');
+        Route::post('/day-tours/availability', 'DayTourAvailabilityController@batchCheck');
+        Route::post('/quotes/day-tour', 'DayTourQuoteController@quote');
+        Route::post('/bookings/day-tour', 'DayTourBookingController@create');
+        Route::get('/day-tour-pricing/current', 'DayTourPricingController@getCurrentPricing');
+
         Route::get('/promos/exclusive', 'PromoController@exclusiveOffers');
         Route::get('/promos/{promoCode}', 'PromoController@showByCode');
 

@@ -9,6 +9,8 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
         Route::get('dashboard', 'DashboardController@index');
         Route::get('clerk/test', fn() => 'Clerk Middleware Check Admin | ' . auth()->user()->clerk_id);
         Route::apiResource('rooms', 'RoomController');
+        Route::patch('day-tour-pricing/{id}/toggle-status', 'DayTourPricingController@toggleStatus');
+        Route::apiResource('day-tour-pricing', 'DayTourPricingController');
 
         // Room Units
         Route::get('room-types/{room}/units', 'RoomUnitController@getRoomUnits');

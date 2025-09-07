@@ -35,11 +35,11 @@ class MealProgramSeeder extends Seeder
         MealPricingTier::firstOrCreate(
             [
                 'meal_program_id' => $octoberProgram->id,
-                'currency' => 'SGD',
+                'currency' => 'PHP',
             ],
             [
-                'adult_price' => 300.00,
-                'child_price' => 150.00,
+                'adult_price' => 1700.00,
+                'child_price' => 1000.00,
                 'effective_from' => Carbon::create(2025, 10, 1),
                 'effective_to' => Carbon::create(2025, 10, 31),
             ]
@@ -78,12 +78,12 @@ class MealProgramSeeder extends Seeder
         MealPricingTier::firstOrCreate(
             [
                 'meal_program_id' => $summerProgram->id,
-                'currency' => 'SGD',
+                'currency' => 'PHP',
                 'effective_from' => null,
             ],
             [
-                'adult_price' => 250.00,
-                'child_price' => 125.00,
+                'adult_price' => 1700.00,
+                'child_price' => 1000.00,
                 'effective_to' => null,
             ]
         );
@@ -92,12 +92,12 @@ class MealProgramSeeder extends Seeder
         MealPricingTier::firstOrCreate(
             [
                 'meal_program_id' => $summerProgram->id,
-                'currency' => 'SGD',
+                'currency' => 'PHP',
                 'effective_from' => Carbon::create(2025, 4, 1),
             ],
             [
-                'adult_price' => 350.00,
-                'child_price' => 175.00,
+                'adult_price' => 2000.00,
+                'child_price' => 1200.00,
                 'effective_to' => Carbon::create(2025, 4, 30),
             ]
         );
@@ -122,11 +122,11 @@ class MealProgramSeeder extends Seeder
         MealPricingTier::firstOrCreate(
             [
                 'meal_program_id' => $yearEndProgram->id,
-                'currency' => 'SGD',
+                'currency' => 'PHP',
             ],
             [
-                'adult_price' => 400.00,
-                'child_price' => 200.00,
+                'adult_price' => 1500.00,
+                'child_price' => 800.00,
                 'effective_from' => null,
                 'effective_to' => null,
             ]

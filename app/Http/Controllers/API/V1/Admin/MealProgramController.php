@@ -18,6 +18,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class MealProgramController extends Controller
@@ -55,6 +56,7 @@ class MealProgramController extends Controller
                 months: $request->validated()['months'] ?? null,
                 weekdays: $request->validated()['weekdays'] ?? null,
                 weekendDefinition: $request->validated()['weekend_definition'] ?? 'SAT_SUN',
+                pmSnackPolicy: $request->validated()['pm_snack_policy'],
                 inactiveLabel: $request->validated()['inactive_label'] ?? 'Free Breakfast',
                 notes: $request->validated()['notes'] ?? null
             );
@@ -110,6 +112,7 @@ class MealProgramController extends Controller
                 months: $request->validated()['months'] ?? null,
                 weekdays: $request->validated()['weekdays'] ?? null,
                 weekendDefinition: $request->validated()['weekend_definition'] ?? 'SAT_SUN',
+                pmSnackPolicy: $request->validated()['pm_snack_policy'],
                 inactiveLabel: $request->validated()['inactive_label'] ?? 'Free Breakfast',
                 notes: $request->validated()['notes'] ?? null
             );

@@ -31,7 +31,7 @@ class RoomController extends Controller
             $rooms = $this->roomService->listRoomsWithAvailability($checkIn, $checkOut);
             return new CollectionResponse(new PublicRoomCollection($rooms), JsonResponse::HTTP_OK);
         }
-        $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page']);
+        $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page', 'room_type']);
         $paginator = $this->roomService->listPublicRooms($filters);
         return new CollectionResponse(new PublicRoomCollection($paginator), JsonResponse::HTTP_OK);
     }

@@ -17,6 +17,7 @@ class Booking extends Model
         'id',
         'user_id',
         'reference_number',
+        'booking_type',
         'check_in_date',
         'check_in_time',
         'check_out_date',
@@ -35,6 +36,7 @@ class Booking extends Model
         'payment_option',
         'downpayment_amount',
         'final_price',
+        'paid_amount',
         'status',
         'is_reviewed',
         'failed_payment_attempts',
@@ -68,6 +70,7 @@ class Booking extends Model
             'total_price' => 'decimal:2',
             'meal_price' => 'decimal:2',
             'downpayment_amount' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
         ];
     }
 
@@ -186,5 +189,21 @@ class Booking extends Model
         return Carbon::parse($this->cancelled_at)
             ->setTimezone($userTimezone)
             ->format('Y-m-d H:i:s');
+    }
+    
+    /**
+     * Check if this is a Day Tour booking
+     */
+    public function isDayTour(): bool
+    {
+        return $this->booking_type === 'day_tour';
+    }
+    
+    /**
+     * Check if this is an Overnight booking
+     */
+    public function isOvernight(): bool
+    {
+        return $this->booking_type === 'overnight';
     }
 }

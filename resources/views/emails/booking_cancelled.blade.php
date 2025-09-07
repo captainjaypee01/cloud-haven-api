@@ -11,6 +11,7 @@
         $fmtDate = function ($date) { if(!$date) return ''; return Carbon::parse($date)->isoFormat('DD MMM YYYY'); };
         $fmtDateTime = function ($date) { if(!$date) return ''; return Carbon::parse($date)->setTimezone('Asia/Singapore')->isoFormat('DD MMM YYYY HH:mm'); };
         $fmtMoney = fn($v) => '₱' . number_format((float)$v, 2);
+        $isDayTour = $booking->isDayTour();
         $nights = 0;
         if (!empty($booking?->check_in_date) && !empty($booking?->check_out_date)) {
             $nights = Carbon::parse($booking->check_in_date)->diffInDays(Carbon::parse($booking->check_out_date));
@@ -42,9 +43,9 @@
                 <div class="content">
                     <p style="margin-bottom:4px;font-size:16px;padding-left:16px;">Hi {{ $booking->guest_name ?? $booking->user->name ?? 'Guest' }},</p>
                     @if($isManualCancellation)
-                        <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">We regret to inform you that your booking reservation has been <strong>cancelled</strong> by our administrative staff.</p>
+                        <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">We regret to inform you that your {{ $isDayTour ? 'Day Tour' : 'accommodation' }} booking reservation has been <strong>cancelled</strong> by our administrative staff.</p>
                     @else
-                        <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">We regret to inform you that your booking reservation has been <strong>cancelled</strong> due to no proof of payment being received within the required timeframe.</p>
+                        <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">We regret to inform you that your {{ $isDayTour ? 'Day Tour' : 'accommodation' }} booking reservation has been <strong>cancelled</strong> due to no proof of payment being received within the required timeframe.</p>
                     @endif
 
                     <!-- Cancellation Status -->
@@ -68,9 +69,14 @@
                     <!-- Core booking facts -->
                     <div class="panel" style="margin-bottom:24px;margin-left:16px;margin-right:16px;">
                         <div class="kv"><strong>Reference Number:</strong> {{ $booking->reference_number }}</div>
-                        <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
-                        <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
-                        <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
+                        @if($isDayTour)
+                            <div class="kv"><strong>Day Tour Date:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
+                            <div class="kv"><strong>Tour Hours:</strong> 8:00 AM - 5:00 PM</div>
+                        @else
+                            <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
+                            <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
+                            <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
+                        @endif
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
                         <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price) }}</div>
                     </div>

@@ -15,4 +15,8 @@ interface RoomRepositoryInterface extends RootRepositoryInterface
     public function findAvailableRooms(string $start, string $end): mixed;
     public function getFeaturedRooms(): Collection;
     public function listRoomsWithAvailability(string $start, string $end);
+    
+    // Day Tour specific methods
+    public function getDayTourRoomsWithAvailability(\Carbon\Carbon $date): Collection;
+    public function findByIds(array $ids): Collection;
 }

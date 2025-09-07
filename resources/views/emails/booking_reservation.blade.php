@@ -11,6 +11,7 @@
         $fmtDate = function ($date) { if(!$date) return ''; return Carbon::parse($date)->isoFormat('DD MMM YYYY'); };
         $fmtDateTime = function ($date) { if(!$date) return ''; return Carbon::parse($date)->setTimezone('Asia/Singapore')->isoFormat('DD MMM YYYY HH:mm'); };
         $fmtMoney = fn($v) => '₱' . number_format((float)$v, 2);
+        $isDayTour = $booking->isDayTour();
         $nights = 0;
         if (!empty($booking?->check_in_date) && !empty($booking?->check_out_date)) {
             $nights = Carbon::parse($booking->check_in_date)->diffInDays(Carbon::parse($booking->check_out_date));
@@ -38,7 +39,7 @@
 
                 <div class="content">
                     <p style="margin-bottom:4px;font-size:16px;padding-left:16px;">Hi {{ $booking->guest_name ?? $booking->user->name ?? 'Guest' }},</p>
-                    <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">Thank you for your reservation. Your booking is currently <strong>on hold</strong> and requires payment to secure the room.</p>
+                    <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">Thank you for your {{ $isDayTour ? 'Day Tour' : 'accommodation' }} reservation. Your booking is currently <strong>on hold</strong> and requires payment to secure {{ $isDayTour ? 'your spot' : 'the room' }}.</p>
                     <p style="margin-bottom:16px;font-size:15px;padding-left:16px;">Here's a summary</p>
 
                     <!-- Status + Expiry (RESERVATION ONLY) -->
@@ -57,9 +58,14 @@
                     <!-- Core booking facts (shared) -->
                     <div class="panel" style="margin-bottom:24px;margin-left:16px;margin-right:16px;">
                         <div class="kv"><strong>Reference Number:</strong> {{ $booking->reference_number }}</div>
-                        <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
-                        <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
-                        <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
+                        @if($isDayTour)
+                            <div class="kv"><strong>Day Tour Date:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
+                            <div class="kv"><strong>Tour Hours:</strong> 8:00 AM - 5:00 PM</div>
+                        @else
+                            <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
+                            <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
+                            <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
+                        @endif
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
                         <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0)) }}</div>
                     </div>
@@ -114,7 +120,62 @@
                                     }
                                 @endphp
                                 
-                                @if($buffetNights->count() > 0)
+                                @if($isDayTour && !empty($mealQuote['selections']))
+                                    <!-- Day Tour Meal Breakdown -->
+                                    @foreach($mealQuote['selections'] as $selection)
+                                        <div style="margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px;">
+                                            <div style="font-weight: bold; margin-bottom: 8px; color: #333;">
+                                                {{ $selection['room_name'] }} - {{ $selection['adults'] + $selection['children'] }} guests
+                                            </div>
+                                            
+                                            <!-- Buffet Lunch -->
+                                            <div style="font-size: 13px; color: #6b7280; margin-left: 12px;">
+                                                @if($selection['include_lunch'] && $selection['lunch_cost'] > 0)
+                                                    <div style="margin-bottom: 4px;">
+                                                        <span style="color: #059669;">✓</span> Buffet Lunch: 
+                                                        @if($selection['adults'] > 0 && $selection['children'] > 0)
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['lunch_adult_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['lunch_child_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
+                                                        @elseif($selection['adults'] > 0)
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['lunch_adult_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
+                                                        @else
+                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['lunch_child_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    <div style="margin-bottom: 4px; color: #9ca3af;">
+                                                        <span style="color: #ef4444;">✗</span> Buffet Lunch: Not included
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            
+                                            <!-- PM Snack -->
+                                            <div style="font-size: 13px; color: #6b7280; margin-left: 12px;">
+                                                @if($selection['include_pm_snack'] && $selection['pm_snack_cost'] > 0)
+                                                    <div style="margin-bottom: 4px;">
+                                                        <span style="color: #059669;">✓</span> PM Snack: 
+                                                        @if($selection['adults'] > 0 && $selection['children'] > 0)
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pm_snack_adult_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['pm_snack_child_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
+                                                        @elseif($selection['adults'] > 0)
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pm_snack_adult_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
+                                                        @else
+                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['pm_snack_child_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    <div style="margin-bottom: 4px; color: #9ca3af;">
+                                                        <span style="color: #ef4444;">✗</span> PM Snack: Not included
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            
+                                            @if($selection['meal_cost'] > 0)
+                                                <div style="font-size: 13px; color: #111827; font-weight: bold; margin-top: 4px; margin-left: 12px;">
+                                                    Meal Total: {{ $fmtMoney($selection['meal_cost']) }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                @elseif($buffetNights->count() > 0)
                                 <div style="margin-bottom: 16px;">
                                     <div style="font-weight: bold; margin-bottom: 8px; color: #333;">
                                         Buffet Meals: {{ $buffetNights->count() }} night{{ $buffetNights->count() > 1 ? 's' : '' }}
@@ -287,10 +348,16 @@
                             <p class="m-0"><strong>Adults:</strong> {{$booking->adults ?? 0}}</p>
                         </td>
                         <td style="width:50%;vertical-align:top;">
-                            <p class="m-0"><strong>Arrival:</strong> {{ $fmtDate($booking->check_in_date) }}</p>
-                            <p class="m-0"><strong>Departure:</strong> {{ $fmtDate($booking->check_out_date) }}</p>
-                            <p class="m-0"><strong>Nights:</strong> {{ $nights }}</p>
-                            <p class="m-0"><strong>Children:</strong> {{$booking->children ?? 0}}</p>
+                            @if($isDayTour)
+                                <p class="m-0"><strong>Tour Date:</strong> {{ $fmtDate($booking->check_in_date) }}</p>
+                                <p class="m-0"><strong>Tour Duration:</strong> 8:00 AM - 5:00 PM</p>
+                                <p class="m-0"><strong>Children:</strong> {{$booking->children ?? 0}}</p>
+                            @else
+                                <p class="m-0"><strong>Arrival:</strong> {{ $fmtDate($booking->check_in_date) }}</p>
+                                <p class="m-0"><strong>Departure:</strong> {{ $fmtDate($booking->check_out_date) }}</p>
+                                <p class="m-0"><strong>Nights:</strong> {{ $nights }}</p>
+                                <p class="m-0"><strong>Children:</strong> {{$booking->children ?? 0}}</p>
+                            @endif
                         </td>
                         </tr></table>
                     </div></div>

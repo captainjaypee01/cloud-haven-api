@@ -13,7 +13,7 @@ class UpdateRoom extends Data
         public int      $quantity,
         public int      $max_guests,
         public int      $extra_guests,
-        public bool     $allows_day_use,
+        public string   $room_type,    // overnight|day_tour
         public string   $status,       // available|unavailable|archived
         public float    $base_weekday_rate,
         public float    $base_weekend_rate,

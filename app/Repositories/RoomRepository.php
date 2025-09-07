@@ -35,6 +35,12 @@ class RoomRepository implements RoomRepositoryInterface
                 $query->where('status', RoomStatusEnum::fromLabel($filters['status'])->value);
         }
 
+        // Filter by room type
+        if (!empty($filters['room_type'])) {
+            if ($filters['room_type'] != 'all')
+                $query->where('room_type', $filters['room_type']);
+        }
+
         // Filter by featured
         if (!empty($filters['featured'])) {
             $query->where('is_featured', $filters['featured']);
@@ -83,8 +89,16 @@ class RoomRepository implements RoomRepositoryInterface
             ->where('booking_rooms.room_id', $roomId)
             ->whereIn('bookings.status', ['paid', 'downpayment'])
             ->where(function ($q) use ($startDate, $endDate) {
-                $q->where('bookings.check_in_date', '<', $endDate)
-                    ->where('bookings.check_out_date', '>', $startDate);
+                // Handle both overnight and day tour bookings
+                $q->where(function ($subQ) use ($startDate, $endDate) {
+                    // Overnight bookings: check_in < endDate AND check_out > startDate
+                    $subQ->where('bookings.check_in_date', '<', $endDate)
+                        ->where('bookings.check_out_date', '>', $startDate);
+                })->orWhere(function ($subQ) use ($startDate) {
+                    // Day tour bookings: check_in_date = startDate (same day booking)
+                    $subQ->where('bookings.booking_type', 'day_tour')
+                        ->where('bookings.check_in_date', $startDate);
+                });
             })
             ->count(); // Each booking_room row is one unit
 
@@ -98,8 +112,16 @@ class RoomRepository implements RoomRepositoryInterface
             ->where('payments.proof_status', 'pending')
             ->where('bookings.reserved_until', '<', now()) // Only count bookings past the initial hold period
             ->where(function ($q) use ($startDate, $endDate) {
-                $q->where('bookings.check_in_date', '<', $endDate)
-                    ->where('bookings.check_out_date', '>', $startDate);
+                // Handle both overnight and day tour bookings
+                $q->where(function ($subQ) use ($startDate, $endDate) {
+                    // Overnight bookings: check_in < endDate AND check_out > startDate
+                    $subQ->where('bookings.check_in_date', '<', $endDate)
+                        ->where('bookings.check_out_date', '>', $startDate);
+                })->orWhere(function ($subQ) use ($startDate) {
+                    // Day tour bookings: check_in_date = startDate (same day booking)
+                    $subQ->where('bookings.booking_type', 'day_tour')
+                        ->where('bookings.check_in_date', $startDate);
+                });
             })
             ->count();
 
@@ -110,10 +132,18 @@ class RoomRepository implements RoomRepositoryInterface
         $pendingBookings = DB::table('bookings')
             ->where('status', 'pending')
             ->where(function ($q) use ($startDate, $endDate) {
-                $q->where('check_in_date', '<', $endDate)
-                    ->where('check_out_date', '>', $startDate);
+                // Handle both overnight and day tour bookings
+                $q->where(function ($subQ) use ($startDate, $endDate) {
+                    // Overnight bookings: check_in < endDate AND check_out > startDate
+                    $subQ->where('check_in_date', '<', $endDate)
+                        ->where('check_out_date', '>', $startDate);
+                })->orWhere(function ($subQ) use ($startDate) {
+                    // Day tour bookings: check_in_date = startDate (same day booking)
+                    $subQ->where('booking_type', 'day_tour')
+                        ->where('check_in_date', $startDate);
+                });
             })
-            ->get(['id', 'check_in_date', 'check_out_date']);
+            ->get(['id', 'check_in_date', 'check_out_date', 'booking_type']);
         
         $lockedUnits = 0;
         Log::info('Pending bookings for date range: ' . json_encode($pendingBookings->toArray()));
@@ -132,12 +162,20 @@ class RoomRepository implements RoomRepositoryInterface
                 // Check if this locked room matches our room and date range
                 // Note: lockedRoom['room_id'] is actually the room slug, not the database ID
                 // Each room entry in Redis represents 1 unit (no quantity field)
-                if (
-                    $lockedRoom['room_id'] == $roomSlug &&
-                    $lock['check_in_date'] < $endDate &&
-                    $lock['check_out_date'] > $startDate
-                ) {
-                    Log::info('Locked unit found - Room Slug: ' . $lockedRoom['room_id'] . ', Dates: ' . $lock['check_in_date'] . ' to ' . $lock['check_out_date'] . ', Count: 1 unit');
+                $isRoomMatch = $lockedRoom['room_id'] == $roomSlug;
+                $isDateMatch = false;
+                
+                // Handle date matching based on booking type
+                if ($booking->booking_type === 'day_tour') {
+                    // For Day Tour: check if the locked date matches our start date
+                    $isDateMatch = $lock['check_in_date'] == $startDate;
+                } else {
+                    // For Overnight: check if dates overlap
+                    $isDateMatch = $lock['check_in_date'] < $endDate && $lock['check_out_date'] > $startDate;
+                }
+                
+                if ($isRoomMatch && $isDateMatch) {
+                    Log::info('Locked unit found - Room Slug: ' . $lockedRoom['room_id'] . ', Dates: ' . $lock['check_in_date'] . ' to ' . $lock['check_out_date'] . ', Type: ' . ($booking->booking_type ?? 'overnight') . ', Count: 1 unit');
                     $lockedUnits += 1; // Each room entry = 1 unit
                 }
             }
@@ -177,7 +215,7 @@ class RoomRepository implements RoomRepositoryInterface
 
     public function findAvailableRooms(string $start, string $end): mixed
     {
-        $rooms = Room::all();
+        $rooms = Room::where('room_type', 'overnight')->get();
         return $rooms->filter(
             fn($room) =>
             $this->getAvailableUnits($room->id, $start, $end) > 0
@@ -189,14 +227,47 @@ class RoomRepository implements RoomRepositoryInterface
         return Room::with([
             'amenities',
             'images' => fn($q) => $q->orderBy('room_image.order')
-        ])->where('is_featured', 1)->where('status', RoomStatusEnum::AVAILABLE)->take(4)->get();
+        ])->where('room_type', 'overnight')
+          ->where('is_featured', 1)
+          ->where('status', RoomStatusEnum::AVAILABLE)
+          ->take(4)
+          ->get();
     }
 
     public function listRoomsWithAvailability(string $start, string $end)
     {
-        return Room::with('amenities')->get()->map(function ($room) use ($start, $end) {
-            $room->available_count = $this->getAvailableUnits($room->id, $start, $end);
-            return $room;
-        });
+        return Room::with('amenities')
+            ->where('room_type', 'overnight')
+            ->get()
+            ->map(function ($room) use ($start, $end) {
+                $room->available_count = $this->getAvailableUnits($room->id, $start, $end);
+                return $room;
+            });
+    }
+
+    public function getDayTourRoomsWithAvailability(\Carbon\Carbon $date): Collection
+    {
+        $startDate = $date->format('Y-m-d');
+        $endDate = $date->copy()->addDay()->format('Y-m-d');
+        
+        return Room::with(['amenities', 'roomUnits'])
+            ->where('room_type', 'day_tour')
+            ->where('status', RoomStatusEnum::AVAILABLE)
+            ->get()
+            ->map(function ($room) use ($startDate, $endDate) {
+                $availability = $this->getDetailedAvailability($room->id, $startDate, $endDate);
+                $room->available_units = $availability['available'];
+                return $room;
+            })
+            ->filter(fn($room) => $room->available_units > 0);
+    }
+
+    public function findByIds(array $ids): Collection
+    {
+        if (empty($ids)) {
+            return collect();
+        }
+        
+        return Room::whereIn('id', $ids)->get();
     }
 }

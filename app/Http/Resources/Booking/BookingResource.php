@@ -25,6 +25,7 @@ class BookingResource extends JsonResource
         $data = [
             'id'                        => $this->id,
             'reference_number'          => $this->reference_number,
+            'booking_type'              => $this->booking_type ?? 'overnight', // Default to overnight for legacy bookings
             'check_in_date'             => $this->check_in_date,
             'check_out_date'            => $this->check_out_date,
             'guest_name'                => $this->guest_name,

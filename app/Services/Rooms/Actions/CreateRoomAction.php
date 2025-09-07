@@ -18,6 +18,7 @@ final class CreateRoomAction implements CreateRoomContract
             'quantity'              => $payload->quantity,
             'max_guests'            => $payload->max_guests,
             'extra_guests'          => $payload->extra_guests,
+            'room_type'             => $payload->room_type,
             'base_weekday_rate'     => $payload->base_weekday_rate,
             'base_weekend_rate'     => $payload->base_weekend_rate,
             'price_per_night'       => $payload->price_per_night,

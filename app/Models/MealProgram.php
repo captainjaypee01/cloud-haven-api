@@ -21,6 +21,7 @@ class MealProgram extends Model
         'weekdays',
         'weekend_definition',
         'inactive_label',
+        'pm_snack_policy',
         'notes',
     ];
 

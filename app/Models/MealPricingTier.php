@@ -15,6 +15,12 @@ class MealPricingTier extends Model
         'currency',
         'adult_price',
         'child_price',
+        'adult_lunch_price',
+        'child_lunch_price',
+        'adult_pm_snack_price',
+        'child_pm_snack_price',
+        'adult_dinner_price',
+        'child_dinner_price',
         'effective_from',
         'effective_to',
     ];
@@ -22,6 +28,12 @@ class MealPricingTier extends Model
     protected $casts = [
         'adult_price' => 'decimal:2',
         'child_price' => 'decimal:2',
+        'adult_lunch_price' => 'decimal:2',
+        'child_lunch_price' => 'decimal:2',
+        'adult_pm_snack_price' => 'decimal:2',
+        'child_pm_snack_price' => 'decimal:2',
+        'adult_dinner_price' => 'decimal:2',
+        'child_dinner_price' => 'decimal:2',
         'effective_from' => 'date',
         'effective_to' => 'date',
     ];

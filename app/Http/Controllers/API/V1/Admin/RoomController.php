@@ -29,7 +29,7 @@ class RoomController extends Controller
      */
     public function index(Request $request): CollectionResponse
     {
-        $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page']);
+        $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page', 'room_type']);
         $paginator = $this->roomService->list($filters);
         return new CollectionResponse(new RoomCollection($paginator), JsonResponse::HTTP_OK);
     }
