@@ -10,6 +10,7 @@
         $resortName = $resort['name'] ?? (config('app.name') ?? 'Your Resort');
         $fmtDate = function ($date) { if(!$date) return ''; return \Carbon\Carbon::parse($date)->format('M d, Y'); };
         $fmtDateTime = function ($date) { if(!$date) return ''; return \Carbon\Carbon::parse($date)->setTimezone('Asia/Singapore')->format('M d, Y H:i'); };
+        $isDayTour = $booking->isDayTour();
     @endphp
     <div class="container">
         <div class="email-wrapper">
@@ -29,8 +30,13 @@
                                 <div class="kv"><strong>Reference Number:</strong> {{ $booking->reference_number }}</div>
                                 <div class="kv"><strong>Guest Name:</strong> {{ $booking->guest_name }}</div>
                                 <div class="kv"><strong>Guest Email:</strong> {{ $booking->guest_email }}</div>
-                                <div class="kv"><strong>Check-in:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
-                                <div class="kv"><strong>Check-out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
+                                @if($isDayTour)
+                                    <div class="kv"><strong>Day Tour Date:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
+                                    <div class="kv"><strong>Tour Hours:</strong> 8:00 AM - 5:00 PM</div>
+                                @else
+                                    <div class="kv"><strong>Check-in:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
+                                    <div class="kv"><strong>Check-out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
+                                @endif
                             </div>
                         </div>
                     </div>
