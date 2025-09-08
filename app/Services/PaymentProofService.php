@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use App\Services\EmailTrackingService;
 use Illuminate\Support\Str;
 
 class PaymentProofService
@@ -81,7 +82,15 @@ class PaymentProofService
                     $adminLink
                 );
 
-                Log::info("Payment proof uploaded successfully for payment {$payment->id}");
+                Log::info("Payment proof uploaded successfully", [
+                    'payment_id' => $payment->id,
+                    'booking_id' => $booking->id,
+                    'reference_number' => $booking->reference_number,
+                    'file_path' => $filePath,
+                    'upload_count' => $payment->proof_upload_count,
+                    'file_size' => $file->getSize(),
+                    'file_type' => $file->getMimeType()
+                ]);
 
                 return [
                     'success' => true,
@@ -91,7 +100,14 @@ class PaymentProofService
                 ];
 
             } catch (\Exception $e) {
-                Log::error("Failed to upload payment proof for payment {$payment->id}: " . $e->getMessage());
+                Log::error("Failed to upload payment proof", [
+                    'payment_id' => $payment->id,
+                    'booking_id' => $booking->id ?? null,
+                    'reference_number' => $booking->reference_number ?? null,
+                    'error' => $e->getMessage(),
+                    'file_size' => $file->getSize(),
+                    'file_type' => $file->getMimeType()
+                ]);
                 
                 return [
                     'success' => false,
@@ -192,14 +208,40 @@ class PaymentProofService
             if ($guestEmail) {
                 if ($status === 'accepted') {
                     // Send "Payment Confirmed" email when proof is accepted
-                    Mail::to($guestEmail)->queue(new ProofPaymentAcceptedMail($payment));
-                    Log::info("Payment proof accepted email queued for payment {$payment->id}");
+                    EmailTrackingService::sendWithTracking(
+                        $guestEmail,
+                        new ProofPaymentAcceptedMail($payment),
+                        'proof_payment_accepted',
+                        [
+                            'payment_id' => $payment->id,
+                            'booking_id' => $payment->booking_id,
+                            'booking_reference' => $payment->booking->reference_number,
+                            'payment_amount' => $payment->amount,
+                            'admin_user_id' => $adminUserId
+                        ]
+                    );
                 } else if ($status === 'rejected') {
-                    Mail::to($guestEmail)->queue(new ProofPaymentRejectedMail($payment, $reason));
-                    Log::info("Proof rejection email queued for payment {$payment->id}");
+                    EmailTrackingService::sendWithTracking(
+                        $guestEmail,
+                        new ProofPaymentRejectedMail($payment, $reason),
+                        'proof_payment_rejected',
+                        [
+                            'payment_id' => $payment->id,
+                            'booking_id' => $payment->booking_id,
+                            'booking_reference' => $payment->booking->reference_number,
+                            'payment_amount' => $payment->amount,
+                            'rejection_reason' => $reason,
+                            'admin_user_id' => $adminUserId
+                        ]
+                    );
                 }
             } else {
-                Log::warning("No guest email found for payment {$payment->id} - skipping notification");
+                Log::warning("No guest email found for payment {$payment->id} - skipping notification", [
+                    'payment_id' => $payment->id,
+                    'booking_id' => $payment->booking_id,
+                    'booking_reference' => $payment->booking->reference_number,
+                    'status' => $status
+                ]);
             }
 
             Log::info("Payment proof status updated for payment {$payment->id}", [

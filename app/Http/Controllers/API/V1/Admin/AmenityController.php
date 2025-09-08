@@ -39,10 +39,30 @@ class AmenityController extends Controller
      */
     public function store(StoreAmenityRequest $request): ItemResponse|ErrorResponse
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin creating new amenity', [
+            'admin_user_id' => $request->user()->id,
+            'amenity_name' => $validatedData['name'] ?? null,
+            'amenity_type' => $validatedData['type'] ?? null
+        ]);
+        
         try {
-            $data = $this->amenityService->create($request->validated(), $request->user()->id);
+            $data = $this->amenityService->create($validatedData, $request->user()->id);
+            
+            Log::info('Amenity created successfully', [
+                'admin_user_id' => $request->user()->id,
+                'amenity_id' => $data->id,
+                'amenity_name' => $data->name,
+                'amenity_type' => $data->type
+            ]);
+            
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to create amenity', [
+                'admin_user_id' => $request->user()->id,
+                'amenity_name' => $validatedData['name'] ?? null,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to create amenity.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new ItemResponse(new AmenityResource($data), JsonResponse::HTTP_CREATED);
@@ -66,12 +86,36 @@ class AmenityController extends Controller
      */
     public function update(UpdateAmenityRequest $request, int $id): ItemResponse|ErrorResponse
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin updating amenity', [
+            'admin_user_id' => auth()->id(),
+            'amenity_id' => $id,
+            'updated_fields' => array_keys($validatedData)
+        ]);
+        
         try {
-            $data = $this->amenityService->update($id, $request->validated());
+            $data = $this->amenityService->update($id, $validatedData);
+            
+            Log::info('Amenity updated successfully', [
+                'admin_user_id' => auth()->id(),
+                'amenity_id' => $id,
+                'amenity_name' => $data->name,
+                'updated_fields' => array_keys($validatedData)
+            ]);
+            
         } catch (ModelNotFoundException $e) {
+            Log::warning('Amenity not found for update', [
+                'admin_user_id' => auth()->id(),
+                'amenity_id' => $id
+            ]);
             return new ErrorResponse('Amenity not found.');
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to update amenity', [
+                'admin_user_id' => auth()->id(),
+                'amenity_id' => $id,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to update amenity.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new ItemResponse(new AmenityResource($data), JsonResponse::HTTP_OK);
@@ -82,14 +126,32 @@ class AmenityController extends Controller
      */
     public function destroy(int $id): EmptyResponse|ErrorResponse
     {
+        Log::info('Admin deleting amenity', [
+            'admin_user_id' => auth()->id(),
+            'amenity_id' => $id
+        ]);
+        
         try {
             $this->amenityService->delete($id);
+            
+            Log::info('Amenity deleted successfully', [
+                'admin_user_id' => auth()->id(),
+                'deleted_amenity_id' => $id
+            ]);
+            
         } catch (ModelNotFoundException $e) {
-            Log::error($e->getMessage());
+            Log::warning('Amenity not found for deletion', [
+                'admin_user_id' => auth()->id(),
+                'amenity_id' => $id
+            ]);
             return new ErrorResponse('Amenity not found.');
         } catch (Exception $e) {
-            Log::error($e->getMessage());
-            return new ErrorResponse('Unable to delete a room.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            Log::error('Failed to delete amenity', [
+                'admin_user_id' => auth()->id(),
+                'amenity_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse('Unable to delete amenity.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new EmptyResponse();
     }
@@ -103,12 +165,35 @@ class AmenityController extends Controller
             'status'    => 'required|string'
         ]);
         
+        Log::info('Admin updating amenity status', [
+            'admin_user_id' => auth()->id(),
+            'amenity_id' => $id,
+            'new_status' => $validated['status']
+        ]);
+        
         try {
             $data = $this->amenityService->updateStatus($id, $validated['status']);
+            
+            Log::info('Amenity status updated successfully', [
+                'admin_user_id' => auth()->id(),
+                'amenity_id' => $id,
+                'amenity_name' => $data->name,
+                'new_status' => $validated['status']
+            ]);
+            
         } catch (ModelNotFoundException $e) {
+            Log::warning('Amenity not found for status update', [
+                'admin_user_id' => auth()->id(),
+                'amenity_id' => $id
+            ]);
             return new ErrorResponse('Amenity not found.');
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to update amenity status', [
+                'admin_user_id' => auth()->id(),
+                'amenity_id' => $id,
+                'new_status' => $validated['status'],
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to update amenity.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new ItemResponse(new AmenityResource($data), JsonResponse::HTTP_OK);

@@ -45,28 +45,50 @@ class MealProgramController extends Controller
      */
     public function store(MealProgramRequest $request): ItemResponse|ErrorResponse
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin creating new meal program', [
+            'admin_user_id' => auth()->id(),
+            'program_name' => $validatedData['name'],
+            'status' => $validatedData['status'],
+            'scope_type' => $validatedData['scope_type'],
+            'pm_snack_policy' => $validatedData['pm_snack_policy']
+        ]);
+        
         try {
             $dto = new MealProgramDTO(
                 id: null,
-                name: $request->validated()['name'],
-                status: $request->validated()['status'],
-                scopeType: $request->validated()['scope_type'],
-                dateStart: isset($request->validated()['date_start']) ? Carbon::parse($request->validated()['date_start']) : null,
-                dateEnd: isset($request->validated()['date_end']) ? Carbon::parse($request->validated()['date_end']) : null,
-                months: $request->validated()['months'] ?? null,
-                weekdays: $request->validated()['weekdays'] ?? null,
-                weekendDefinition: $request->validated()['weekend_definition'] ?? 'SAT_SUN',
-                pmSnackPolicy: $request->validated()['pm_snack_policy'],
-                inactiveLabel: $request->validated()['inactive_label'] ?? 'Free Breakfast',
-                notes: $request->validated()['notes'] ?? null
+                name: $validatedData['name'],
+                status: $validatedData['status'],
+                scopeType: $validatedData['scope_type'],
+                dateStart: isset($validatedData['date_start']) ? Carbon::parse($validatedData['date_start']) : null,
+                dateEnd: isset($validatedData['date_end']) ? Carbon::parse($validatedData['date_end']) : null,
+                months: $validatedData['months'] ?? null,
+                weekdays: $validatedData['weekdays'] ?? null,
+                weekendDefinition: $validatedData['weekend_definition'] ?? 'SAT_SUN',
+                pmSnackPolicy: $validatedData['pm_snack_policy'],
+                inactiveLabel: $validatedData['inactive_label'] ?? 'Free Breakfast',
+                notes: $validatedData['notes'] ?? null
             );
 
             $program = $this->upsertAction->execute($dto);
             $program->load(['pricingTiers', 'calendarOverrides']);
 
+            Log::info('Meal program created successfully', [
+                'admin_user_id' => auth()->id(),
+                'program_id' => $program->id,
+                'program_name' => $program->name,
+                'status' => $program->status,
+                'scope_type' => $program->scope_type
+            ]);
+
             return new ItemResponse(new MealProgramResource($program), JsonResponse::HTTP_CREATED);
         } catch (Exception $e) {
-            Log::error('Failed to create meal program: ' . $e->getMessage());
+            Log::error('Failed to create meal program', [
+                'admin_user_id' => auth()->id(),
+                'program_name' => $validatedData['name'] ?? null,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to create meal program.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -95,34 +117,57 @@ class MealProgramController extends Controller
      */
     public function update(MealProgramRequest $request, int $id): ItemResponse|ErrorResponse
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin updating meal program', [
+            'admin_user_id' => auth()->id(),
+            'program_id' => $id,
+            'updated_fields' => array_keys($validatedData)
+        ]);
+        
         try {
             $program = $this->programRepository->find($id);
 
             if (!$program) {
+                Log::warning('Meal program not found for update', [
+                    'admin_user_id' => auth()->id(),
+                    'program_id' => $id
+                ]);
                 return new ErrorResponse('Meal program not found.', JsonResponse::HTTP_NOT_FOUND);
             }
 
             $dto = new MealProgramDTO(
                 id: $id,
-                name: $request->validated()['name'],
-                status: $request->validated()['status'],
-                scopeType: $request->validated()['scope_type'],
-                dateStart: isset($request->validated()['date_start']) ? Carbon::parse($request->validated()['date_start']) : null,
-                dateEnd: isset($request->validated()['date_end']) ? Carbon::parse($request->validated()['date_end']) : null,
-                months: $request->validated()['months'] ?? null,
-                weekdays: $request->validated()['weekdays'] ?? null,
-                weekendDefinition: $request->validated()['weekend_definition'] ?? 'SAT_SUN',
-                pmSnackPolicy: $request->validated()['pm_snack_policy'],
-                inactiveLabel: $request->validated()['inactive_label'] ?? 'Free Breakfast',
-                notes: $request->validated()['notes'] ?? null
+                name: $validatedData['name'],
+                status: $validatedData['status'],
+                scopeType: $validatedData['scope_type'],
+                dateStart: isset($validatedData['date_start']) ? Carbon::parse($validatedData['date_start']) : null,
+                dateEnd: isset($validatedData['date_end']) ? Carbon::parse($validatedData['date_end']) : null,
+                months: $validatedData['months'] ?? null,
+                weekdays: $validatedData['weekdays'] ?? null,
+                weekendDefinition: $validatedData['weekend_definition'] ?? 'SAT_SUN',
+                pmSnackPolicy: $validatedData['pm_snack_policy'],
+                inactiveLabel: $validatedData['inactive_label'] ?? 'Free Breakfast',
+                notes: $validatedData['notes'] ?? null
             );
 
             $program = $this->upsertAction->execute($dto);
             $program->load(['pricingTiers', 'calendarOverrides']);
 
+            Log::info('Meal program updated successfully', [
+                'admin_user_id' => auth()->id(),
+                'program_id' => $id,
+                'program_name' => $program->name,
+                'updated_fields' => array_keys($validatedData)
+            ]);
+
             return new ItemResponse(new MealProgramResource($program));
         } catch (Exception $e) {
-            Log::error('Failed to update meal program: ' . $e->getMessage());
+            Log::error('Failed to update meal program', [
+                'admin_user_id' => auth()->id(),
+                'program_id' => $id,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to update meal program.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -132,18 +177,37 @@ class MealProgramController extends Controller
      */
     public function destroy(int $id): EmptyResponse|ErrorResponse
     {
+        Log::info('Admin deleting meal program', [
+            'admin_user_id' => auth()->id(),
+            'program_id' => $id
+        ]);
+        
         try {
             $program = $this->programRepository->find($id);
 
             if (!$program) {
+                Log::warning('Meal program not found for deletion', [
+                    'admin_user_id' => auth()->id(),
+                    'program_id' => $id
+                ]);
                 return new ErrorResponse('Meal program not found.', JsonResponse::HTTP_NOT_FOUND);
             }
 
             $this->programRepository->delete($program);
 
+            Log::info('Meal program deleted successfully', [
+                'admin_user_id' => auth()->id(),
+                'deleted_program_id' => $id,
+                'program_name' => $program->name
+            ]);
+
             return new EmptyResponse();
         } catch (Exception $e) {
-            Log::error('Failed to delete meal program: ' . $e->getMessage());
+            Log::error('Failed to delete meal program', [
+                'admin_user_id' => auth()->id(),
+                'program_id' => $id,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to delete meal program.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

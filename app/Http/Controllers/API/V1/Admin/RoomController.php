@@ -53,10 +53,30 @@ class RoomController extends Controller
      */
     public function store(StoreRoomRequest $request): ItemResponse|ErrorResponse
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin creating new room', [
+            'admin_user_id' => $request->user()->id,
+            'room_name' => $validatedData['name'] ?? null,
+            'room_type' => $validatedData['type'] ?? null
+        ]);
+        
         try {
-            $data = $this->roomService->create($request->validated(), $request->user()->id);
+            $data = $this->roomService->create($validatedData, $request->user()->id);
+            
+            Log::info('Room created successfully', [
+                'admin_user_id' => $request->user()->id,
+                'room_id' => $data->id,
+                'room_name' => $data->name,
+                'room_type' => $data->type
+            ]);
+            
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to create room', [
+                'admin_user_id' => $request->user()->id,
+                'room_name' => $validatedData['name'] ?? null,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to create a room.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new ItemResponse(new RoomResource($data), JsonResponse::HTTP_CREATED);
@@ -67,13 +87,36 @@ class RoomController extends Controller
      */
     public function update(UpdateRoomRequest $request, $room): ItemResponse|ErrorResponse
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin updating room', [
+            'admin_user_id' => $request->user()->id,
+            'room_id' => $room,
+            'updated_fields' => array_keys($validatedData)
+        ]);
+        
         try {
-            $data = $this->roomService->update($request->validated(), $room, $request->user()->id);
+            $data = $this->roomService->update($validatedData, $room, $request->user()->id);
+            
+            Log::info('Room updated successfully', [
+                'admin_user_id' => $request->user()->id,
+                'room_id' => $room,
+                'room_name' => $data->name,
+                'updated_fields' => array_keys($validatedData)
+            ]);
+            
         } catch (ModelNotFoundException $e) {
-            Log::error($e->getMessage());
+            Log::warning('Room not found for update', [
+                'admin_user_id' => $request->user()->id,
+                'room_id' => $room
+            ]);
             return new ErrorResponse('Room not found.');
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to update room', [
+                'admin_user_id' => $request->user()->id,
+                'room_id' => $room,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to update a room.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new ItemResponse(new RoomResource($data), JsonResponse::HTTP_OK);
@@ -84,13 +127,31 @@ class RoomController extends Controller
      */
     public function destroy(Request $request, $room): EmptyResponse|ErrorResponse
     {
+        Log::info('Admin deleting room', [
+            'admin_user_id' => $request->user()->id,
+            'room_id' => $room
+        ]);
+        
         try {
             $this->roomService->delete($room, $request->user()->id);
+            
+            Log::info('Room deleted successfully', [
+                'admin_user_id' => $request->user()->id,
+                'deleted_room_id' => $room
+            ]);
+            
         } catch (ModelNotFoundException $e) {
-            Log::error($e->getMessage());
+            Log::warning('Room not found for deletion', [
+                'admin_user_id' => $request->user()->id,
+                'room_id' => $room
+            ]);
             return new ErrorResponse('Room not found.');
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to delete room', [
+                'admin_user_id' => $request->user()->id,
+                'room_id' => $room,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to delete a room.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new EmptyResponse();

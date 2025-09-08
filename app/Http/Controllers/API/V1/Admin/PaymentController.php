@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use App\Services\EmailTrackingService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class PaymentController extends Controller
@@ -37,6 +38,16 @@ class PaymentController extends Controller
             'notify_guest' => 'sometimes|boolean',
         ]);
 
+        Log::info('Admin processing payment', [
+            'admin_user_id' => auth()->id(),
+            'reference_number' => $validated['reference_number'],
+            'amount' => $validated['amount'],
+            'provider' => $validated['provider'],
+            'status' => $validated['status'],
+            'transaction_id' => $validated['transaction_id'] ?? null,
+            'notify_guest' => $validated['notify_guest'] ?? false
+        ]);
+
         $dto = new PaymentRequestDTO(
             referenceNumber: $validated['reference_number'],
             amount: $validated['amount'],
@@ -49,6 +60,27 @@ class PaymentController extends Controller
         );
 
         $result = $this->paymentService->execute($dto);
+        
+        if ($result->success) {
+            Log::info('Admin payment processed successfully', [
+                'admin_user_id' => auth()->id(),
+                'reference_number' => $validated['reference_number'],
+                'payment_id' => $result->payment->id,
+                'amount' => $validated['amount'],
+                'status' => $validated['status'],
+                'booking_id' => $result->booking->id
+            ]);
+        } else {
+            Log::error('Admin payment processing failed', [
+                'admin_user_id' => auth()->id(),
+                'reference_number' => $validated['reference_number'],
+                'error_code' => $result->errorCode,
+                'error_message' => $result->errorMessage,
+                'amount' => $validated['amount'],
+                'status' => $validated['status']
+            ]);
+        }
+        
         // Decide HTTP status based on result
         $status = JsonResponse::HTTP_OK;
 
@@ -87,6 +119,18 @@ class PaymentController extends Controller
         $oldStatus = $payment->status;
         $newStatus = $validated['status'];
         $notifyGuest = $validated['notify_guest'] ?? true;
+
+        Log::info('Admin updating payment', [
+            'admin_user_id' => auth()->id(),
+            'payment_id' => $payment->id,
+            'booking_id' => $payment->booking_id,
+            'booking_reference' => $payment->booking->reference_number,
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+            'amount' => $validated['amount'],
+            'provider' => $validated['provider'],
+            'notify_guest' => $notifyGuest
+        ]);
 
         // Update the payment
         $payment->update($validated);

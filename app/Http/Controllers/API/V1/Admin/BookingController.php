@@ -97,11 +97,33 @@ class BookingController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'remarks' => 'nullable|string',
         ]);
+        
+        Log::info('Admin adding other charge to booking', [
+            'admin_user_id' => auth()->id(),
+            'booking_id' => $booking,
+            'charge_amount' => $validated['amount'],
+            'remarks' => $validated['remarks'] ?? null
+        ]);
+        
         try {
             $data = $this->bookingService->show($booking);
-            $data->otherCharges()->create($validated);
+            $otherCharge = $data->otherCharges()->create($validated);
+            
+            Log::info('Other charge added successfully', [
+                'admin_user_id' => auth()->id(),
+                'booking_id' => $booking,
+                'booking_reference' => $data->reference_number,
+                'charge_id' => $otherCharge->id,
+                'charge_amount' => $validated['amount'],
+                'remarks' => $validated['remarks'] ?? null
+            ]);
+            
             return new ItemResponse(new BookingResource($data), JsonResponse::HTTP_CREATED);
         } catch (ModelNotFoundException $e) {
+            Log::warning('Booking not found for other charge', [
+                'admin_user_id' => auth()->id(),
+                'booking_id' => $booking
+            ]);
             return new ErrorResponse('Booking not found.');
         }
         return new ItemResponse(new BookingResource($data->refresh()), JsonResponse::HTTP_CREATED);
@@ -115,11 +137,31 @@ class BookingController extends Controller
         ]);
 
         $booking = $this->bookingService->show($booking);
+        
         // Calculate the original duration (in nights)
         $originalNights = Carbon::parse($booking->check_in_date)->diffInDays(Carbon::parse($booking->check_out_date));
         $newNights = Carbon::parse($validated['check_in_date'])->diffInDays(Carbon::parse($validated['check_out_date']));
 
+        Log::info('Admin rescheduling booking', [
+            'admin_user_id' => auth()->id(),
+            'booking_id' => $booking,
+            'booking_reference' => $booking->reference_number,
+            'original_check_in' => $booking->check_in_date,
+            'original_check_out' => $booking->check_out_date,
+            'new_check_in' => $validated['check_in_date'],
+            'new_check_out' => $validated['check_out_date'],
+            'original_nights' => $originalNights,
+            'new_nights' => $newNights
+        ]);
+
         if ($newNights !== $originalNights) {
+            Log::warning('Reschedule rejected - duration mismatch', [
+                'admin_user_id' => auth()->id(),
+                'booking_id' => $booking,
+                'booking_reference' => $booking->reference_number,
+                'original_nights' => $originalNights,
+                'new_nights' => $newNights
+            ]);
             return new ErrorResponse("The reschedule duration must match the original booking duration ({$originalNights} night(s)).", 422);
         }
 
@@ -131,10 +173,25 @@ class BookingController extends Controller
                 'check_out_date' => $validated['check_out_date'],
             ]);
             DB::commit();
+            
+            Log::info('Booking rescheduled successfully', [
+                'admin_user_id' => auth()->id(),
+                'booking_id' => $booking,
+                'booking_reference' => $booking->reference_number,
+                'new_check_in' => $validated['check_in_date'],
+                'new_check_out' => $validated['check_out_date'],
+                'nights' => $newNights
+            ]);
+            
             return new ItemResponse(new BookingResource($booking));
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error($e->getMessage());
+            Log::error('Failed to reschedule booking', [
+                'admin_user_id' => auth()->id(),
+                'booking_id' => $booking,
+                'booking_reference' => $booking->reference_number,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse("Unable to reschedule", JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

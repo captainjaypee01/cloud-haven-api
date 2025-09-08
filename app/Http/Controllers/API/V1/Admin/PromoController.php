@@ -33,10 +33,32 @@ class PromoController extends Controller
     /** Store a new promo */
     public function store(StorePromoRequest $request): ItemResponse|ErrorResponse
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin creating new promo code', [
+            'admin_user_id' => auth()->id(),
+            'promo_code' => $validatedData['code'] ?? null,
+            'discount_type' => $validatedData['discount_type'] ?? null,
+            'discount_value' => $validatedData['discount_value'] ?? null
+        ]);
+        
         try {
-            $promo = $this->promoService->create($request->validated());
+            $promo = $this->promoService->create($validatedData);
+            
+            Log::info('Promo code created successfully', [
+                'admin_user_id' => auth()->id(),
+                'promo_id' => $promo->id,
+                'promo_code' => $promo->code,
+                'discount_type' => $promo->discount_type,
+                'discount_value' => $promo->discount_value
+            ]);
+            
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to create promo code', [
+                'admin_user_id' => auth()->id(),
+                'promo_code' => $validatedData['code'] ?? null,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to create promo code.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new ItemResponse(new PromoResource($promo), JsonResponse::HTTP_CREATED);
@@ -56,12 +78,36 @@ class PromoController extends Controller
     /** Update an existing promo */
     public function update(UpdatePromoRequest $request, int $id): ItemResponse|ErrorResponse
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin updating promo code', [
+            'admin_user_id' => auth()->id(),
+            'promo_id' => $id,
+            'updated_fields' => array_keys($validatedData)
+        ]);
+        
         try {
-            $promo = $this->promoService->update($id, $request->validated());
+            $promo = $this->promoService->update($id, $validatedData);
+            
+            Log::info('Promo code updated successfully', [
+                'admin_user_id' => auth()->id(),
+                'promo_id' => $id,
+                'promo_code' => $promo->code,
+                'updated_fields' => array_keys($validatedData)
+            ]);
+            
         } catch (ModelNotFoundException $e) {
+            Log::warning('Promo not found for update', [
+                'admin_user_id' => auth()->id(),
+                'promo_id' => $id
+            ]);
             return new ErrorResponse('Promo not found.', JsonResponse::HTTP_NOT_FOUND);
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to update promo code', [
+                'admin_user_id' => auth()->id(),
+                'promo_id' => $id,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to update promo.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new ItemResponse(new PromoResource($promo), JsonResponse::HTTP_OK);
@@ -70,12 +116,31 @@ class PromoController extends Controller
     /** Delete a promo */
     public function destroy(int $id): EmptyResponse|ErrorResponse
     {
+        Log::info('Admin deleting promo code', [
+            'admin_user_id' => auth()->id(),
+            'promo_id' => $id
+        ]);
+        
         try {
             $this->promoService->delete($id);
+            
+            Log::info('Promo code deleted successfully', [
+                'admin_user_id' => auth()->id(),
+                'deleted_promo_id' => $id
+            ]);
+            
         } catch (ModelNotFoundException $e) {
+            Log::warning('Promo not found for deletion', [
+                'admin_user_id' => auth()->id(),
+                'promo_id' => $id
+            ]);
             return new ErrorResponse('Promo not found.', JsonResponse::HTTP_NOT_FOUND);
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to delete promo code', [
+                'admin_user_id' => auth()->id(),
+                'promo_id' => $id,
+                'error' => $e->getMessage()
+            ]);
             // If PromoInUseException was thrown, it will be caught here as generic Exception.
             // For simplicity, we return a generic message (could also inspect $e for specific exception).
             return new ErrorResponse('Unable to delete promo.', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);

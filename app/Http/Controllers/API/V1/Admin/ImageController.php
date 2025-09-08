@@ -29,9 +29,10 @@ class ImageController extends Controller
     {
         try {
             Log::info('Starting image upload process', [
-                'user_id' => auth()->id(),
+                'admin_user_id' => auth()->id(),
                 'file_count' => count($request->file('files', [])),
-                'file_sizes' => array_map(fn($file) => $file->getSize(), $request->file('files', []))
+                'file_sizes' => array_map(fn($file) => $file->getSize(), $request->file('files', [])),
+                'file_types' => array_map(fn($file) => $file->getMimeType(), $request->file('files', []))
             ]);
 
             $files = $request->file('files');
@@ -39,17 +40,18 @@ class ImageController extends Controller
             $images = $this->imageService->uploadImages($files, $names);
             
             Log::info('Image upload completed successfully', [
-                'user_id' => auth()->id(),
-                'uploaded_count' => count($images)
+                'admin_user_id' => auth()->id(),
+                'uploaded_count' => count($images),
+                'image_ids' => $images->pluck('id')->toArray()
             ]);
             
             return new CollectionResponse(ImageResource::collection($images), 201);
         } catch (Exception $e) {
             Log::error('Image upload failed', [
-                'user_id' => auth()->id(),
+                'admin_user_id' => auth()->id(),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'file_count' => count($request->file('files', []))
+                'file_count' => count($request->file('files', [])),
+                'file_sizes' => array_map(fn($file) => $file->getSize(), $request->file('files', []))
             ]);
             return new ErrorResponse('Unable to upload images: ' . $e->getMessage(), JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }

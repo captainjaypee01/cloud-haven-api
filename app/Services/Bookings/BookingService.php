@@ -19,6 +19,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use App\Services\EmailTrackingService;
 
 class BookingService implements BookingServiceInterface
 {
@@ -65,6 +66,17 @@ class BookingService implements BookingServiceInterface
     
     public function createBooking(BookingData $bookingData, ?int $userId = null)
     {
+        Log::info('Starting booking creation process', [
+            'guest_email' => $bookingData->guest_email,
+            'guest_name' => $bookingData->guest_name,
+            'check_in_date' => $bookingData->check_in_date,
+            'check_out_date' => $bookingData->check_out_date,
+            'total_adults' => $bookingData->total_adults,
+            'total_children' => $bookingData->total_children,
+            'user_id' => $userId,
+            'room_count' => count($bookingData->rooms)
+        ]);
+
         $bookingRoomArr = array_map(fn($rd) => (object) $rd, $bookingData->rooms);
 
         $booking = DB::transaction(function () use ($bookingData, $bookingRoomArr, $userId) {
@@ -96,7 +108,29 @@ class BookingService implements BookingServiceInterface
             return $booking->refresh();
         });
 
-        Mail::to($bookingData->guest_email)->queue(new \App\Mail\BookingReservation($booking));
+        Log::info('Booking created successfully', [
+            'booking_id' => $booking->id,
+            'reference_number' => $booking->reference_number,
+            'total_price' => $booking->total_price,
+            'final_price' => $booking->final_price,
+            'meal_price' => $booking->meal_price,
+            'guest_name' => $bookingData->guest_name,
+            'check_in_date' => $bookingData->check_in_date,
+            'check_out_date' => $bookingData->check_out_date
+        ]);
+
+        EmailTrackingService::sendWithTracking(
+            $bookingData->guest_email,
+            new \App\Mail\BookingReservation($booking),
+            'booking_reservation',
+            [
+                'booking_id' => $booking->id,
+                'reference_number' => $booking->reference_number,
+                'guest_name' => $bookingData->guest_name,
+                'check_in_date' => $bookingData->check_in_date,
+                'check_out_date' => $bookingData->check_out_date
+            ]
+        );
 
         return $booking;
     }
@@ -120,9 +154,17 @@ class BookingService implements BookingServiceInterface
         $dpPercent = config('booking.downpayment_percent', 0.5);
         $dpAmount = $totalPayable * $dpPercent;
 
-        
         $previousStatus = $booking->status;
         $newStatus = null;
+        
+        Log::info('Processing payment status update', [
+            'booking_id' => $booking->id,
+            'reference_number' => $booking->reference_number,
+            'previous_status' => $previousStatus,
+            'paid_amount' => $paidAmount,
+            'total_payable' => $totalPayable,
+            'downpayment_amount' => $dpAmount
+        ]);
         
         if ($paidAmount >= $totalPayable) {
             $booking->update([
@@ -146,14 +188,36 @@ class BookingService implements BookingServiceInterface
             $newStatus = 'pending';
         }
 
+        Log::info('Booking status updated', [
+            'booking_id' => $booking->id,
+            'reference_number' => $booking->reference_number,
+            'status_changed_from' => $previousStatus,
+            'status_changed_to' => $newStatus,
+            'paid_amount' => $paidAmount
+        ]);
+
         // If booking just became confirmed (first time reaching downpayment or paid status), assign room units
         if ($previousStatus === 'pending' && in_array($newStatus, ['downpayment', 'paid'])) {
+            Log::info('Booking confirmed - assigning room units', [
+                'booking_id' => $booking->id,
+                'reference_number' => $booking->reference_number,
+                'new_status' => $newStatus
+            ]);
+            
             $confirmBookingAction = app(\App\Actions\Bookings\ConfirmBookingAction::class);
             $allUnitsAssigned = $confirmBookingAction->execute($booking->refresh());
             
             if (!$allUnitsAssigned) {
-                Log::warning("Not all room units could be assigned for booking {$booking->reference_number}");
+                Log::warning("Not all room units could be assigned for booking {$booking->reference_number}", [
+                    'booking_id' => $booking->id,
+                    'reference_number' => $booking->reference_number
+                ]);
                 // Could potentially send a notification to staff here
+            } else {
+                Log::info('All room units assigned successfully', [
+                    'booking_id' => $booking->id,
+                    'reference_number' => $booking->reference_number
+                ]);
             }
         }
     }

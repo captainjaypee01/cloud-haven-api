@@ -14,6 +14,7 @@ use App\Models\Booking;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use App\Services\EmailTrackingService;
 
 class PaymentService implements PaymentServiceInterface
 {
@@ -84,14 +85,56 @@ class PaymentService implements PaymentServiceInterface
             if ($dto->isNotifyGuest) {
                 if ($status === 'paid') {
                     if ($isFirstSuccessfulPayment) {
-                        Mail::to($booking->guest_email)->queue(new \App\Mail\BookingConfirmation($booking, $payment->amount));
-                        Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentSuccess($booking, $payment));
+                        EmailTrackingService::sendWithTracking(
+                            $booking->guest_email,
+                            new \App\Mail\BookingConfirmation($booking, $payment->amount),
+                            'booking_confirmation',
+                            [
+                                'booking_id' => $booking->id,
+                                'reference_number' => $booking->reference_number,
+                                'payment_amount' => $payment->amount,
+                                'is_first_payment' => true
+                            ]
+                        );
+                        
+                        EmailTrackingService::sendWithTracking(
+                            $booking->guest_email,
+                            new \App\Mail\PaymentSuccess($booking, $payment),
+                            'payment_success',
+                            [
+                                'booking_id' => $booking->id,
+                                'reference_number' => $booking->reference_number,
+                                'payment_id' => $payment->id,
+                                'payment_amount' => $payment->amount
+                            ]
+                        );
                     } else {
-                        Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentSuccess($booking, $payment));
+                        EmailTrackingService::sendWithTracking(
+                            $booking->guest_email,
+                            new \App\Mail\PaymentSuccess($booking, $payment),
+                            'payment_success',
+                            [
+                                'booking_id' => $booking->id,
+                                'reference_number' => $booking->reference_number,
+                                'payment_id' => $payment->id,
+                                'payment_amount' => $payment->amount,
+                                'is_additional_payment' => true
+                            ]
+                        );
                     }
                 } elseif ($status === 'failed') {
                     // Optional PaymentFailed email
-                    Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentFailed($booking, $payment));
+                    EmailTrackingService::sendWithTracking(
+                        $booking->guest_email,
+                        new \App\Mail\PaymentFailed($booking, $payment),
+                        'payment_failed',
+                        [
+                            'booking_id' => $booking->id,
+                            'reference_number' => $booking->reference_number,
+                            'payment_id' => $payment->id,
+                            'payment_amount' => $payment->amount
+                        ]
+                    );
                 }
             }
 

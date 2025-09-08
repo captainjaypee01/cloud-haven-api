@@ -7,6 +7,7 @@ use App\Mail\ProofPaymentUploadedMail;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use App\Services\EmailTrackingService;
 
 class SendProofPaymentNotificationListener
 {
@@ -25,28 +26,50 @@ class SendProofPaymentNotificationListener
             $timeSinceLastNotification = $lastNotificationTime->diffInMinutes(now());
             
             if ($timeSinceLastNotification < $suppressWindowMinutes) {
-                Log::info("Payment proof notification suppressed for payment {$payment->id} - too soon since last notification");
+                Log::info("Payment proof notification suppressed for payment {$payment->id} - too soon since last notification", [
+                    'payment_id' => $payment->id,
+                    'booking_id' => $event->booking->id,
+                    'booking_reference' => $event->booking->reference_number,
+                    'time_since_last_notification' => $timeSinceLastNotification,
+                    'suppress_window_minutes' => $suppressWindowMinutes,
+                    'last_notification_at' => $payment->last_proof_notification_at
+                ]);
                 return;
             }
         }
 
         try {
-            // Queue the email
-            Mail::to($notificationEmail)->queue(
+            // Queue the email with comprehensive tracking
+            EmailTrackingService::sendWithTracking(
+                $notificationEmail,
                 new ProofPaymentUploadedMail(
                     $event->payment,
                     $event->booking,
                     $event->sequenceNumber,
                     $event->adminLink
-                )
+                ),
+                'proof_payment_uploaded_admin',
+                [
+                    'payment_id' => $payment->id,
+                    'booking_id' => $event->booking->id,
+                    'booking_reference' => $event->booking->reference_number,
+                    'sequence_number' => $event->sequenceNumber,
+                    'upload_count' => $payment->proof_upload_count,
+                    'guest_email' => $event->booking->guest_email,
+                    'admin_link' => $event->adminLink
+                ]
             );
 
             // Update the last notification timestamp
             $payment->update(['last_proof_notification_at' => now()]);
             
-            Log::info("Payment proof notification queued for payment {$payment->id}");
         } catch (\Exception $e) {
-            Log::error("Failed to queue payment proof notification for payment {$payment->id}: " . $e->getMessage());
+            Log::error("Failed to queue payment proof notification for payment {$payment->id}", [
+                'payment_id' => $payment->id,
+                'booking_id' => $event->booking->id,
+                'booking_reference' => $event->booking->reference_number,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

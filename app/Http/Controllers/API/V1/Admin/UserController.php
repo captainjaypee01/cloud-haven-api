@@ -39,11 +39,32 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): ItemResponse|ErrorResponse
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin creating new user', [
+            'admin_user_id' => auth()->id(),
+            'user_email' => $validatedData['email'] ?? null,
+            'user_role' => $validatedData['role'] ?? null
+        ]);
         
         try {
-            $data = $this->userService->createUser($request->validated());
+            $data = $this->userService->createUser($validatedData);
+            
+            Log::info('User created successfully', [
+                'admin_user_id' => auth()->id(),
+                'created_user_id' => $data->id,
+                'user_email' => $data->email,
+                'user_role' => $data->role
+            ]);
+            
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to create user', [
+                'admin_user_id' => auth()->id(),
+                'user_email' => $validatedData['email'] ?? null,
+                'error' => $e->getMessage(),
+                'error_code' => $e->getCode()
+            ]);
+            
             if($e->getCode() === 422) {
                 return new ErrorResponse($e->getMessage(), 422);
             }
@@ -78,9 +99,29 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, int $id)
     {
+        $validatedData = $request->validated();
+        
+        Log::info('Admin updating user', [
+            'admin_user_id' => auth()->id(),
+            'target_user_id' => $id,
+            'updated_fields' => array_keys($validatedData)
+        ]);
+        
         try {
-            $user = $this->userService->updateById($id, $request->validated());
+            $user = $this->userService->updateById($id, $validatedData);
+            
+            Log::info('User updated successfully', [
+                'admin_user_id' => auth()->id(),
+                'target_user_id' => $id,
+                'user_email' => $user->email,
+                'updated_fields' => array_keys($validatedData)
+            ]);
+            
         } catch (ModelNotFoundException $e) {
+            Log::warning('User not found for update', [
+                'admin_user_id' => auth()->id(),
+                'target_user_id' => $id
+            ]);
             return new ErrorResponse('User not found.', JsonResponse::HTTP_NOT_FOUND);
         }
         return new ItemResponse(new UserResource($user));
@@ -91,13 +132,31 @@ class UserController extends Controller
      */
     public function destroy(int $id)
     {
+        Log::info('Admin deleting user', [
+            'admin_user_id' => auth()->id(),
+            'target_user_id' => $id
+        ]);
+        
         try {
             $this->userService->deleteById($id);
+            
+            Log::info('User deleted successfully', [
+                'admin_user_id' => auth()->id(),
+                'deleted_user_id' => $id
+            ]);
+            
         } catch (ModelNotFoundException $e) {
-            Log::error($e->getMessage());
+            Log::warning('User not found for deletion', [
+                'admin_user_id' => auth()->id(),
+                'target_user_id' => $id
+            ]);
             return new ErrorResponse('User not found.');
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Failed to delete user', [
+                'admin_user_id' => auth()->id(),
+                'target_user_id' => $id,
+                'error' => $e->getMessage()
+            ]);
             return new ErrorResponse('Unable to delete a user.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
         return new EmptyResponse();
