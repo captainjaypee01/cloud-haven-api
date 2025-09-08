@@ -34,6 +34,16 @@ interface MealCalendarOverrideRepositoryInterface
     public function getByProgramAndDate(int $programId, Carbon $date): ?MealCalendarOverride;
 
     /**
+     * Get month-wide override for a specific month
+     *
+     * @param int $programId
+     * @param int $month
+     * @param int $year
+     * @return MealCalendarOverride|null
+     */
+    public function getByProgramAndMonth(int $programId, int $month, int $year): ?MealCalendarOverride;
+
+    /**
      * Get overrides for date range
      *
      * @param int $programId

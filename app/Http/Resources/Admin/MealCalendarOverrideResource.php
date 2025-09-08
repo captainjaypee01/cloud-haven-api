@@ -15,7 +15,10 @@ class MealCalendarOverrideResource extends JsonResource
         return [
             'id' => $this->id,
             'meal_program_id' => $this->meal_program_id,
-            'date' => $this->date->format('Y-m-d'),
+            'override_type' => $this->override_type ?? 'date',
+            'date' => $this->date?->format('Y-m-d'),
+            'month' => $this->month,
+            'year' => $this->year,
             'is_active' => $this->is_active,
             'note' => $this->note,
             'created_at' => $this->created_at->toISOString(),

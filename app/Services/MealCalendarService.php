@@ -64,6 +64,19 @@ class MealCalendarService implements MealCalendarServiceInterface
         return $availability;
     }
 
+    public function getActiveProgramForDate(Carbon $date): ?MealProgram
+    {
+        $activePrograms = $this->programRepository->getActive();
+        
+        foreach ($activePrograms as $program) {
+            if ($this->programScopeMatches($program, $date)) {
+                return $program;
+            }
+        }
+        
+        return null;
+    }
+
     private function getActiveProgram(): ?MealProgram
     {
         $activePrograms = $this->programRepository->getActive();
@@ -83,13 +96,24 @@ class MealCalendarService implements MealCalendarServiceInterface
 
     private function isProgramActiveOnDate(MealProgram $program, Carbon $date): bool
     {
-        // 1. Check for overrides first (highest precedence)
-        $override = $this->overrideRepository->getByProgramAndDate($program->id, $date);
+        // 1. Check if program scope applies to this date first
+        if (!$this->programScopeMatches($program, $date)) {
+            return false;
+        }
+
+        // 2. Check for calendar overrides (highest precedence)
+        $override = $this->getOverrideForDate($program->id, $date);
         if ($override) {
             return $override->is_active;
         }
 
-        // 2. Check scope type
+        // 3. Check program's buffet enabled setting
+        return $program->buffet_enabled ?? true; // Default to true for backward compatibility
+    }
+
+    private function programScopeMatches(MealProgram $program, Carbon $date): bool
+    {
+        // Check scope type
         switch ($program->scope_type) {
             case 'always':
                 return true;
@@ -119,6 +143,23 @@ class MealCalendarService implements MealCalendarServiceInterface
             default:
                 return false;
         }
+    }
+
+    private function getOverrideForDate(int $programId, Carbon $date)
+    {
+        // First check for date-specific override
+        $dateOverride = $this->overrideRepository->getByProgramAndDate($programId, $date);
+        if ($dateOverride) {
+            return $dateOverride;
+        }
+
+        // Then check for month-wide override
+        $monthOverride = $this->overrideRepository->getByProgramAndMonth($programId, $date->month, $date->year);
+        if ($monthOverride) {
+            return $monthOverride;
+        }
+
+        return null;
     }
 
     private function isInDateRange(MealProgram $program, Carbon $date): bool

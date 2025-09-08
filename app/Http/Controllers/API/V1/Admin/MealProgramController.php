@@ -69,6 +69,7 @@ class MealProgramController extends Controller
                 weekendDefinition: $validatedData['weekend_definition'] ?? 'SAT_SUN',
                 pmSnackPolicy: $validatedData['pm_snack_policy'],
                 inactiveLabel: $validatedData['inactive_label'] ?? 'Free Breakfast',
+                buffetEnabled: $validatedData['buffet_enabled'] ?? true,
                 notes: $validatedData['notes'] ?? null
             );
 
@@ -157,6 +158,7 @@ class MealProgramController extends Controller
                 weekendDefinition: $validatedData['weekend_definition'] ?? 'SAT_SUN',
                 pmSnackPolicy: $validatedData['pm_snack_policy'],
                 inactiveLabel: $validatedData['inactive_label'] ?? 'Free Breakfast',
+                buffetEnabled: $validatedData['buffet_enabled'] ?? true,
                 notes: $validatedData['notes'] ?? null
             );
 

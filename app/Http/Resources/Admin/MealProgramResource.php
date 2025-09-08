@@ -24,6 +24,7 @@ class MealProgramResource extends JsonResource
             'weekend_definition' => $this->weekend_definition,
             'pm_snack_policy' => $this->pm_snack_policy,
             'inactive_label' => $this->inactive_label,
+            'buffet_enabled' => $this->buffet_enabled ?? true,
             'notes' => $this->notes,
             'pricing_tiers' => MealPricingTierResource::collection($this->whenLoaded('pricingTiers')),
             'calendar_overrides' => MealCalendarOverrideResource::collection($this->whenLoaded('calendarOverrides')),

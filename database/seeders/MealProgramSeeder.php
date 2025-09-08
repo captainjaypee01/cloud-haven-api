@@ -27,6 +27,8 @@ class MealProgramSeeder extends Seeder
                 'weekdays' => null,
                 'weekend_definition' => 'FRI_SUN',
                 'inactive_label' => 'Free Breakfast',
+                'pm_snack_policy' => 'optional',
+                'buffet_enabled' => true,
                 'notes' => 'Demo: Buffet available on Fridays, Saturdays, and Sundays during October 2025',
             ]
         );
@@ -49,6 +51,7 @@ class MealProgramSeeder extends Seeder
         MealCalendarOverride::firstOrCreate(
             [
                 'meal_program_id' => $octoberProgram->id,
+                'override_type' => 'date',
                 'date' => Carbon::create(2025, 10, 15),
             ],
             [
@@ -69,6 +72,8 @@ class MealProgramSeeder extends Seeder
                 'weekdays' => null,
                 'weekend_definition' => 'SAT_SUN',
                 'inactive_label' => 'Free Breakfast',
+                'pm_snack_policy' => 'optional',
+                'buffet_enabled' => true,
                 'notes' => 'Demo: Buffet available on all days during Summer months (March-May)',
             ]
         );
@@ -114,6 +119,8 @@ class MealProgramSeeder extends Seeder
                 'weekdays' => null,
                 'weekend_definition' => 'SAT_SUN',
                 'inactive_label' => 'Complimentary Breakfast',
+                'pm_snack_policy' => 'optional',
+                'buffet_enabled' => true,
                 'notes' => 'Demo: Special buffet pricing for year-end holidays (currently inactive)',
             ]
         );
@@ -129,6 +136,68 @@ class MealProgramSeeder extends Seeder
                 'child_price' => 800.00,
                 'effective_from' => null,
                 'effective_to' => null,
+            ]
+        );
+
+        // 4. September PM Snack Only (No Buffet)
+        $septemberProgram = MealProgram::firstOrCreate(
+            ['name' => 'September PM Snack Only'],
+            [
+                'status' => 'active',
+                'scope_type' => 'months',
+                'date_start' => null,
+                'date_end' => null,
+                'months' => [9], // September only
+                'weekdays' => null,
+                'weekend_definition' => 'SAT_SUN',
+                'inactive_label' => 'Free Breakfast',
+                'pm_snack_policy' => 'optional',
+                'buffet_enabled' => false, // No buffet, only PM snacks
+                'notes' => 'Demo: PM snacks available but no buffet during September',
+            ]
+        );
+
+        // Add pricing tier for September program (PM snack only)
+        MealPricingTier::firstOrCreate(
+            [
+                'meal_program_id' => $septemberProgram->id,
+                'currency' => 'PHP',
+            ],
+            [
+                'adult_price' => 0.00, // No buffet price
+                'child_price' => 0.00, // No buffet price
+                'adult_pm_snack_price' => 200.00, // PM snack price
+                'child_pm_snack_price' => 100.00, // PM snack price
+                'effective_from' => Carbon::create(2025, 9, 1),
+                'effective_to' => Carbon::create(2025, 9, 30),
+            ]
+        );
+
+        // Add month-level overrides for September program
+        MealCalendarOverride::firstOrCreate(
+            [
+                'meal_program_id' => $septemberProgram->id,
+                'override_type' => 'month',
+                'month' => 9,
+                'year' => 2025,
+            ],
+            [
+                'is_active' => false,
+                'note' => 'September - No buffet service, PM snacks only',
+            ]
+        );
+
+        // Add month-level override for Summer program - force buffet ON for April
+        MealCalendarOverride::firstOrCreate(
+            [
+                'meal_program_id' => $summerProgram->id,
+                'override_type' => 'month',
+                'month' => 4,
+                'year' => 2025,
+            ],
+            [
+                'is_active' => true,
+                'note' => 'April - Peak season buffet service',
             ]
         );
 

@@ -22,6 +22,7 @@ class MealProgram extends Model
         'weekend_definition',
         'inactive_label',
         'pm_snack_policy',
+        'buffet_enabled',
         'notes',
     ];
 
@@ -30,6 +31,7 @@ class MealProgram extends Model
         'date_end' => 'date',
         'months' => 'array',
         'weekdays' => 'array',
+        'buffet_enabled' => 'boolean',
     ];
 
     public function pricingTiers(): HasMany

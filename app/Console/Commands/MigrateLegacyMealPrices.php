@@ -60,6 +60,7 @@ class MigrateLegacyMealPrices extends Command
                 weekdays: null,
                 weekendDefinition: 'SAT_SUN',
                 inactiveLabel: 'Free Breakfast',
+                buffetEnabled: false,
                 notes: 'Migrated from legacy meal_prices table. This program is always inactive to maintain backwards compatibility.'
             );
 

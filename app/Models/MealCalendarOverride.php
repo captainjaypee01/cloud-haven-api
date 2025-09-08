@@ -12,13 +12,18 @@ class MealCalendarOverride extends Model
 
     protected $fillable = [
         'meal_program_id',
+        'override_type',
         'date',
+        'month',
+        'year',
         'is_active',
         'note',
     ];
 
     protected $casts = [
         'date' => 'date',
+        'month' => 'integer',
+        'year' => 'integer',
         'is_active' => 'boolean',
     ];
 

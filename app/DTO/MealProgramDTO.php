@@ -19,6 +19,7 @@ class MealProgramDTO
         public string $weekendDefinition,
         public string $pmSnackPolicy,
         public string $inactiveLabel,
+        public bool $buffetEnabled,
         public ?string $notes,
         public ?array $pricingTiers = [],
         public ?array $calendarOverrides = []
@@ -38,6 +39,7 @@ class MealProgramDTO
             weekendDefinition: $program->weekend_definition,
             pmSnackPolicy: $program->pm_snack_policy,
             inactiveLabel: $program->inactive_label,
+            buffetEnabled: $program->buffet_enabled ?? true,
             notes: $program->notes,
             pricingTiers: $program->relationLoaded('pricingTiers') 
                 ? $program->pricingTiers->map(fn($tier) => MealPricingTierDTO::fromModel($tier))->toArray()
@@ -62,6 +64,7 @@ class MealProgramDTO
             'weekend_definition' => $this->weekendDefinition,
             'pm_snack_policy' => $this->pmSnackPolicy,
             'inactive_label' => $this->inactiveLabel,
+            'buffet_enabled' => $this->buffetEnabled,
             'notes' => $this->notes,
             'pricing_tiers' => array_map(fn($tier) => $tier->toArray(), $this->pricingTiers),
             'calendar_overrides' => array_map(fn($override) => $override->toArray(), $this->calendarOverrides),

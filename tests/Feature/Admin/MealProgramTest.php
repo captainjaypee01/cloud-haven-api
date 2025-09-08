@@ -38,6 +38,8 @@ it('can create a meal program with date range scope', function () {
         'date_start' => '2025-10-01',
         'date_end' => '2025-10-31',
         'inactive_label' => 'Free Breakfast',
+        'pm_snack_policy' => 'optional',
+        'buffet_enabled' => true,
     ];
 
     $response = $this->postJson('/api/v1/admin/meal-programs', $data);
@@ -85,6 +87,8 @@ it('can update a meal program', function () {
         'name' => 'Updated Name',
         'status' => 'active',
         'scope_type' => 'always',
+        'pm_snack_policy' => 'optional',
+        'buffet_enabled' => true,
     ];
 
     $response = $this->putJson("/api/v1/admin/meal-programs/{$program->id}", $data);
@@ -187,4 +191,29 @@ it('requires admin role', function () {
     $response = $this->getJson('/api/v1/admin/meal-programs');
 
     $response->assertForbidden();
+});
+
+it('can create a meal program with buffet disabled', function () {
+    $data = [
+        'name' => 'PM Snack Only Program',
+        'status' => 'active',
+        'scope_type' => 'months',
+        'months' => [9], // September
+        'inactive_label' => 'Free Breakfast',
+        'pm_snack_policy' => 'optional',
+        'buffet_enabled' => false,
+    ];
+
+    $response = $this->postJson('/api/v1/admin/meal-programs', $data);
+
+    $response->assertCreated()
+        ->assertJsonFragment([
+            'name' => 'PM Snack Only Program',
+            'buffet_enabled' => false,
+        ]);
+
+    $this->assertDatabaseHas('meal_programs', [
+        'name' => 'PM Snack Only Program',
+        'buffet_enabled' => false,
+    ]);
 });

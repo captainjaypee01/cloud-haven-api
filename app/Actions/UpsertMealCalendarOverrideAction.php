@@ -18,7 +18,10 @@ class UpsertMealCalendarOverrideAction
         return DB::transaction(function () use ($dto) {
             $data = [
                 'meal_program_id' => $dto->mealProgramId,
+                'override_type' => $dto->overrideType,
                 'date' => $dto->date,
+                'month' => $dto->month,
+                'year' => $dto->year,
                 'is_active' => $dto->isActive,
                 'note' => $dto->note,
             ];
@@ -29,20 +32,36 @@ class UpsertMealCalendarOverrideAction
                     throw new \Exception('Calendar override not found');
                 }
                 
-                // Check if date is changing and would create a duplicate
-                if (!$override->date->eq($dto->date)) {
-                    $existing = $this->overrideRepository->getByProgramAndDate($dto->mealProgramId, $dto->date);
-                    if ($existing && $existing->id !== $dto->id) {
-                        throw new \InvalidArgumentException('An override already exists for this date');
+                // Check for duplicates based on override type
+                if ($dto->overrideType === 'date' && $dto->date) {
+                    if (!$override->date || !$override->date->eq($dto->date)) {
+                        $existing = $this->overrideRepository->getByProgramAndDate($dto->mealProgramId, $dto->date);
+                        if ($existing && $existing->id !== $dto->id) {
+                            throw new \InvalidArgumentException('An override already exists for this date');
+                        }
+                    }
+                } elseif ($dto->overrideType === 'month' && $dto->month && $dto->year) {
+                    if ($override->month !== $dto->month || $override->year !== $dto->year) {
+                        $existing = $this->overrideRepository->getByProgramAndMonth($dto->mealProgramId, $dto->month, $dto->year);
+                        if ($existing && $existing->id !== $dto->id) {
+                            throw new \InvalidArgumentException('An override already exists for this month');
+                        }
                     }
                 }
                 
                 return $this->overrideRepository->update($override, $data);
             } else {
-                // Check for existing override on this date
-                $existing = $this->overrideRepository->getByProgramAndDate($dto->mealProgramId, $dto->date);
-                if ($existing) {
-                    throw new \InvalidArgumentException('An override already exists for this date');
+                // Check for existing override based on type
+                if ($dto->overrideType === 'date' && $dto->date) {
+                    $existing = $this->overrideRepository->getByProgramAndDate($dto->mealProgramId, $dto->date);
+                    if ($existing) {
+                        throw new \InvalidArgumentException('An override already exists for this date');
+                    }
+                } elseif ($dto->overrideType === 'month' && $dto->month && $dto->year) {
+                    $existing = $this->overrideRepository->getByProgramAndMonth($dto->mealProgramId, $dto->month, $dto->year);
+                    if ($existing) {
+                        throw new \InvalidArgumentException('An override already exists for this month');
+                    }
                 }
                 
                 return $this->overrideRepository->create($data);

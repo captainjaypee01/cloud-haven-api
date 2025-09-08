@@ -29,12 +29,16 @@ class MealCalendarOverrideController extends Controller
     public function store(MealCalendarOverrideRequest $request, int $programId): ItemResponse|ErrorResponse
     {
         try {
+            $validated = $request->validated();
             $dto = new MealOverrideDTO(
                 id: null,
                 mealProgramId: $programId,
-                date: Carbon::parse($request->validated()['date']),
-                isActive: $request->validated()['is_active'],
-                note: $request->validated()['note'] ?? null
+                overrideType: $validated['override_type'],
+                date: isset($validated['date']) ? Carbon::parse($validated['date']) : null,
+                month: $validated['month'] ?? null,
+                year: $validated['year'] ?? null,
+                isActive: $validated['is_active'],
+                note: $validated['note'] ?? null
             );
 
             $override = $this->upsertAction->execute($dto);
@@ -58,12 +62,16 @@ class MealCalendarOverrideController extends Controller
                 return new ErrorResponse('Calendar override not found.', JsonResponse::HTTP_NOT_FOUND);
             }
 
+            $validated = $request->validated();
             $dto = new MealOverrideDTO(
                 id: $overrideId,
                 mealProgramId: $programId,
-                date: Carbon::parse($request->validated()['date']),
-                isActive: $request->validated()['is_active'],
-                note: $request->validated()['note'] ?? null
+                overrideType: $validated['override_type'],
+                date: isset($validated['date']) ? Carbon::parse($validated['date']) : null,
+                month: $validated['month'] ?? null,
+                year: $validated['year'] ?? null,
+                isActive: $validated['is_active'],
+                note: $validated['note'] ?? null
             );
 
             $override = $this->upsertAction->execute($dto);

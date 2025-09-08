@@ -27,6 +27,8 @@ class MealProgramFactory extends Factory
             'scope_type' => $scopeType,
             'weekend_definition' => fake()->randomElement(['SAT_SUN', 'FRI_SUN', 'CUSTOM']),
             'inactive_label' => fake()->randomElement(['Free Breakfast', 'Complimentary Breakfast', 'Continental Breakfast']),
+            'pm_snack_policy' => fake()->randomElement(['hidden', 'optional', 'required']),
+            'buffet_enabled' => fake()->boolean(80), // 80% chance of being enabled
             'notes' => fake()->optional()->sentence(),
         ];
 
@@ -35,7 +37,7 @@ class MealProgramFactory extends Factory
             case 'date_range':
                 $startDate = fake()->dateTimeBetween('+1 month', '+6 months');
                 $data['date_start'] = $startDate;
-                $data['date_end'] = fake()->dateTimeBetween($startDate, '+3 months');
+                $data['date_end'] = fake()->dateTimeBetween($startDate->format('Y-m-d') . ' +1 day', '+9 months');
                 break;
                 
             case 'months':
@@ -51,7 +53,7 @@ class MealProgramFactory extends Factory
             case 'composite':
                 $startDate = fake()->dateTimeBetween('+1 month', '+6 months');
                 $data['date_start'] = $startDate;
-                $data['date_end'] = fake()->dateTimeBetween($startDate, '+3 months');
+                $data['date_end'] = fake()->dateTimeBetween($startDate->format('Y-m-d') . ' +1 day', '+9 months');
                 $data['months'] = fake()->randomElements(range(1, 12), fake()->numberBetween(1, 3));
                 break;
         }

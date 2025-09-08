@@ -4,13 +4,24 @@ namespace App\DTO;
 
 use App\Models\MealCalendarOverride;
 use Carbon\Carbon;
+use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Attributes\WithCast;
+use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
+use Spatie\LaravelData\Data;
 
-class MealOverrideDTO
+class MealOverrideDTO extends Data
 {
     public function __construct(
         public ?int $id,
+        #[MapInputName('meal_program_id')]
         public int $mealProgramId,
-        public Carbon $date,
+        #[MapInputName('override_type')]
+        public string $overrideType,
+        #[WithCast(DateTimeInterfaceCast::class)]
+        public ?Carbon $date,
+        public ?int $month,
+        public ?int $year,
+        #[MapInputName('is_active')]
         public bool $isActive,
         public ?string $note
     ) {}
@@ -20,20 +31,12 @@ class MealOverrideDTO
         return new self(
             id: $override->id,
             mealProgramId: $override->meal_program_id,
+            overrideType: $override->override_type ?? 'date',
             date: $override->date,
+            month: $override->month,
+            year: $override->year,
             isActive: $override->is_active,
             note: $override->note
         );
-    }
-
-    public function toArray(): array
-    {
-        return [
-            'id' => $this->id,
-            'meal_program_id' => $this->mealProgramId,
-            'date' => $this->date->format('Y-m-d'),
-            'is_active' => $this->isActive,
-            'note' => $this->note,
-        ];
     }
 }

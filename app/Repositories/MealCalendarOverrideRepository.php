@@ -24,7 +24,17 @@ class MealCalendarOverrideRepository implements MealCalendarOverrideRepositoryIn
     public function getByProgramAndDate(int $programId, Carbon $date): ?MealCalendarOverride
     {
         return MealCalendarOverride::where('meal_program_id', $programId)
+            ->where('override_type', 'date')
             ->whereDate('date', $date)
+            ->first();
+    }
+
+    public function getByProgramAndMonth(int $programId, int $month, int $year): ?MealCalendarOverride
+    {
+        return MealCalendarOverride::where('meal_program_id', $programId)
+            ->where('override_type', 'month')
+            ->where('month', $month)
+            ->where('year', $year)
             ->first();
     }
 

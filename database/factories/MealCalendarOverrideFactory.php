@@ -20,12 +20,26 @@ class MealCalendarOverrideFactory extends Factory
      */
     public function definition(): array
     {
-        return [
+        $overrideType = fake()->randomElement(['date', 'month']);
+        
+        $data = [
             'meal_program_id' => MealProgram::factory(),
-            'date' => fake()->dateTimeBetween('+1 week', '+6 months'),
+            'override_type' => $overrideType,
             'is_active' => fake()->boolean(),
             'note' => fake()->optional()->sentence(),
         ];
+        
+        if ($overrideType === 'date') {
+            $data['date'] = fake()->dateTimeBetween('+1 week', '+6 months');
+            $data['month'] = null;
+            $data['year'] = null;
+        } else {
+            $data['date'] = null;
+            $data['month'] = fake()->numberBetween(1, 12);
+            $data['year'] = fake()->numberBetween(2025, 2026);
+        }
+        
+        return $data;
     }
 
     /**
@@ -47,6 +61,32 @@ class MealCalendarOverrideFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'is_active' => false,
             'note' => 'Maintenance - no buffet service',
+        ]);
+    }
+
+    /**
+     * Create a date-specific override.
+     */
+    public function dateOverride(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'override_type' => 'date',
+            'date' => fake()->dateTimeBetween('+1 week', '+6 months'),
+            'month' => null,
+            'year' => null,
+        ]);
+    }
+
+    /**
+     * Create a month-wide override.
+     */
+    public function monthOverride(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'override_type' => 'month',
+            'date' => null,
+            'month' => fake()->numberBetween(1, 12),
+            'year' => fake()->numberBetween(2025, 2026),
         ]);
     }
 }

@@ -33,4 +33,13 @@ interface MealCalendarServiceInterface
      * @return array<string, string> Date => 'buffet' or 'free_breakfast'
      */
     public function previewProgramCalendar(int $programId, Carbon $startDate, Carbon $endDate): array;
+
+    /**
+     * Get active meal program for a specific date based on scope rules
+     * This is separate from buffet availability - used for PM snack policy
+     *
+     * @param Carbon $date
+     * @return \App\Models\MealProgram|null
+     */
+    public function getActiveProgramForDate(Carbon $date): ?\App\Models\MealProgram;
 }

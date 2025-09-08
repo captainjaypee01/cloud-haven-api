@@ -122,11 +122,11 @@ class MealPricingService implements MealPricingServiceInterface
         bool $includePmSnack,
         string $pmSnackPolicy
     ): DayTourMealBreakdownDTO {
-        $program = $this->getActiveMealProgram();
-        
         // Get property timezone
         $timezone = config('resort.timezone', 'Asia/Singapore');
         $localDate = $date->copy()->setTimezone($timezone)->startOfDay();
+        
+        $program = $this->calendarService->getActiveProgramForDate($localDate);
         
         // Check if buffet is active on this date
         $isBuffetActive = $this->calendarService->isBuffetActiveOn($localDate);
@@ -180,15 +180,16 @@ class MealPricingService implements MealPricingServiceInterface
 
     public function getLunchAndSnackPrices(Carbon $date): array
     {
-        $program = $this->getActiveMealProgram();
+        // Get property timezone
+        $timezone = config('resort.timezone', 'Asia/Singapore');
+        $localDate = $date->copy()->setTimezone($timezone)->startOfDay();
+        
+        // Get active meal program for this specific date
+        $program = $this->calendarService->getActiveProgramForDate($localDate);
         
         if (!$program) {
             return ['lunch' => null, 'snack' => null];
         }
-        
-        // Get property timezone
-        $timezone = config('resort.timezone', 'Asia/Singapore');
-        $localDate = $date->copy()->setTimezone($timezone)->startOfDay();
         
         // Check if buffet is active on this date
         $isBuffetActive = $this->calendarService->isBuffetActiveOn($localDate);

@@ -32,6 +32,7 @@ class MealProgramRequest extends FormRequest
             'weekdays.*' => Rule::in(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']),
             'weekend_definition' => ['nullable', Rule::in(['SAT_SUN', 'FRI_SUN', 'CUSTOM'])],
             'pm_snack_policy' => ['required', Rule::in(['hidden', 'optional', 'required'])],
+            'buffet_enabled' => 'nullable|boolean',
             'inactive_label' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:1000',
         ];

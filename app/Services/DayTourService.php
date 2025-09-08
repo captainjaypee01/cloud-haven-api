@@ -34,8 +34,8 @@ class DayTourService implements DayTourServiceInterface
         // Check buffet active status
         $buffetActive = $this->calendarService->isBuffetActiveOn($localDate);
         
-        // Get active meal program and its PM snack policy
-        $program = $this->mealPricingService->getActiveMealProgram();
+        // Get active meal program for this date and its PM snack policy
+        $program = $this->calendarService->getActiveProgramForDate($localDate);
         $pmSnackPolicy = $program ? $program->pm_snack_policy : 'hidden';
         
         // Get lunch and snack prices
@@ -98,8 +98,8 @@ class DayTourService implements DayTourServiceInterface
         // Check buffet active status
         $buffetActive = $this->calendarService->isBuffetActiveOn($localDate);
         
-        // Get active meal program and its PM snack policy
-        $program = $this->mealPricingService->getActiveMealProgram();
+        // Get active meal program for this date and its PM snack policy
+        $program = $this->calendarService->getActiveProgramForDate($localDate);
         $pmSnackPolicy = $program ? $program->pm_snack_policy : 'hidden';
         
         // Get rooms data by slug
