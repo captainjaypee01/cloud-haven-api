@@ -23,6 +23,12 @@ class MealPricingTierRequest extends FormRequest
             'currency' => 'required|string|size:3',
             'adult_price' => 'required|numeric|min:0|max:999999.99',
             'child_price' => 'required|numeric|min:0|max:999999.99',
+            'adult_lunch_price' => 'nullable|numeric|min:0|max:999999.99',
+            'child_lunch_price' => 'nullable|numeric|min:0|max:999999.99',
+            'adult_pm_snack_price' => 'nullable|numeric|min:0|max:999999.99',
+            'child_pm_snack_price' => 'nullable|numeric|min:0|max:999999.99',
+            'adult_dinner_price' => 'nullable|numeric|min:0|max:999999.99',
+            'child_dinner_price' => 'nullable|numeric|min:0|max:999999.99',
             'effective_from' => 'nullable|date',
             'effective_to' => 'nullable|date|after:effective_from',
         ];

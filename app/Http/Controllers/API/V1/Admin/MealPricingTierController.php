@@ -29,15 +29,11 @@ class MealPricingTierController extends Controller
     public function store(MealPricingTierRequest $request, int $programId): ItemResponse|ErrorResponse
     {
         try {
-            $dto = new MealPricingTierDTO(
-                id: null,
-                mealProgramId: $programId,
-                currency: $request->validated()['currency'],
-                adultPrice: $request->validated()['adult_price'],
-                childPrice: $request->validated()['child_price'],
-                effectiveFrom: isset($request->validated()['effective_from']) ? Carbon::parse($request->validated()['effective_from']) : null,
-                effectiveTo: isset($request->validated()['effective_to']) ? Carbon::parse($request->validated()['effective_to']) : null
-            );
+            $data = $request->validated();
+            $data['meal_program_id'] = $programId;
+            $data['id'] = null;
+            
+            $dto = MealPricingTierDTO::from($data);
 
             $tier = $this->upsertAction->execute($dto);
 
@@ -60,15 +56,11 @@ class MealPricingTierController extends Controller
                 return new ErrorResponse('Pricing tier not found.', JsonResponse::HTTP_NOT_FOUND);
             }
 
-            $dto = new MealPricingTierDTO(
-                id: $tierId,
-                mealProgramId: $programId,
-                currency: $request->validated()['currency'],
-                adultPrice: $request->validated()['adult_price'],
-                childPrice: $request->validated()['child_price'],
-                effectiveFrom: isset($request->validated()['effective_from']) ? Carbon::parse($request->validated()['effective_from']) : null,
-                effectiveTo: isset($request->validated()['effective_to']) ? Carbon::parse($request->validated()['effective_to']) : null
-            );
+            $data = $request->validated();
+            $data['meal_program_id'] = $programId;
+            $data['id'] = $tierId;
+            
+            $dto = MealPricingTierDTO::from($data);
 
             $tier = $this->upsertAction->execute($dto);
 

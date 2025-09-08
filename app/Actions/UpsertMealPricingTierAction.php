@@ -21,6 +21,12 @@ class UpsertMealPricingTierAction
                 'currency' => $dto->currency,
                 'adult_price' => $dto->adultPrice,
                 'child_price' => $dto->childPrice,
+                'adult_lunch_price' => $dto->adultLunchPrice,
+                'child_lunch_price' => $dto->childLunchPrice,
+                'adult_pm_snack_price' => $dto->adultPmSnackPrice,
+                'child_pm_snack_price' => $dto->childPmSnackPrice,
+                'adult_dinner_price' => $dto->adultDinnerPrice,
+                'child_dinner_price' => $dto->childDinnerPrice,
                 'effective_from' => $dto->effectiveFrom,
                 'effective_to' => $dto->effectiveTo,
             ];
