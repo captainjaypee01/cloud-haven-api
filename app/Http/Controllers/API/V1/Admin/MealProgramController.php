@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use App\Utils\ChangeLogger;
 
 class MealProgramController extends Controller
 {
@@ -119,12 +120,6 @@ class MealProgramController extends Controller
     {
         $validatedData = $request->validated();
         
-        Log::info('Admin updating meal program', [
-            'admin_user_id' => auth()->id(),
-            'program_id' => $id,
-            'updated_fields' => array_keys($validatedData)
-        ]);
-        
         try {
             $program = $this->programRepository->find($id);
 
@@ -135,6 +130,20 @@ class MealProgramController extends Controller
                 ]);
                 return new ErrorResponse('Meal program not found.', JsonResponse::HTTP_NOT_FOUND);
             }
+
+            // Capture original values for comparison
+            $originalValues = $program->only(array_keys($validatedData));
+            
+            ChangeLogger::logUpdateAttempt(
+                'Admin updating meal program',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'program_id' => $id,
+                    'program_name' => $program->name
+                ]
+            );
 
             $dto = new MealProgramDTO(
                 id: $id,
@@ -154,12 +163,16 @@ class MealProgramController extends Controller
             $program = $this->upsertAction->execute($dto);
             $program->load(['pricingTiers', 'calendarOverrides']);
 
-            Log::info('Meal program updated successfully', [
-                'admin_user_id' => auth()->id(),
-                'program_id' => $id,
-                'program_name' => $program->name,
-                'updated_fields' => array_keys($validatedData)
-            ]);
+            ChangeLogger::logSuccessfulUpdate(
+                'Meal program updated successfully',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'program_id' => $id,
+                    'program_name' => $program->name
+                ]
+            );
 
             return new ItemResponse(new MealProgramResource($program));
         } catch (Exception $e) {

@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Utils\ChangeLogger;
 
 class RoomController extends Controller
 {
@@ -89,21 +90,34 @@ class RoomController extends Controller
     {
         $validatedData = $request->validated();
         
-        Log::info('Admin updating room', [
-            'admin_user_id' => $request->user()->id,
-            'room_id' => $room,
-            'updated_fields' => array_keys($validatedData)
-        ]);
-        
         try {
+            // Get original room data before update
+            $originalRoom = $this->roomService->show($room);
+            $originalValues = $originalRoom->only(array_keys($validatedData));
+            
+            ChangeLogger::logUpdateAttempt(
+                'Admin updating room',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => $request->user()->id,
+                    'room_id' => $room,
+                    'room_name' => $originalRoom->name
+                ]
+            );
+            
             $data = $this->roomService->update($validatedData, $room, $request->user()->id);
             
-            Log::info('Room updated successfully', [
-                'admin_user_id' => $request->user()->id,
-                'room_id' => $room,
-                'room_name' => $data->name,
-                'updated_fields' => array_keys($validatedData)
-            ]);
+            ChangeLogger::logSuccessfulUpdate(
+                'Room updated successfully',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => $request->user()->id,
+                    'room_id' => $room,
+                    'room_name' => $data->name
+                ]
+            );
             
         } catch (ModelNotFoundException $e) {
             Log::warning('Room not found for update', [
@@ -156,4 +170,5 @@ class RoomController extends Controller
         }
         return new EmptyResponse();
     }
+
 }

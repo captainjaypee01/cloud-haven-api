@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Utils\ChangeLogger;
 
 class AmenityController extends Controller
 {
@@ -88,21 +89,34 @@ class AmenityController extends Controller
     {
         $validatedData = $request->validated();
         
-        Log::info('Admin updating amenity', [
-            'admin_user_id' => auth()->id(),
-            'amenity_id' => $id,
-            'updated_fields' => array_keys($validatedData)
-        ]);
-        
         try {
+            // Get original amenity data before update
+            $originalAmenity = $this->amenityService->show($id);
+            $originalValues = $originalAmenity->only(array_keys($validatedData));
+            
+            ChangeLogger::logUpdateAttempt(
+                'Admin updating amenity',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'amenity_id' => $id,
+                    'amenity_name' => $originalAmenity->name
+                ]
+            );
+            
             $data = $this->amenityService->update($id, $validatedData);
             
-            Log::info('Amenity updated successfully', [
-                'admin_user_id' => auth()->id(),
-                'amenity_id' => $id,
-                'amenity_name' => $data->name,
-                'updated_fields' => array_keys($validatedData)
-            ]);
+            ChangeLogger::logSuccessfulUpdate(
+                'Amenity updated successfully',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'amenity_id' => $id,
+                    'amenity_name' => $data->name
+                ]
+            );
             
         } catch (ModelNotFoundException $e) {
             Log::warning('Amenity not found for update', [

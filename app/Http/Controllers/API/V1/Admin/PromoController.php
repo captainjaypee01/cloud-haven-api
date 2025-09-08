@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Exception;
+use App\Utils\ChangeLogger;
 
 class PromoController extends Controller
 {
@@ -80,21 +81,34 @@ class PromoController extends Controller
     {
         $validatedData = $request->validated();
         
-        Log::info('Admin updating promo code', [
-            'admin_user_id' => auth()->id(),
-            'promo_id' => $id,
-            'updated_fields' => array_keys($validatedData)
-        ]);
-        
         try {
+            // Get original promo data before update
+            $originalPromo = $this->promoService->show($id);
+            $originalValues = $originalPromo->only(array_keys($validatedData));
+            
+            ChangeLogger::logUpdateAttempt(
+                'Admin updating promo code',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'promo_id' => $id,
+                    'promo_code' => $originalPromo->code
+                ]
+            );
+            
             $promo = $this->promoService->update($id, $validatedData);
             
-            Log::info('Promo code updated successfully', [
-                'admin_user_id' => auth()->id(),
-                'promo_id' => $id,
-                'promo_code' => $promo->code,
-                'updated_fields' => array_keys($validatedData)
-            ]);
+            ChangeLogger::logSuccessfulUpdate(
+                'Promo code updated successfully',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'promo_id' => $id,
+                    'promo_code' => $promo->code
+                ]
+            );
             
         } catch (ModelNotFoundException $e) {
             Log::warning('Promo not found for update', [

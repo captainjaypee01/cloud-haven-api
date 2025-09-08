@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Utils\ChangeLogger;
 
 class UserController extends Controller
 {
@@ -101,21 +102,34 @@ class UserController extends Controller
     {
         $validatedData = $request->validated();
         
-        Log::info('Admin updating user', [
-            'admin_user_id' => auth()->id(),
-            'target_user_id' => $id,
-            'updated_fields' => array_keys($validatedData)
-        ]);
-        
         try {
+            // Get original user data before update
+            $originalUser = $this->userService->show($id);
+            $originalValues = $originalUser->only(array_keys($validatedData));
+            
+            ChangeLogger::logUpdateAttempt(
+                'Admin updating user',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'target_user_id' => $id,
+                    'user_email' => $originalUser->email
+                ]
+            );
+            
             $user = $this->userService->updateById($id, $validatedData);
             
-            Log::info('User updated successfully', [
-                'admin_user_id' => auth()->id(),
-                'target_user_id' => $id,
-                'user_email' => $user->email,
-                'updated_fields' => array_keys($validatedData)
-            ]);
+            ChangeLogger::logSuccessfulUpdate(
+                'User updated successfully',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'target_user_id' => $id,
+                    'user_email' => $user->email
+                ]
+            );
             
         } catch (ModelNotFoundException $e) {
             Log::warning('User not found for update', [
@@ -161,4 +175,5 @@ class UserController extends Controller
         }
         return new EmptyResponse();
     }
+
 }

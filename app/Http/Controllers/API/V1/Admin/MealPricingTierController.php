@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use App\Utils\ChangeLogger;
 
 class MealPricingTierController extends Controller
 {
@@ -74,13 +75,6 @@ class MealPricingTierController extends Controller
     {
         $validatedData = $request->validated();
         
-        Log::info('Admin updating meal pricing tier', [
-            'admin_user_id' => auth()->id(),
-            'program_id' => $programId,
-            'tier_id' => $tierId,
-            'updated_fields' => array_keys($validatedData)
-        ]);
-        
         try {
             $tier = $this->tierRepository->find($tierId);
 
@@ -93,6 +87,21 @@ class MealPricingTierController extends Controller
                 return new ErrorResponse('Pricing tier not found.', JsonResponse::HTTP_NOT_FOUND);
             }
 
+            // Capture original values for comparison
+            $originalValues = $tier->only(array_keys($validatedData));
+            
+            ChangeLogger::logUpdateAttempt(
+                'Admin updating meal pricing tier',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'program_id' => $programId,
+                    'tier_id' => $tierId,
+                    'tier_name' => $tier->name
+                ]
+            );
+
             $data = $validatedData;
             $data['meal_program_id'] = $programId;
             $data['id'] = $tierId;
@@ -101,13 +110,17 @@ class MealPricingTierController extends Controller
 
             $tier = $this->upsertAction->execute($dto);
 
-            Log::info('Meal pricing tier updated successfully', [
-                'admin_user_id' => auth()->id(),
-                'program_id' => $programId,
-                'tier_id' => $tierId,
-                'tier_name' => $tier->name,
-                'updated_fields' => array_keys($validatedData)
-            ]);
+            ChangeLogger::logSuccessfulUpdate(
+                'Meal pricing tier updated successfully',
+                $originalValues,
+                $validatedData,
+                [
+                    'admin_user_id' => auth()->id(),
+                    'program_id' => $programId,
+                    'tier_id' => $tierId,
+                    'tier_name' => $tier->name
+                ]
+            );
 
             return new ItemResponse(new MealPricingTierResource($tier));
         } catch (Exception $e) {
