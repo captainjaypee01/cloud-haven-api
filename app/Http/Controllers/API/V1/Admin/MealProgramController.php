@@ -238,7 +238,7 @@ class MealProgramController extends Controller
                 'to' => 'required|date|after:from',
             ]);
 
-            $program = $this->programRepository->find($id);
+            $program = $this->programRepository->find($id, ['calendarOverrides']);
 
             if (!$program) {
                 return new ErrorResponse('Meal program not found.', JsonResponse::HTTP_NOT_FOUND);

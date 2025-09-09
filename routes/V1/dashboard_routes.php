@@ -18,8 +18,9 @@ Route::prefix('/')->namespace('App\Http\Controllers\API\V1\Dashboard')
         Route::get('/meal-prices', 'MealPriceController@getMealPrices');
 
         // Meal Programs
-        Route::get('/public/meal-availability', 'MealController@availability');
-        Route::post('/public/quotes/meal', 'MealController@quote');
+        Route::get('/meals/availability', 'MealController@availability');
+        Route::get('/meals/date-ranges', 'MealController@availableDateRanges');
+        Route::post('/meals/quote', 'MealController@quote');
 
         Route::post('/bookings', 'BookingController@store');
         Route::get('/bookings/ref/{referenceNumber}', 'BookingController@showByReferenceNumber'); // routes/api.php

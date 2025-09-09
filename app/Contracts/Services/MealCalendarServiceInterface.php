@@ -42,4 +42,12 @@ interface MealCalendarServiceInterface
      * @return \App\Models\MealProgram|null
      */
     public function getActiveProgramForDate(Carbon $date): ?\App\Models\MealProgram;
+
+    /**
+     * Get available date ranges based on active meal programs
+     * Used for frontend date picker restrictions
+     *
+     * @return array<array{start: string, end: string}>
+     */
+    public function getAvailableDateRanges(): array;
 }

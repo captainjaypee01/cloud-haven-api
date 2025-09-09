@@ -71,4 +71,22 @@ class MealController extends Controller
             return new ErrorResponse('Unable to compute meal quote.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    /**
+     * Get available date ranges based on active meal programs.
+     */
+    public function availableDateRanges(): ItemResponse|ErrorResponse
+    {
+        try {
+            $ranges = $this->calendarService->getAvailableDateRanges();
+
+            return new ItemResponse(new \Illuminate\Http\Resources\Json\JsonResource([
+                'ranges' => $ranges,
+                'has_active_programs' => !empty($ranges)
+            ]));
+        } catch (Exception $e) {
+            Log::error('Failed to get available date ranges: ' . $e->getMessage());
+            return new ErrorResponse('Unable to get available date ranges.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }
