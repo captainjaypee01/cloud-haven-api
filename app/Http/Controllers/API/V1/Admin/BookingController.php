@@ -26,7 +26,11 @@ class BookingController extends Controller
      */
     public function index(Request $request)
     {
-        $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page', 'date', 'date_from', 'date_to']);
+        $filters = $request->only([
+            'status', 'search', 'sort', 'per_page', 'page', 
+            'date', 'date_from', 'date_to',
+            'created_date', 'created_from', 'created_to'
+        ]);
         $paginator = $this->bookingService->list($filters);
         return new CollectionResponse(new BookingCollection($paginator), JsonResponse::HTTP_OK);
     }

@@ -44,13 +44,27 @@ class BookingRepository implements BookingRepositoryInterface
             });
         }
 
-        // Filter by date range (from and to)
+        // Filter by date range (from and to) - for booking dates (check-in/check-out)
         if (!empty($filters['date_from'])) {
             $query->where('check_out_date', '>', $filters['date_from']);
         }
         if (!empty($filters['date_to'])) {
             $query->where('check_in_date', '<=', $filters['date_to']);
         }
+
+        // Filter by booking creation date range
+        if (!empty($filters['created_from'])) {
+            $query->whereDate('created_at', '>=', $filters['created_from']);
+        }
+        if (!empty($filters['created_to'])) {
+            $query->whereDate('created_at', '<=', $filters['created_to']);
+        }
+
+        // Filter by specific booking creation date
+        if (!empty($filters['created_date'])) {
+            $query->whereDate('created_at', $filters['created_date']);
+        }
+
 
         // Sorting
         if ($sort) {

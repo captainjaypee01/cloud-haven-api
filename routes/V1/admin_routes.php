@@ -35,7 +35,9 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
         Route::post('bookings/{booking}/other-charges', 'BookingController@storeOtherCharge')->middleware('role:admin,superadmin');
         Route::patch('bookings/{booking}/reschedule', 'BookingController@reschedule')->middleware('role:admin,superadmin');
         Route::delete('bookings/{booking}/other-charges/{charge}', 'OtherChargeController@destroy')->middleware('role:admin,superadmin');
-        // Route::apiResource('payments', 'PaymentController');
+        
+        // Payment management routes
+        Route::get('payments', 'PaymentController@index')->middleware('role:admin,superadmin');
         Route::post('payments/pay', 'PaymentController@pay')->middleware('role:admin,superadmin');
         Route::put('payments/{payment}', 'PaymentController@update')->middleware('role:admin,superadmin');
         

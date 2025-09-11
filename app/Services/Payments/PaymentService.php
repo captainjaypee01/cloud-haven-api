@@ -11,6 +11,7 @@ use App\Contracts\Services\PaymentServiceInterface;
 use App\DTO\Payments\PaymentRequestDTO;
 use App\DTO\Payments\PaymentResultDTO;
 use App\Models\Booking;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -152,5 +153,10 @@ class PaymentService implements PaymentServiceInterface
         } finally {
             $this->bookingLockService->delete($booking->id);
         }
+    }
+
+    public function list(array $filters): LengthAwarePaginator
+    {
+        return $this->paymentRepo->list($filters);
     }
 }

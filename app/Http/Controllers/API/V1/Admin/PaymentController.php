@@ -6,8 +6,11 @@ use App\Contracts\Services\PaymentServiceInterface;
 use App\Contracts\Services\BookingServiceInterface;
 use App\DTO\Payments\PaymentRequestDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Responses\CollectionResponse;
 use App\Http\Responses\EmptyResponse;
 use App\Http\Responses\PaymentResponse;
+use App\Http\Resources\Payment\PaymentCollection;
+use App\Http\Resources\Payment\PaymentResource;
 use App\Models\Payment;
 use App\Services\PaymentProofService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -26,6 +29,18 @@ class PaymentController extends Controller
         private PaymentProofService $paymentProofService
     ) {}
 
+    /**
+     * Display a paginated listing of payments with filtering
+     * GET /v1/admin/payments
+     */
+    public function index(Request $request): CollectionResponse
+    {
+        $filters = $request->only(['search', 'status', 'proof_status', 'date', 'from_date', 'to_date', 'sort', 'per_page', 'page']);
+        $paginator = $this->paymentService->list($filters);
+        
+        return new CollectionResponse(new PaymentCollection($paginator), JsonResponse::HTTP_OK);
+    }
+
     public function pay(Request $request)
     {
         $validated = $request->validate([
@@ -39,7 +54,7 @@ class PaymentController extends Controller
         ]);
 
         Log::info('Admin processing payment', [
-            'admin_user_id' => auth()->id(),
+            'admin_user_id' => Auth::id(),
             'reference_number' => $validated['reference_number'],
             'amount' => $validated['amount'],
             'provider' => $validated['provider'],
@@ -63,7 +78,7 @@ class PaymentController extends Controller
         
         if ($result->success) {
             Log::info('Admin payment processed successfully', [
-                'admin_user_id' => auth()->id(),
+                'admin_user_id' => Auth::id(),
                 'reference_number' => $validated['reference_number'],
                 'payment_id' => $result->payment->id,
                 'amount' => $validated['amount'],
@@ -72,7 +87,7 @@ class PaymentController extends Controller
             ]);
         } else {
             Log::error('Admin payment processing failed', [
-                'admin_user_id' => auth()->id(),
+                'admin_user_id' => Auth::id(),
                 'reference_number' => $validated['reference_number'],
                 'error_code' => $result->errorCode,
                 'error_message' => $result->errorMessage,
@@ -121,7 +136,7 @@ class PaymentController extends Controller
         $notifyGuest = $validated['notify_guest'] ?? true;
 
         Log::info('Admin updating payment', [
-            'admin_user_id' => auth()->id(),
+            'admin_user_id' => Auth::id(),
             'payment_id' => $payment->id,
             'booking_id' => $payment->booking_id,
             'booking_reference' => $payment->booking->reference_number,
