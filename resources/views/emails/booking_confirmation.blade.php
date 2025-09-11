@@ -11,7 +11,7 @@
         $fmtDate = function ($date) { if(!$date) return ''; return Carbon::parse($date)->isoFormat('DD MMM YYYY'); };
         $fmtDateTime = function ($date) { if(!$date) return ''; return Carbon::parse($date)->setTimezone('Asia/Singapore')->isoFormat('DD MMM YYYY HH:mm'); };
         $fmtMoney = fn($v) => '₱' . number_format((float)$v, 2);
-        $isDayTour = $booking->isDayTour();
+        $isDayTour = ($booking->booking_type ?? 'overnight') === 'day_tour';
         $nights = 0;
         if (!empty($booking?->check_in_date) && !empty($booking?->check_out_date)) {
             $nights = Carbon::parse($booking->check_in_date)->diffInDays(Carbon::parse($booking->check_out_date));
@@ -208,16 +208,18 @@
                                                 <strong>{{ $startDate->format('M j') }} to {{ $endDate->format('M j') }}</strong>
                                             </div>
                                             <div style="font-size: 13px; color: #6b7280;">
-                                                Adults: {{ $night['adults'] }} × ₱{{ number_format($night['adult_price'], 2) }} = ₱{{ number_format($night['adults'] * $night['adult_price'], 2) }}
+                                                Adult Price: ₱{{ number_format($night['adult_price'] ?? 0, 2) }} per person
                                             </div>
-                                            @if($night['children'] > 0)
+                                            @if(isset($night['child_price']) && $night['child_price'] > 0)
                                             <div style="font-size: 13px; color: #6b7280;">
-                                                Children: {{ $night['children'] }} × ₱{{ number_format($night['child_price'], 2) }} = ₱{{ number_format($night['children'] * $night['child_price'], 2) }}
+                                                Child Price: ₱{{ number_format($night['child_price'], 2) }} per person
                                             </div>
                                             @endif
+                                            @if(isset($night['night_total']) && $night['night_total'] > 0)
                                             <div style="font-size: 13px; color: #111827; font-weight: bold; margin-top: 2px;">
                                                 Total: ₱{{ number_format($night['night_total'], 2) }}
                                             </div>
+                                            @endif
                                         </div>
                                     @endforeach
                                 </div>
@@ -280,9 +282,6 @@
                     </div>
                     @endif
 
-                    <div class="mt-15" style="margin:16px 16px;">
-                        <a href="{{ $frontendBase . '/booking/' . $booking->reference_number }}" style="display:inline-block;padding:10px 18px;border:1px solid #bbb;border-radius:6px;color:#000;">View / Manage Reservation</a>
-                    </div>
 
                     <!-- Guest Data -->
                     <div class="section">
@@ -372,19 +371,6 @@
                     </div></div>
                     </div>
 
-                    <!-- Cancellation Policies -->
-                    <div class="section">
-                    <div class="section-title">Cancellation Policies</div>
-                    <div class="box"><div class="box-inner" style="font-size:13px; line-height:19px;">
-                        <p class="m-0"><strong>Guarantee & Payment Policy</strong><br>{{ ($resort['policy']['guarantee'] ?? 'Full payment or Downpayment is required before the option date or prior to check-in.') }}</p>
-                        <ul style="margin:8px 0 0 18px; padding:0;">
-                        <li>{{ ($resort['policy']['non_refundable'] ?? 'All paid bookings are non-refundable.') }}</li>
-                        <li>{{ ($resort['policy']['no_show'] ?? 'Guests will be charged the full amount in the event of a No Show.') }}</li>
-                        <li>{{ ($resort['policy']['force_majeure'] ?? 'The resort is not liable for services not rendered due to Force Majeure.') }}</li>
-                        </ul>
-                    </div></div>
-                    </div>
-
                     @if(!empty($booking->special_requests))
                     <div class="section">
                         <div class="section-title">Requests</div>
@@ -394,7 +380,66 @@
                     </div>
                     @endif
 
+                    <div class="mt-15" style="margin:16px 16px;">
+                        <a href="{{ $frontendBase . '/booking/' . $booking->reference_number }}" style="display:inline-block;padding:10px 18px;border:1px solid #bbb;border-radius:6px;color:#000;">View / Manage Reservation</a>
+                    </div>
+
+                    <!-- Hotel Policies -->
+                    <div class="section">
+                    <div class="section-title">NETANIA DE LAIYA HOUSE RULES & POLICIES</div>
+                    <div class="box"><div class="box-inner" style="font-size:13px; line-height:19px;">
+                        
+                        <p class="m-0"><strong>1. CHECK-IN/OUT, BOOKING, RESCHEDULING</strong></p>
+                        <ul style="margin:8px 0 0 18px; padding:0;">
+                        <li><strong>1.1</strong> Check-in time: 3:00 PM/Check-out time 1:00 PM: For overnight stay extended hours may be allowed depending on room availability; rate adjustment applies; requires at least 16 hours advance notice.</li>
+                        <li><strong>1.2</strong> You may enter the resort gate 15 minutes before check-in time to settle the balance. Please wait in the parking area or at any available tables and chairs at poolside while waiting for the check-in time at 3:00PM.</li>
+                        <li><strong>1.3</strong> Rescheduling Policy: For rescheduling of reservation, kindly inform the resort 1 week before the booking schedule. Deposit made for bookings is strictly non-refundable but we allow re-scheduling of reservation (valid for 30 days).</li>
+                        <li><strong>1.4</strong> Final Number of Rooms and Headcount: The confirmation of the final rooms and head count is one week before the booking schedule. If the resort is not informed and you are reducing your room or head count, you will not be able to refund. Drivers are included in the final head count. 3 years old and below are free of charge.</li>
+                        <li><strong>1.5</strong> Forfeited Reservation: If the client fails to arrive on the date of their reservation.</li>
+                        <li><strong>1.6</strong> Pets are allowed with the following conditions: A maximum of two (2) pets per cabana or table for day tours, regardless of the number of rooms for overnight. Only pets weighing a maximum of eighteen (18) kilograms will be allowed. Pets must be kept on a leash or in a kennel/carrier at all times, especially in public areas to maintain cleanliness in the area, pet owners are encouraged to have their pets wear diapers.</li>
+                        <li><strong>1.7</strong> Ecological Fee: Present your Booking Confirmation to the Municipal Tourism Reception Area. Pay for the Ecological fee of P50 per person and claim your Ecological Fee tickets together with your Referral Slip. You will only need to present your Referral Slip upon arrival at the resort.</li>
+                        </ul>
+
+                        <p class="m-0" style="margin-top:16px;"><strong>2. OCCUPANCY & ROOM SERVICES</strong></p>
+                        <ul style="margin:8px 0 0 18px; padding:0;">
+                        <li><strong>2.1</strong> Room capacity shall be STRICTLY OBSERVED.</li>
+                        <li><strong>2.2</strong> Bringing food is not allowed inside the rooms. You can order through the resort restaurant menu an hour in advance. You are allowed however to bring snacks, chips, bread, pizza, fruits, fast food meal, liquor and drinks-NO CORKAGE.</li>
+                        <li><strong>2.3</strong> Bringing Lechon (with corkage fee=2500)</li>
+                        </ul>
+
+                        <p class="m-0" style="margin-top:16px;"><strong>3. DAMAGES AND LOSSES OF RESORT'S PROPERTY</strong></p>
+                        <ul style="margin:8px 0 0 18px; padding:0;">
+                        <li><strong>3.1</strong> Guests are responsible for any damage that may occur during their stay at the resort.</li>
+                        </ul>
+
+                        <p class="m-0" style="margin-top:16px;"><strong>4. SECURITY CONCERNS, DAMAGES & MISSING ITEMS/VALUABLES</strong></p>
+                        <ul style="margin:8px 0 0 18px; padding:0;">
+                        <li><strong>4.1</strong> Netania De Laiya is not liable for the lost, stolen or damaged items. Please keep your valuable and do not leave your things unattended. The resort is not responsible for your personal belongings.</li>
+                        <li><strong>4.2</strong> The gate is closed at 10pm, but if there is an emergency and you need to go out, you can tell the front desk or guard so they can assist you.</li>
+                        </ul>
+
+                        <p class="m-0" style="margin-top:16px;"><strong>5. SWIMMING POOL and BEACH AVAILABILITY:</strong></p>
+                        <ul style="margin:8px 0 0 18px; padding:0;">
+                        <li>Beach Cut Off Time: 6:00pm</li>
+                        <li>Swimming Pool Cut Off Time: 10:00pm</li>
+                        </ul>
+
+                        <p class="m-0" style="margin-top:16px;"><strong>6. Proper Conduct</strong></p>
+                        <ul style="margin:8px 0 0 18px; padding:0;">
+                        <li><strong>6.1</strong> Please observe silence between 10:00 PM to 6:30 AM - Guests are advised to respect the privacy and comfort of other guests. Hence, kindly refrain from loud music or any noise during these hours. Karaokes or sound systems are allowed only for exclusive and pre-arranged functions.</li>
+                        </ul>
+                    </div></div>
+                    </div>
+
                     <p class="note" style="padding-left:16px;">Your booking is now <strong>confirmed</strong>. We look forward to welcoming you!</p>
+                    
+                    <div class="section" style="margin-top: 20px;">
+                        <div class="section-title">📎 Attached Document</div>
+                        <div class="box"><div class="box-inner" style="font-size:13px; line-height:19px;">
+                            <p class="m-0">📄 <strong>Resort Policies PDF</strong> - A detailed copy of all resort policies and house rules has been attached to this email for your reference.</p>
+                        </div></div>
+                    </div>
+                    
                     <p style="margin:36px 0 0 0;font-size:14px;padding-left:16px;">Thank you,<br>The {{ $resortName }} Team</p>
                 </div>
 

@@ -2,27 +2,28 @@
 
 namespace App\Mail;
 
+use App\Services\ResortPoliciesPdfService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class BookingConfirmation extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public $booking, $downpayment;
-    public $payment_method; // optional; pass if you have it
+    public $booking;
+
     /**
      * Create a new message instance.
      */
-    public function __construct($booking, $downpayment, $payment_method = null)
+    public function __construct($booking)
     {
         $this->booking = $booking;
-        $this->downpayment = $downpayment;
-        $this->payment_method = $payment_method;
     }
 
     /**
@@ -43,16 +44,9 @@ class BookingConfirmation extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        // Load room unit data for the booking
-        $this->booking->load('bookingRooms.room', 'bookingRooms.roomUnit');
-        
         return new Content(
             markdown: 'emails.booking_confirmation',
-            with: [
-                'booking' => $this->booking,
-                'downpayment' => $this->downpayment,
-                'payment_method' => $this->payment_method,
-            ],
+            with: ['booking' => $this->booking],
         );
     }
 
@@ -63,6 +57,20 @@ class BookingConfirmation extends Mailable implements ShouldQueue
      */
     public function attachments(): array
     {
-        return [];
+        try {
+            $pdfService = app(ResortPoliciesPdfService::class);
+            $pdfPath = $pdfService->generatePdf();
+            $filename = $pdfService->getFilename();
+            
+            return [
+                Attachment::fromPath($pdfPath)
+                    ->as($filename)
+                    ->withMime('application/pdf'),
+            ];
+        } catch (\Exception $e) {
+            // Log the error but don't fail the email
+            Log::error('Failed to generate policies PDF for confirmation email: ' . $e->getMessage());
+            return [];
+        }
     }
 }

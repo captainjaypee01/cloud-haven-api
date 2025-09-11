@@ -21,9 +21,11 @@ class CalculateBookingTotalAction
             $totalRoom += $room->price_per_night * $nights;
         }
 
-        // Use new meal program system for dynamic pricing
-        $mealQuote = $this->computeMealQuoteAction->execute($check_in_date, $check_out_date, $adults, $children);
-        $mealTotal = $mealQuote->mealSubtotal;
+        // Get meal program info for the stay (dates only)
+        $mealQuote = $this->computeMealQuoteAction->execute($check_in_date, $check_out_date);
+        
+        // Calculate meal total based on actual guest counts and room capacity
+        $mealTotal = $this->calculateMealTotalForBooking($mealQuote, $bookingRoomArr, $rooms);
 
         $finalTotal = $totalRoom + $mealTotal;
         return [
@@ -32,5 +34,40 @@ class CalculateBookingTotalAction
             'final_price' => $finalTotal,
             'meal_quote' => $mealQuote // Include meal quote for email templates
         ];
+    }
+
+    /**
+     * Calculate meal total for booking based on room guests and meal program
+     */
+    private function calculateMealTotalForBooking($mealQuote, array $bookingRoomArr, $rooms): float
+    {
+        $totalMealCost = 0;
+
+        foreach ($mealQuote->nights as $night) {
+            $nightCost = 0;
+
+            foreach ($bookingRoomArr as $roomData) {
+                $room = $rooms[$roomData->room_id];
+                $adults = $roomData->adults ?? 0;
+                $children = $roomData->children ?? 0;
+
+                if ($night->type === 'buffet') {
+                    // Buffet: all guests pay
+                    $nightCost += ($adults * ($night->adultPrice ?? 0)) + ($children * ($night->childPrice ?? 0));
+                } else {
+                    // Free breakfast: only extra guests pay
+                    $totalGuests = $adults + $children;
+                    $extraGuests = max(0, $totalGuests - $room->max_guests);
+                    
+                    // For simplicity, use adult breakfast price for extra guests
+                    // (as discussed, we don't differentiate adult/child for extra guests)
+                    $nightCost += $extraGuests * ($night->adultBreakfastPrice ?? 0);
+                }
+            }
+
+            $totalMealCost += $nightCost;
+        }
+
+        return round($totalMealCost, 2);
     }
 }

@@ -22,8 +22,6 @@ class MealQuoteRequest extends FormRequest
         return [
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
-            'adults' => 'required|integer|min:1|max:20',
-            'children' => 'nullable|integer|min:0|max:20',
         ];
     }
 

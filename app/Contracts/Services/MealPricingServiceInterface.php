@@ -15,9 +15,20 @@ interface MealPricingServiceInterface
      * @param Carbon $checkOut
      * @param int $adults
      * @param int $children
+     * @param array|null $rooms Room information for breakfast cost calculation
      * @return MealQuoteDTO
      */
-    public function quoteForStay(Carbon $checkIn, Carbon $checkOut, int $adults, int $children): MealQuoteDTO;
+    public function quoteForStay(Carbon $checkIn, Carbon $checkOut, int $adults, int $children, ?array $rooms = null): MealQuoteDTO;
+
+    /**
+     * Get meal program information for a stay (simplified approach)
+     * Returns only meal program info and pricing, no calculations
+     *
+     * @param Carbon $checkIn
+     * @param Carbon $checkOut
+     * @return MealQuoteDTO
+     */
+    public function getMealProgramInfoForStay(Carbon $checkIn, Carbon $checkOut): MealQuoteDTO;
 
     /**
      * Quote meal prices for Day Tour

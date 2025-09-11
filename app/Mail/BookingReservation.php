@@ -2,12 +2,15 @@
 
 namespace App\Mail;
 
+use App\Services\ResortPoliciesPdfService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class BookingReservation extends Mailable implements ShouldQueue
 {
@@ -55,6 +58,20 @@ class BookingReservation extends Mailable implements ShouldQueue
      */
     public function attachments(): array
     {
-        return [];
+        try {
+            $pdfService = app(ResortPoliciesPdfService::class);
+            $pdfPath = $pdfService->generatePdf();
+            $filename = $pdfService->getFilename();
+            
+            return [
+                Attachment::fromPath($pdfPath)
+                    ->as($filename)
+                    ->withMime('application/pdf'),
+            ];
+        } catch (\Exception $e) {
+            // Log the error but don't fail the email
+            Log::error('Failed to generate policies PDF for email: ' . $e->getMessage());
+            return [];
+        }
     }
 }

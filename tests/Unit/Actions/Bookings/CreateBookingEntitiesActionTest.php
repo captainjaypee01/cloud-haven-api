@@ -52,7 +52,7 @@ describe('CreateBookingEntitiesAction', function () {
             'adults' => 1,
             'total_guests' => 1,
         ]);
-        expect($booking->reference_number)->toMatch('/^NTDL-\d{6}-[A-Z0-9]{6}$/')
+        expect($booking->reference_number)->toMatch('/^NL-\d{6}-[A-Z0-9]{6}$/')
             ->and($booking->reference_number)->not()->toBeEmpty();
     });
 

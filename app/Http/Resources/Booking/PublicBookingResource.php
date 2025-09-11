@@ -33,8 +33,8 @@ class PublicBookingResource extends JsonResource
             'adults'          => $this->adults,
             'children'          => $this->children,
             'total_guests'          => $this->total_guests,
-            'total_price'          => $this->total_price,
-            'meal_price'          => $this->meal_price,
+            'total_price'          => (float) $this->total_price,
+            'meal_price'          => (float) $this->meal_price,
             'meal_quote_data'      => $this->meal_quote_data,
             'discount_amount'          => $this->discount_amount,
             'payment_option'          => $this->payment_option,
@@ -49,7 +49,7 @@ class PublicBookingResource extends JsonResource
             'other_charges' => $this->otherCharges,
         ];
         return array_merge($bookingData, [
-            'final_price' => $this->final_price,
+            'final_price' => (float)$this->final_price,
             'downpayment_percent' => $downpaymentPercent,
             'downpayment_amount' => $downpaymentAmount,
             'created_at' => $this->local_created_at,

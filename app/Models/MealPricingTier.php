@@ -21,6 +21,8 @@ class MealPricingTier extends Model
         'child_pm_snack_price',
         'adult_dinner_price',
         'child_dinner_price',
+        'adult_breakfast_price',
+        'child_breakfast_price',
         'effective_from',
         'effective_to',
     ];
@@ -34,6 +36,8 @@ class MealPricingTier extends Model
         'child_pm_snack_price' => 'decimal:2',
         'adult_dinner_price' => 'decimal:2',
         'child_dinner_price' => 'decimal:2',
+        'adult_breakfast_price' => 'decimal:2',
+        'child_breakfast_price' => 'decimal:2',
         'effective_from' => 'date',
         'effective_to' => 'date',
     ];

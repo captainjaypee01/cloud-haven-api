@@ -18,7 +18,7 @@ class MealCalendarService implements MealCalendarServiceInterface
 
     public function isBuffetActiveOn(Carbon $date): bool
     {
-        $program = $this->getActiveProgram();
+        $program = $this->getActiveProgramForDate($date);
         
         if (!$program) {
             return false;
@@ -471,19 +471,16 @@ class MealCalendarService implements MealCalendarServiceInterface
                 return $this->isInWeeklyPattern($program, $date);
                 
             case 'composite':
-                // For composite, check all applicable rules
+                // For composite, ALL applicable rules must be satisfied
+                
+                // Check date range if specified
                 if ($program->date_start && $program->date_end && !$this->isInDateRange($program, $date)) {
                     return false;
                 }
                 
-                // For months, only apply the restriction if no date range is specified
-                // When a date range is specified, it takes precedence over month restrictions
-                if ($program->months && !$this->isInMonths($program, $date)) {
-                    // Only apply month restriction if no date range is specified
-                    // If date range is specified, let it take precedence
-                    if (!$program->date_start || !$program->date_end) {
-                        return false;
-                    }
+                // Check months if specified (always apply if present)
+                if ($program->months && !empty($program->months) && !$this->isInMonths($program, $date)) {
+                    return false;
                 }
                 
                 // Check weekly pattern - this includes both custom weekdays and weekend definitions

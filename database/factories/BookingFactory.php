@@ -21,7 +21,7 @@ class BookingFactory extends Factory
         return [
             // 'id' => not set (auto-increment integer)
             'user_id' => null, // or User::factory()
-            'reference_number' => 'NTDL-' . $now->format('ymd') . '-' . strtoupper(Str::random(6)),
+            'reference_number' => 'NL-' . $now->format('ymd') . '-' . strtoupper(Str::random(6)),
             'check_in_date' => $now->copy()->addDays(5)->format('Y-m-d'),
             'check_in_time' => '14:00',
             'check_out_date' => $now->copy()->addDays(7)->format('Y-m-d'),

@@ -12,7 +12,7 @@ class ComputeMealQuoteAction
         private MealPricingServiceInterface $mealPricingService
     ) {}
 
-    public function execute(string $checkIn, string $checkOut, int $adults, int $children): MealQuoteDTO
+    public function execute(string $checkIn, string $checkOut): MealQuoteDTO
     {
         $checkInDate = Carbon::parse($checkIn);
         $checkOutDate = Carbon::parse($checkOut);
@@ -22,20 +22,9 @@ class ComputeMealQuoteAction
             throw new \InvalidArgumentException('Check-out date must be after check-in date');
         }
 
-        // Validate party size
-        if ($adults < 1) {
-            throw new \InvalidArgumentException('At least one adult is required');
-        }
-
-        if ($children < 0) {
-            throw new \InvalidArgumentException('Number of children cannot be negative');
-        }
-
-        return $this->mealPricingService->quoteForStay(
+        return $this->mealPricingService->getMealProgramInfoForStay(
             $checkInDate,
-            $checkOutDate,
-            $adults,
-            $children
+            $checkOutDate
         );
     }
 }

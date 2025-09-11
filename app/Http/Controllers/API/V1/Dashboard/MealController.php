@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\V1\Dashboard;
 
 use App\Actions\ComputeMealQuoteAction;
 use App\Contracts\Services\MealCalendarServiceInterface;
+use App\Contracts\Services\MealPricingServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\MealQuoteRequest;
 use App\Http\Responses\ItemResponse;
@@ -18,6 +19,7 @@ class MealController extends Controller
 {
     public function __construct(
         private MealCalendarServiceInterface $calendarService,
+        private MealPricingServiceInterface $mealPricingService,
         private ComputeMealQuoteAction $computeMealQuoteAction
     ) {}
 
@@ -40,7 +42,14 @@ class MealController extends Controller
                 return new ErrorResponse('Date range cannot exceed 365 days', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
             }
 
-            $availability = $this->calendarService->getAvailabilityForDateRange($startDate, $endDate);
+            // Use the same logic as meal quote for consistency
+            $quote = $this->mealPricingService->getMealProgramInfoForStay($startDate, $endDate);
+            
+            // Convert to availability format (date => type)
+            $availability = [];
+            foreach ($quote->nights as $night) {
+                $availability[$night->date->format('Y-m-d')] = $night->type;
+            }
 
             return new ItemResponse(new \Illuminate\Http\Resources\Json\JsonResource($availability));
         } catch (Exception $e) {
@@ -56,11 +65,10 @@ class MealController extends Controller
     {
         try {
             $validated = $request->validated();
+            
             $quote = $this->computeMealQuoteAction->execute(
                 $validated['check_in'],
-                $validated['check_out'],
-                $validated['adults'],
-                $validated['children'] ?? 0
+                $validated['check_out']
             );
 
             return new ItemResponse(new \Illuminate\Http\Resources\Json\JsonResource($quote->toArray()));

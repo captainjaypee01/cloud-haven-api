@@ -24,6 +24,8 @@ class MealPricingTierResource extends JsonResource
             'child_pm_snack_price' => $this->child_pm_snack_price ? (float) $this->child_pm_snack_price : null,
             'adult_dinner_price' => $this->adult_dinner_price ? (float) $this->adult_dinner_price : null,
             'child_dinner_price' => $this->child_dinner_price ? (float) $this->child_dinner_price : null,
+            'adult_breakfast_price' => $this->adult_breakfast_price ? (float) $this->adult_breakfast_price : null,
+            'child_breakfast_price' => $this->child_breakfast_price ? (float) $this->child_breakfast_price : null,
             'effective_from' => $this->effective_from?->format('Y-m-d'),
             'effective_to' => $this->effective_to?->format('Y-m-d'),
             'created_at' => $this->created_at->toISOString(),
