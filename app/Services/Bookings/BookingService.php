@@ -280,21 +280,40 @@ class BookingService implements BookingServiceInterface
         // Events: one per booking_room (prefer assigned unit data)
         $eventRows = BookingRoom::query()
             ->with([
-                'booking:id,check_in_date,check_out_date,status,guest_name,total_price,final_price,adults,children,total_guests,reference_number,booking_type,deleted_at',
+                'booking:id,check_in_date,check_out_date,status,guest_name,total_price,final_price,adults,children,total_guests,reference_number,booking_type,deleted_at,meal_quote_data',
                 'room:id,name,max_guests',
                 'roomUnit:id,unit_number',
             ])
             ->whereHas('booking', function ($q) use ($startDate, $endDate, $statuses, $isDayView) {
                 if ($isDayView) {
                     // For day view: show bookings that are active on this specific day
-                    // A booking is active if: check_in_date <= selected_date AND check_out_date > selected_date
-                    // This excludes the checkout day from being shown
-                    $q->where('check_in_date', '<=', $startDate->toDateString())
-                      ->where('check_out_date', '>', $startDate->toDateString());
+                    // Include Day Tour bookings (same check-in and check-out date)
+                    $q->where(function ($dayQuery) use ($startDate) {
+                        $dayQuery->where(function ($overnightQuery) use ($startDate) {
+                            // Overnight bookings: check_in_date <= selected_date AND check_out_date > selected_date
+                            $overnightQuery->where('check_in_date', '<=', $startDate->toDateString())
+                                          ->where('check_out_date', '>', $startDate->toDateString());
+                        })->orWhere(function ($dayTourQuery) use ($startDate) {
+                            // Day Tour bookings: check_in_date = selected_date AND check_out_date = selected_date
+                            $dayTourQuery->where('check_in_date', '=', $startDate->toDateString())
+                                        ->where('check_out_date', '=', $startDate->toDateString())
+                                        ->where('booking_type', 'day_tour');
+                        });
+                    });
                 } else {
-                    // For month view: show all overlapping bookings (excluding checkout days)
-                    $q->where('check_in_date', '<=', $endDate->toDateString())
-                      ->where('check_out_date', '>', $startDate->toDateString());
+                    // For month view: show all overlapping bookings
+                    $q->where(function ($monthQuery) use ($startDate, $endDate) {
+                        $monthQuery->where(function ($overnightQuery) use ($startDate, $endDate) {
+                            // Overnight bookings: standard overlap logic (excluding checkout days)
+                            $overnightQuery->where('check_in_date', '<=', $endDate->toDateString())
+                                          ->where('check_out_date', '>', $startDate->toDateString());
+                        })->orWhere(function ($dayTourQuery) use ($startDate, $endDate) {
+                            // Day Tour bookings: check_in_date within the range
+                            $dayTourQuery->where('booking_type', 'day_tour')
+                                        ->where('check_in_date', '>=', $startDate->toDateString())
+                                        ->where('check_in_date', '<=', $endDate->toDateString());
+                        });
+                    });
                 }
                 
                 if (is_array($statuses) && count($statuses) > 0) {
@@ -318,10 +337,18 @@ class BookingService implements BookingServiceInterface
             $paidAmount = $booking->payments()->where('status', 'paid')->sum('amount');
             $remainingBalance = max(0, $booking->final_price - $paidAmount);
             
-            $events[] = [
+            // Determine meal program type based on meal_quote_data
+            $mealProgramType = $this->determineMealProgramType($booking);
+            
+            // For Day Tours, price_per_night actually contains price_per_pax
+            $isDayTour = $booking->booking_type === 'day_tour';
+            
+            $eventData = [
                 'booking_id' => (int) $booking->id,
                 'reference_number' => $booking->reference_number,
                 'booking_type' => $booking->booking_type ?? 'overnight',
+                'meal_program_type' => $mealProgramType,
+                'meal_quote_data' => $booking->meal_quote_data,
                 'room_type_id' => $br->room?->id,
                 'room_type_name' => $br->room?->name ?? 'Unassigned Room',
                 'room_unit_id' => $br->roomUnit?->id,
@@ -343,21 +370,53 @@ class BookingService implements BookingServiceInterface
                 'booking_children' => $booking->children,
                 'booking_total_guests' => $booking->total_guests,
             ];
+            
+            // Add Day Tour specific fields
+            if ($isDayTour) {
+                $eventData['price_per_pax'] = $br->price_per_night; // For Day Tours, this is actually price per pax
+                $eventData['include_lunch'] = $br->include_lunch ?? false;
+                $eventData['include_pm_snack'] = $br->include_pm_snack ?? false;
+                $eventData['lunch_cost'] = $br->lunch_cost ?? 0;
+                $eventData['pm_snack_cost'] = $br->pm_snack_cost ?? 0;
+                $eventData['meal_cost'] = $br->meal_cost ?? 0;
+                $eventData['base_price'] = $br->base_price ?? 0;
+                $eventData['room_total_price'] = $br->total_price ?? 0;
+            }
+            
+            $events[] = $eventData;
         }
 
         // Occupancy: count unique bookings per night (not individual rooms)
         $bookingRows = Booking::query()
             ->where(function($q) use ($startDate, $endDate, $isDayView) {
                 if ($isDayView) {
-                    // For day view: show bookings that are active on this specific day
-                    // A booking is active if: check_in_date <= selected_date AND check_out_date > selected_date
-                    // This excludes the checkout day from being counted
-                    $q->where('check_in_date', '<=', $startDate->toDateString())
-                      ->where('check_out_date', '>', $startDate->toDateString());
+                    // For day view: include both overnight and day tour bookings
+                    $q->where(function ($dayQuery) use ($startDate) {
+                        $dayQuery->where(function ($overnightQuery) use ($startDate) {
+                            // Overnight bookings: check_in_date <= selected_date AND check_out_date > selected_date
+                            $overnightQuery->where('check_in_date', '<=', $startDate->toDateString())
+                                          ->where('check_out_date', '>', $startDate->toDateString());
+                        })->orWhere(function ($dayTourQuery) use ($startDate) {
+                            // Day Tour bookings: check_in_date = selected_date AND check_out_date = selected_date
+                            $dayTourQuery->where('check_in_date', '=', $startDate->toDateString())
+                                        ->where('check_out_date', '=', $startDate->toDateString())
+                                        ->where('booking_type', 'day_tour');
+                        });
+                    });
                 } else {
-                    // For month view: show all overlapping bookings (excluding checkout days)
-                    $q->where('check_in_date', '<=', $endDate->toDateString())
-                      ->where('check_out_date', '>', $startDate->toDateString());
+                    // For month view: include both overnight and day tour bookings
+                    $q->where(function ($monthQuery) use ($startDate, $endDate) {
+                        $monthQuery->where(function ($overnightQuery) use ($startDate, $endDate) {
+                            // Overnight bookings: standard overlap logic (excluding checkout days)
+                            $overnightQuery->where('check_in_date', '<=', $endDate->toDateString())
+                                          ->where('check_out_date', '>', $startDate->toDateString());
+                        })->orWhere(function ($dayTourQuery) use ($startDate, $endDate) {
+                            // Day Tour bookings: check_in_date within the range
+                            $dayTourQuery->where('booking_type', 'day_tour')
+                                        ->where('check_in_date', '>=', $startDate->toDateString())
+                                        ->where('check_in_date', '<=', $endDate->toDateString());
+                        });
+                    });
                 }
             })
             ->whereNotIn('status', ['cancelled', 'failed'])
@@ -429,5 +488,28 @@ class BookingService implements BookingServiceInterface
             'summary' => $summary,
             'events' => $events,
         ];
+    }
+
+    /**
+     * Determine meal program type based on booking's meal_quote_data
+     */
+    private function determineMealProgramType(Booking $booking): string
+    {
+        $mealQuoteData = $booking->meal_quote_data;
+        
+        if (!$mealQuoteData || empty($mealQuoteData)) {
+            return 'free_breakfast';
+        }
+        
+        // Check if any night has buffet type
+        if (isset($mealQuoteData['nights']) && is_array($mealQuoteData['nights'])) {
+            foreach ($mealQuoteData['nights'] as $night) {
+                if (isset($night['type']) && $night['type'] === 'buffet') {
+                    return 'buffet';
+                }
+            }
+        }
+        
+        return 'free_breakfast';
     }
 }
