@@ -5,6 +5,7 @@ namespace App\Actions\DayTour;
 use App\Actions\Bookings\CheckRoomAvailabilityAction;
 use App\Contracts\Services\DayTourServiceInterface;
 use App\Contracts\Services\MealPricingServiceInterface;
+use App\Contracts\Services\MealCalendarServiceInterface;
 use App\Contracts\Services\BookingLockServiceInterface;
 use App\DTO\DayTour\DayTourBookingRequestDTO;
 use App\DTO\DayTour\DayTourQuoteRequestDTO;
@@ -21,6 +22,7 @@ class CreateDayTourBookingAction
     public function __construct(
         private DayTourServiceInterface $dayTourService,
         private MealPricingServiceInterface $mealPricingService,
+        private MealCalendarServiceInterface $calendarService,
         private BookingLockServiceInterface $lockService,
         private CheckRoomAvailabilityAction $checkAvailability,
         private ComputeDayTourQuoteAction $computeQuoteAction
@@ -36,12 +38,16 @@ class CreateDayTourBookingAction
             // 1. Check room availability BEFORE creating booking (same as overnight bookings)
             $this->checkDayTourRoomAvailability($request);
 
+            // Parse the date without timezone conversion since meal programs are date-based, not time-based
+            // This prevents edge cases around month boundaries due to timezone conversion
+            $localDate = Carbon::parse($request->date)->startOfDay();
+
             // Get Day Tour pricing from database (NOT from frontend)
             $dayTourPricing = DayTourPricing::where('is_active', true)
-                ->where('effective_from', '<=', $request->date)
-                ->where(function ($query) use ($request) {
+                ->where('effective_from', '<=', $localDate->format('Y-m-d'))
+                ->where(function ($query) use ($localDate) {
                     $query->whereNull('effective_until')
-                        ->orWhere('effective_until', '>=', $request->date);
+                        ->orWhere('effective_until', '>=', $localDate->format('Y-m-d'));
                 })
                 ->orderBy('effective_from', 'desc')
                 ->first();
@@ -50,14 +56,11 @@ class CreateDayTourBookingAction
                 throw new \InvalidArgumentException('No active Day Tour pricing found for the selected date.');
             }
 
-            // Get property timezone
-            $timezone = config('resort.timezone', 'Asia/Singapore');
-            $localDate = Carbon::parse($request->date)->setTimezone($timezone)->startOfDay();
-
             // Get meal program and pricing using the same logic as DayTourService
-            $mealProgram = $this->mealPricingService->getActiveMealProgram();
+            // Use calendarService to get the program active for the specific date
+            $mealProgram = $this->calendarService->getActiveProgramForDate($localDate);
             if (!$mealProgram) {
-                throw new \InvalidArgumentException('No active meal program found.');
+                throw new \InvalidArgumentException('No active meal program found for the selected date.');
             }
 
             // Get pricing tier for the specific date (same as DayTourService)

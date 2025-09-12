@@ -115,7 +115,7 @@ class BookingController extends Controller
             
             Log::info('Other charge added successfully', [
                 'admin_user_id' => auth()->id(),
-                'booking_id' => $booking,
+                'booking_id' => $data->id,
                 'booking_reference' => $data->reference_number,
                 'charge_id' => $otherCharge->id,
                 'charge_amount' => $validated['amount'],
@@ -135,34 +135,49 @@ class BookingController extends Controller
 
     public function reschedule(Request $request, $booking)
     {
-        $validated = $request->validate([
-            'check_in_date' => 'required|date|after_or_equal:today',
-            'check_out_date' => 'required|date|after:check_in_date',
-        ]);
-
-        $booking = $this->bookingService->show($booking);
+        $bookingModel = $this->bookingService->show($booking);
+        
+        // Handle validation based on booking type
+        if ($bookingModel->booking_type === 'day_tour') {
+            // For Day Tour, only validate the tour date (same for check-in and check-out)
+            $validated = $request->validate([
+                'tour_date' => 'required|date|after_or_equal:today',
+            ]);
+            
+            // Set both check-in and check-out to the same date for Day Tour
+            $validated['check_in_date'] = $validated['tour_date'];
+            $validated['check_out_date'] = $validated['tour_date'];
+        } else {
+            // For overnight bookings, validate check-in and check-out dates
+            $validated = $request->validate([
+                'check_in_date' => 'required|date|after_or_equal:today',
+                'check_out_date' => 'required|date|after:check_in_date',
+            ]);
+        }
         
         // Calculate the original duration (in nights)
-        $originalNights = Carbon::parse($booking->check_in_date)->diffInDays(Carbon::parse($booking->check_out_date));
+        $originalNights = Carbon::parse($bookingModel->check_in_date)->diffInDays(Carbon::parse($bookingModel->check_out_date));
         $newNights = Carbon::parse($validated['check_in_date'])->diffInDays(Carbon::parse($validated['check_out_date']));
 
         Log::info('Admin rescheduling booking', [
             'admin_user_id' => auth()->id(),
-            'booking_id' => $booking,
-            'booking_reference' => $booking->reference_number,
-            'original_check_in' => $booking->check_in_date,
-            'original_check_out' => $booking->check_out_date,
+            'booking_id' => $bookingModel->id,
+            'booking_reference' => $bookingModel->reference_number,
+            'booking_type' => $bookingModel->booking_type,
+            'original_check_in' => $bookingModel->check_in_date,
+            'original_check_out' => $bookingModel->check_out_date,
             'new_check_in' => $validated['check_in_date'],
             'new_check_out' => $validated['check_out_date'],
             'original_nights' => $originalNights,
             'new_nights' => $newNights
         ]);
 
-        if ($newNights !== $originalNights) {
+        // For overnight bookings, check that duration matches
+        if ($bookingModel->booking_type !== 'day_tour' && $newNights !== $originalNights) {
             Log::warning('Reschedule rejected - duration mismatch', [
                 'admin_user_id' => auth()->id(),
-                'booking_id' => $booking,
-                'booking_reference' => $booking->reference_number,
+                'booking_id' => $bookingModel->id,
+                'booking_reference' => $bookingModel->reference_number,
                 'original_nights' => $originalNights,
                 'new_nights' => $newNights
             ]);
@@ -172,7 +187,7 @@ class BookingController extends Controller
         // Proceed to update booking dates in a transaction
         DB::beginTransaction();
         try {
-            $booking->update([
+            $bookingModel->update([
                 'check_in_date' => $validated['check_in_date'],
                 'check_out_date' => $validated['check_out_date'],
             ]);
@@ -180,20 +195,20 @@ class BookingController extends Controller
             
             Log::info('Booking rescheduled successfully', [
                 'admin_user_id' => auth()->id(),
-                'booking_id' => $booking,
-                'booking_reference' => $booking->reference_number,
+                'booking_id' => $bookingModel->id,
+                'booking_reference' => $bookingModel->reference_number,
                 'new_check_in' => $validated['check_in_date'],
                 'new_check_out' => $validated['check_out_date'],
                 'nights' => $newNights
             ]);
             
-            return new ItemResponse(new BookingResource($booking));
+            return new ItemResponse(new BookingResource($bookingModel));
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Failed to reschedule booking', [
                 'admin_user_id' => auth()->id(),
-                'booking_id' => $booking,
-                'booking_reference' => $booking->reference_number,
+                'booking_id' => $bookingModel->id,
+                'booking_reference' => $bookingModel->reference_number,
                 'error' => $e->getMessage()
             ]);
             return new ErrorResponse("Unable to reschedule", JsonResponse::HTTP_INTERNAL_SERVER_ERROR);

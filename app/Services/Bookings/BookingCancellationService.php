@@ -72,6 +72,65 @@ class BookingCancellationService
     }
 
     /**
+     * Delete a booking (soft delete + cancel status)
+     */
+    public function deleteBooking(Booking $booking, string $reason, int $adminUserId): array
+    {
+        // Can delete any booking that exists (even cancelled/paid ones)
+        if ($booking->trashed()) {
+            return [
+                'success' => false,
+                'error_code' => 'already_deleted',
+                'message' => 'This booking has already been deleted.'
+            ];
+        }
+
+        return DB::transaction(function () use ($booking, $reason, $adminUserId) {
+            try {
+                // Remove Redis lock if exists
+                $this->lockService->delete($booking->id);
+
+                // Update booking status to cancelled and soft delete
+                $booking->update([
+                    'status' => 'cancelled',
+                    'cancelled_at' => now(),
+                    'cancelled_by' => $adminUserId,
+                    'cancellation_reason' => $reason,
+                ]);
+
+                // Soft delete the booking
+                $booking->delete();
+
+                // Send deletion email (similar to cancellation but for deletion)
+                Mail::to($booking->guest_email)->queue(new BookingCancelled($booking, $reason, true));
+
+                // Log the action
+                Log::info("Booking deleted by admin", [
+                    'booking_id' => $booking->id,
+                    'reference_number' => $booking->reference_number,
+                    'admin_user_id' => $adminUserId,
+                    'reason' => $reason,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Booking deleted successfully.',
+                    'booking' => $booking->fresh()
+                ];
+
+            } catch (\Exception $e) {
+                Log::error("Failed to delete booking {$booking->id}: " . $e->getMessage());
+                
+                return [
+                    'success' => false,
+                    'error_code' => 'deletion_failed',
+                    'message' => 'Failed to delete booking. Please try again.'
+                ];
+            }
+        });
+    }
+
+    /**
      * Check if a booking can be cancelled
      */
     public function canCancel(Booking $booking): bool

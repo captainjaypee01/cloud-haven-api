@@ -41,18 +41,15 @@ class MealPricingService implements MealPricingServiceInterface
         // Iterate breakfast days (check-in + 1 day to check-out)
         $current = $checkIn->copy()->setTimezone($timezone)->startOfDay()->addDay(); // Start from next day
         $end = $checkOut->copy()->setTimezone($timezone)->startOfDay();
-        
         while ($current->lte($end)) {
             // Find the active meal program for this breakfast date
             $program = $this->findActiveProgramForDate($current);
-            
             if ($program) {
                 // Check if buffet is active on this breakfast date
                 $isBuffetActive = $this->calendarService->isBuffetActiveOn($current);
                 
                 // Get pricing tier for this date
                 $tier = $this->getPricingTierForDate($program->id, $current);
-                
                 if ($tier) {
                     $nights[] = new MealNightDTO(
                         date: $current->copy(),
@@ -91,7 +88,6 @@ class MealPricingService implements MealPricingServiceInterface
             
             $current->addDay();
         }
-        
         // Get any active program for labels
         $anyProgram = $this->getActiveMealProgram();
         $labels = [
@@ -321,7 +317,6 @@ class MealPricingService implements MealPricingServiceInterface
     private function findActiveProgramForDate(Carbon $date): ?MealProgram
     {
         $activePrograms = $this->programRepository->getActive();
-        
         foreach ($activePrograms as $program) {
             if ($this->isProgramActiveForDate($program, $date)) {
                 return $program;
@@ -360,7 +355,6 @@ class MealPricingService implements MealPricingServiceInterface
                 if ($program->date_start && $program->date_end && !$this->isInDateRange($program, $date)) {
                     return false;
                 }
-                
                 // Check months if specified
                 if ($program->months && !empty($program->months) && !$this->isInMonths($program, $date)) {
                     return false;
@@ -381,7 +375,6 @@ class MealPricingService implements MealPricingServiceInterface
     private function findProgramForBreakfastPricing(Carbon $date): ?MealProgram
     {
         $activePrograms = $this->programRepository->getActive();
-        
         foreach ($activePrograms as $program) {
             // Check if date falls within program scope (ignoring weekly patterns for breakfast pricing)
             if ($this->isProgramInScopeForBreakfastPricing($program, $date)) {
@@ -438,7 +431,12 @@ class MealPricingService implements MealPricingServiceInterface
             return false;
         }
         
-        return $date->between($program->date_start, $program->date_end);
+        // Simple date-only comparison using Y-m-d format
+        $dateString = $date->format('Y-m-d');
+        $startDateString = $program->date_start->format('Y-m-d');
+        $endDateString = $program->date_end->format('Y-m-d');
+        
+        return $dateString >= $startDateString && $dateString <= $endDateString;
     }
 
     private function isInMonths(MealProgram $program, Carbon $date): bool
@@ -446,7 +444,6 @@ class MealPricingService implements MealPricingServiceInterface
         if (!$program->months || empty($program->months)) {
             return false;
         }
-        
         return in_array($date->month, $program->months);
     }
 

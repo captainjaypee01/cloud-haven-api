@@ -159,6 +159,10 @@ class Booking extends Model
 
     public function getLocalDownpaymentAtAttribute()
     {
+        if (!$this->downpayment_at) {
+            return null;
+        }
+        
         $userTimezone = "Asia/Singapore";
         return Carbon::parse($this->downpayment_at)
             ->setTimezone($userTimezone)
@@ -167,6 +171,10 @@ class Booking extends Model
 
     public function getLocalPaidAtAttribute()
     {
+        if (!$this->paid_at) {
+            return null;
+        }
+        
         $userTimezone = "Asia/Singapore";
         return Carbon::parse($this->paid_at)
             ->setTimezone($userTimezone)
@@ -175,6 +183,10 @@ class Booking extends Model
 
     public function getLocalReservedUntilAttribute()
     {
+        if (!$this->reserved_until) {
+            return null;
+        }
+        
         $userTimezone = "Asia/Singapore";
         return Carbon::parse($this->reserved_until)
             ->setTimezone($userTimezone)

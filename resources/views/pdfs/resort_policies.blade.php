@@ -152,6 +152,28 @@
         </ul>
     </div>
 
+    <div class="section">
+        <div class="section-title">CHILD POLICY</div>
+        
+        <div class="subsection-title">Age Categories & Pricing</div>
+        <ul>
+            <li><strong>Children aged 3 years old and below</strong> are free of charge for the entrance fee.</li>
+            <li>They are allowed to share a bed with accompanying adults at no additional cost.</li>
+            <li><strong>3 years old below</strong> are not required to avail of the buffet but may share food from the adults' plates.</li>
+            <li><strong>Children aged 4 to 6 years old</strong> will be charged a reduced buffet rate. Current pricing available during booking.</li>
+            <li><strong>7 years old above</strong> will be charged same rate as adult.</li>
+        </ul>
+        
+        <div class="subsection-title">Additional Child Policies</div>
+        <ul>
+            <li>Final number of children and headcount must be confirmed one week before the booking schedule.</li>
+            <li>Drivers are included in the final head count.</li>
+            <li>The resort reserves the right to verify age with valid identification if needed.</li>
+            <li>Children must be supervised by adults at all times, especially around water areas.</li>
+            <li>Parents/guardians are responsible for their children's safety and conduct during the stay.</li>
+        </ul>
+    </div>
+
     <div class="highlight">
         <strong>Important:</strong> Please read and understand all policies before your stay. For any questions or clarifications, please contact the resort directly.
     </div>

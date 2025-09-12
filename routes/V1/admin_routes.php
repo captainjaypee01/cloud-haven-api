@@ -29,6 +29,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
         // Booking cancellation management (must be before resource routes)
         Route::get('bookings/cancellation-reasons', 'BookingCancellationController@getCancellationReasons')->middleware('role:admin,superadmin');
         Route::post('bookings/{booking}/cancel', 'BookingCancellationController@cancel')->middleware('role:admin,superadmin');
+        Route::post('bookings/{booking}/delete', 'BookingCancellationController@delete')->middleware('role:superadmin');
         Route::get('bookings/{booking}/can-cancel', 'BookingCancellationController@canCancel')->middleware('role:admin,superadmin');
         
         Route::apiResource('bookings', 'BookingController')->middleware('role:admin,superadmin');
