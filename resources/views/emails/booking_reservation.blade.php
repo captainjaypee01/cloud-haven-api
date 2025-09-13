@@ -218,7 +218,7 @@
                                         @endphp
                                         <div style="margin-bottom: 4px; padding-left: 12px; border-left: 3px solid #d1fae5;">
                                             <div style="font-size: 13px; color: #6b7280;">
-                                                {{ $breakfastDate->format('M j') }} - Free Breakfast
+                                                {{ $breakfastDate->format('M j') }} - Plated
                                             </div>
                                         </div>
                                     @endforeach

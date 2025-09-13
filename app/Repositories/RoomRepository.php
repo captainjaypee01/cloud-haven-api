@@ -240,7 +240,16 @@ class RoomRepository implements RoomRepositoryInterface
             ->where('room_type', 'overnight')
             ->get()
             ->map(function ($room) use ($start, $end) {
-                $room->available_count = $this->getAvailableUnits($room->id, $start, $end);
+                // Get detailed availability information instead of just available count
+                $availability = $this->getDetailedAvailability($room->id, $start, $end);
+                
+                // Set the availability data on the room model
+                $room->available_count = $availability['available'];
+                $room->pending_count = $availability['pending'];
+                $room->confirmed_count = $availability['confirmed'];
+                $room->maintenance_count = $availability['maintenance'];
+                $room->total_units = $availability['total_units'];
+                
                 return $room;
             });
     }
