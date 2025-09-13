@@ -22,6 +22,12 @@ class BookingRepository implements BookingRepositoryInterface
                 $query->where('status', $filters['status']);
         }
 
+        // Filter by booking type
+        if (!empty($filters['booking_type'])) {
+            if ($filters['booking_type'] != 'all')
+                $query->where('booking_type', $filters['booking_type']);
+        }
+
         // Search by name, reference number
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
