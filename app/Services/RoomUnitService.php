@@ -129,7 +129,7 @@ class RoomUnitService
      */
     public function updateRoomUnit(RoomUnit $roomUnit, array $data): RoomUnit
     {
-        $allowedFields = ['status', 'notes'];
+        $allowedFields = ['status', 'notes', 'maintenance_start_at', 'maintenance_end_at', 'blocked_start_at', 'blocked_end_at'];
         $updateData = array_intersect_key($data, array_flip($allowedFields));
 
         return $this->roomUnitRepository->update($roomUnit, $updateData);
@@ -255,5 +255,73 @@ class RoomUnitService
         $stats['occupied'] = $activeBookingsCount;
 
         return $stats;
+    }
+
+    /**
+     * Get room unit calendar data for a specific month and year.
+     * Returns data for overnight rooms only.
+     */
+    public function getRoomUnitCalendarData(int $year, int $month): array
+    {
+        // Get all overnight room units
+        $roomUnits = RoomUnit::with(['room', 'bookingRooms.booking'])
+            ->whereHas('room', function ($query) {
+                $query->where('room_type', 'overnight');
+            })
+            ->orderBy('room_id')
+            ->orderByRaw('CAST(unit_number AS UNSIGNED)')
+            ->get();
+
+        // Get days in month
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $days = [];
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $days[] = $day;
+        }
+
+        // Group units by room
+        $roomsData = [];
+        foreach ($roomUnits as $unit) {
+            $roomId = $unit->room_id;
+            $roomName = $unit->room->name;
+
+            if (!isset($roomsData[$roomId])) {
+                $roomsData[$roomId] = [
+                    'room_id' => $roomId,
+                    'room_name' => $roomName,
+                    'units' => []
+                ];
+            }
+
+            // Get status for each day of the month
+            $dayStatuses = [];
+            foreach ($days as $day) {
+                $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+                $dayStatuses[] = [
+                    'day' => $day,
+                    'date' => $date,
+                    'status' => $unit->getStatusForDate($date)
+                ];
+            }
+
+            $roomsData[$roomId]['units'][] = [
+                'id' => $unit->id,
+                'unit_number' => $unit->unit_number,
+                'current_status' => $unit->status->value,
+                'notes' => $unit->notes,
+                'maintenance_start_at' => $unit->maintenance_start_at?->format('Y-m-d'),
+                'maintenance_end_at' => $unit->maintenance_end_at?->format('Y-m-d'),
+                'blocked_start_at' => $unit->blocked_start_at?->format('Y-m-d'),
+                'blocked_end_at' => $unit->blocked_end_at?->format('Y-m-d'),
+                'day_statuses' => $dayStatuses
+            ];
+        }
+
+        return [
+            'year' => $year,
+            'month' => $month,
+            'days' => $days,
+            'rooms' => array_values($roomsData)
+        ];
     }
 }

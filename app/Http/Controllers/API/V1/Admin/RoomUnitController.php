@@ -133,10 +133,28 @@ class RoomUnitController extends Controller
         $request->validate([
             'status' => ['sometimes', 'in:available,occupied,maintenance,blocked'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'maintenance_start_at' => ['nullable', 'date', 'required_if:status,maintenance'],
+            'maintenance_end_at' => ['nullable', 'date', 'required_if:status,maintenance', 'after_or_equal:maintenance_start_at'],
+            'blocked_start_at' => ['nullable', 'date', 'required_if:status,blocked'],
+            'blocked_end_at' => ['nullable', 'date', 'required_if:status,blocked', 'after_or_equal:blocked_start_at'],
         ]);
 
         try {
-            $updatedUnit = $this->roomUnitService->updateRoomUnit($roomUnit, $request->only(['status', 'notes']));
+            $data = $request->only(['status', 'notes', 'maintenance_start_at', 'maintenance_end_at', 'blocked_start_at', 'blocked_end_at']);
+            
+            // Clear date fields when status changes
+            if ($request->has('status')) {
+                if ($request->status !== 'maintenance') {
+                    $data['maintenance_start_at'] = null;
+                    $data['maintenance_end_at'] = null;
+                }
+                if ($request->status !== 'blocked') {
+                    $data['blocked_start_at'] = null;
+                    $data['blocked_end_at'] = null;
+                }
+            }
+            
+            $updatedUnit = $this->roomUnitService->updateRoomUnit($roomUnit, $data);
 
             return response()->json([
                 'success' => true,
@@ -148,6 +166,35 @@ class RoomUnitController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update room unit: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get room unit calendar data for a specific month and year.
+     */
+    public function getCalendarData(Request $request): JsonResponse
+    {
+        $request->validate([
+            'year' => ['required', 'integer', 'min:2020', 'max:2030'],
+            'month' => ['required', 'integer', 'min:1', 'max:12'],
+        ]);
+
+        try {
+            $calendarData = $this->roomUnitService->getRoomUnitCalendarData(
+                $request->integer('year'),
+                $request->integer('month')
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => $calendarData,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get calendar data: ' . $e->getMessage(),
             ], 500);
         }
     }

@@ -16,6 +16,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
         Route::get('room-types/{room}/units', 'RoomUnitController@getRoomUnits');
         Route::get('room-types/{room}/stats', 'RoomUnitController@getRoomStats');
         Route::post('room-types/{room}/units/generate', 'RoomUnitController@generateUnits');
+        Route::get('room-units/calendar', 'RoomUnitController@getCalendarData');
         Route::apiResource('room-units', 'RoomUnitController');
 
         Route::apiResource('users', 'UserController')->middleware('role:admin,superadmin');
