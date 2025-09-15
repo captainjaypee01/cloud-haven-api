@@ -146,9 +146,27 @@ class RoomRepository implements RoomRepositoryInterface
             ->count();
 
         // 4. Count unavailable units from room_units table (maintenance/blocked)
+        // Check units that are in maintenance or blocked status AND their date ranges overlap with our search dates
         $unavailableUnits = DB::table('room_units')
             ->where('room_id', $roomId)
-            ->whereIn('status', ['maintenance', 'blocked'])
+            ->where(function ($query) use ($startDate, $endDate) {
+                // Units in maintenance status with date range overlap
+                $query->where(function ($subQuery) use ($startDate, $endDate) {
+                    $subQuery->where('status', 'maintenance')
+                        ->whereNotNull('maintenance_start_at')
+                        ->whereNotNull('maintenance_end_at')
+                        ->where('maintenance_start_at', '<=', $endDate)
+                        ->where('maintenance_end_at', '>=', $startDate);
+                })
+                // OR units in blocked status with date range overlap  
+                ->orWhere(function ($subQuery) use ($startDate, $endDate) {
+                    $subQuery->where('status', 'blocked')
+                        ->whereNotNull('blocked_start_at')
+                        ->whereNotNull('blocked_end_at')
+                        ->where('blocked_start_at', '<=', $endDate)
+                        ->where('blocked_end_at', '>=', $startDate);
+                });
+            })
             ->count();
 
         // Calculate totals

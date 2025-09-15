@@ -69,9 +69,30 @@ class RoomUnit extends Model
      */
     public function isAvailableForDates(string $checkInDate, string $checkOutDate): bool
     {
-        // If unit is under maintenance or blocked, it's not available
-        if (in_array($this->status, [RoomUnitStatusEnum::MAINTENANCE, RoomUnitStatusEnum::BLOCKED])) {
-            return false;
+        // Check if unit is in maintenance during the booking period
+        if ($this->status === RoomUnitStatusEnum::MAINTENANCE) {
+            if ($this->maintenance_start_at && $this->maintenance_end_at) {
+                // Check if maintenance dates overlap with booking dates
+                if ($this->maintenance_start_at <= $checkOutDate && $this->maintenance_end_at >= $checkInDate) {
+                    return false;
+                }
+            } else {
+                // If maintenance status but no dates set, consider unavailable
+                return false;
+            }
+        }
+
+        // Check if unit is blocked during the booking period
+        if ($this->status === RoomUnitStatusEnum::BLOCKED) {
+            if ($this->blocked_start_at && $this->blocked_end_at) {
+                // Check if blocked dates overlap with booking dates
+                if ($this->blocked_start_at <= $checkOutDate && $this->blocked_end_at >= $checkInDate) {
+                    return false;
+                }
+            } else {
+                // If blocked status but no dates set, consider unavailable
+                return false;
+            }
         }
 
         // Check if unit has conflicting bookings for the given dates
@@ -122,6 +143,11 @@ class RoomUnit extends Model
      */
     public function isInMaintenanceOnDate(string $date): bool
     {
+        // Unit must have maintenance status AND be within the maintenance date range
+        if ($this->status !== RoomUnitStatusEnum::MAINTENANCE) {
+            return false;
+        }
+        
         if (!$this->maintenance_start_at || !$this->maintenance_end_at) {
             return false;
         }
@@ -135,6 +161,11 @@ class RoomUnit extends Model
      */
     public function isBlockedOnDate(string $date): bool
     {
+        // Unit must have blocked status AND be within the blocked date range
+        if ($this->status !== RoomUnitStatusEnum::BLOCKED) {
+            return false;
+        }
+        
         if (!$this->blocked_start_at || !$this->blocked_end_at) {
             return false;
         }

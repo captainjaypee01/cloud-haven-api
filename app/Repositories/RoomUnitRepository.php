@@ -72,9 +72,9 @@ class RoomUnitRepository implements RoomUnitRepositoryInterface
     public function findAvailableUnitForBooking(int $roomId, string $checkInDate, string $checkOutDate): ?RoomUnit
     {
         return DB::transaction(function () use ($roomId, $checkInDate, $checkOutDate) {
-            // Find units that are not blocked or under maintenance
+            // Find units that are available for the given date range
             return RoomUnit::where('room_id', $roomId)
-                          ->whereNotIn('status', [RoomUnitStatusEnum::MAINTENANCE, RoomUnitStatusEnum::BLOCKED])
+                          // Exclude units that have conflicting bookings
                           ->whereNotExists(function ($query) use ($checkInDate, $checkOutDate) {
                               $query->select(DB::raw(1))
                                    ->from('booking_rooms')
@@ -85,6 +85,38 @@ class RoomUnitRepository implements RoomUnitRepositoryInterface
                                        $q->where('bookings.check_in_date', '<', $checkOutDate)
                                          ->where('bookings.check_out_date', '>', $checkInDate);
                                    });
+                          })
+                          // Exclude units that are in maintenance during the booking period
+                          ->where(function ($query) use ($checkInDate, $checkOutDate) {
+                              $query->where(function ($subQuery) use ($checkInDate, $checkOutDate) {
+                                  // Allow units that are NOT in maintenance status
+                                  $subQuery->where('status', '!=', RoomUnitStatusEnum::MAINTENANCE);
+                              })->orWhere(function ($subQuery) use ($checkInDate, $checkOutDate) {
+                                  // OR allow maintenance units where dates don't overlap
+                                  $subQuery->where('status', RoomUnitStatusEnum::MAINTENANCE)
+                                      ->where(function ($dateQuery) use ($checkInDate, $checkOutDate) {
+                                          $dateQuery->whereNull('maintenance_start_at')
+                                              ->orWhereNull('maintenance_end_at')
+                                              ->orWhere('maintenance_end_at', '<', $checkInDate)
+                                              ->orWhere('maintenance_start_at', '>', $checkOutDate);
+                                      });
+                              });
+                          })
+                          // Exclude units that are blocked during the booking period
+                          ->where(function ($query) use ($checkInDate, $checkOutDate) {
+                              $query->where(function ($subQuery) use ($checkInDate, $checkOutDate) {
+                                  // Allow units that are NOT in blocked status
+                                  $subQuery->where('status', '!=', RoomUnitStatusEnum::BLOCKED);
+                              })->orWhere(function ($subQuery) use ($checkInDate, $checkOutDate) {
+                                  // OR allow blocked units where dates don't overlap
+                                  $subQuery->where('status', RoomUnitStatusEnum::BLOCKED)
+                                      ->where(function ($dateQuery) use ($checkInDate, $checkOutDate) {
+                                          $dateQuery->whereNull('blocked_start_at')
+                                              ->orWhereNull('blocked_end_at')
+                                              ->orWhere('blocked_end_at', '<', $checkInDate)
+                                              ->orWhere('blocked_start_at', '>', $checkOutDate);
+                                      });
+                              });
                           })
                           ->orderByRaw('CAST(unit_number AS UNSIGNED)')
                           ->lockForUpdate()
