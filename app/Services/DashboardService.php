@@ -27,7 +27,6 @@ class DashboardService implements DashboardServiceInterface
                 END) as revenue
             ')
             ->value('revenue') ?? 0;
-        
         $averageRating = null;  // placeholder (no ratings in DB yet)
 
         // 2. Top 5 most booked rooms (only confirmed bookings)

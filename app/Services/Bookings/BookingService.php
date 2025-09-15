@@ -177,7 +177,8 @@ class BookingService implements BookingServiceInterface
             $booking->update([
                 'status' => 'downpayment', 
                 'downpayment_at' => now(),
-                'paid_amount' => $paidAmount
+                'paid_amount' => $paidAmount,
+                'downpayment_amount' => $dpAmount
             ]);
             $newStatus = 'downpayment';
         } else {
