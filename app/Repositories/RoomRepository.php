@@ -83,7 +83,7 @@ class RoomRepository implements RoomRepositoryInterface
     {
         $room = Room::findOrFail($roomId);
 
-        // Calculate units booked (from DB bookings) - confirmed bookings only
+        // 1. Count confirmed units - bookings with paid/downpayment status
         $confirmedUnits = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
             ->where('booking_rooms.room_id', $roomId)
@@ -100,17 +100,15 @@ class RoomRepository implements RoomRepositoryInterface
                         ->where('bookings.check_in_date', $startDate);
                 });
             })
-            ->count(); // Each booking_room row is one unit
+            ->count();
 
-        // Calculate pending bookings with proof of payment uploaded (awaiting verification)
-        // These are bookings that have proof uploaded but are still pending (beyond Redis lock period)
-        $pendingWithProof = DB::table('booking_rooms')
+        // 2. Count pending units Part 1 - bookings with payment records (proof uploaded)
+        // Status doesn't matter as long as there's a payment record
+        $pendingWithPayment = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
             ->join('payments', 'bookings.id', '=', 'payments.booking_id')
             ->where('booking_rooms.room_id', $roomId)
             ->where('bookings.status', 'pending')
-            ->where('payments.proof_status', 'pending')
-            ->where('bookings.reserved_until', '<', now()) // Only count bookings past the initial hold period
             ->where(function ($q) use ($startDate, $endDate) {
                 // Handle both overnight and day tour bookings
                 $q->where(function ($subQ) use ($startDate, $endDate) {
@@ -125,80 +123,46 @@ class RoomRepository implements RoomRepositoryInterface
             })
             ->count();
 
-        Log::info('Pending with proof count: ' . $pendingWithProof . ' for room ' . $roomId . ' and dates ' . $startDate . ' to ' . $endDate);
-
-        // Calculate Redis locked units (initial 2-hour hold period)
-        // First, get pending bookings that overlap with our date range
-        $pendingBookings = DB::table('bookings')
-            ->where('status', 'pending')
+        // 3. Count pending units Part 2 - bookings without payment records (within reserved_until period)
+        $pendingWithoutPayment = DB::table('booking_rooms')
+            ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
+            ->leftJoin('payments', 'bookings.id', '=', 'payments.booking_id')
+            ->where('booking_rooms.room_id', $roomId)
+            ->where('bookings.status', 'pending')
+            ->whereNull('payments.booking_id') // No payment record exists
+            ->where('bookings.reserved_until', '>', now()) // Still within reserved period
             ->where(function ($q) use ($startDate, $endDate) {
                 // Handle both overnight and day tour bookings
                 $q->where(function ($subQ) use ($startDate, $endDate) {
                     // Overnight bookings: check_in < endDate AND check_out > startDate
-                    $subQ->where('check_in_date', '<', $endDate)
-                        ->where('check_out_date', '>', $startDate);
+                    $subQ->where('bookings.check_in_date', '<', $endDate)
+                        ->where('bookings.check_out_date', '>', $startDate);
                 })->orWhere(function ($subQ) use ($startDate) {
                     // Day tour bookings: check_in_date = startDate (same day booking)
-                    $subQ->where('booking_type', 'day_tour')
-                        ->where('check_in_date', $startDate);
+                    $subQ->where('bookings.booking_type', 'day_tour')
+                        ->where('bookings.check_in_date', $startDate);
                 });
             })
-            ->get(['id', 'check_in_date', 'check_out_date', 'booking_type']);
-        
-        $lockedUnits = 0;
-        Log::info('Pending bookings for date range: ' . json_encode($pendingBookings->toArray()));
-        
-        // Get the room slug for comparison (since Redis lock stores room_id as slug)
-        $roomSlug = $room->slug;
-        Log::info('Looking for room slug: ' . $roomSlug . ' (room ID: ' . $roomId . ')');
-        
-        foreach ($pendingBookings as $booking) {
-            $lock = $this->lockService->get($booking->id);
-            if (!$lock) continue;
-            
-            Log::info('Found lock for booking ' . $booking->id . ': ' . json_encode($lock));
-            
-            foreach ($lock['rooms'] as $lockedRoom) {
-                // Check if this locked room matches our room and date range
-                // Note: lockedRoom['room_id'] is actually the room slug, not the database ID
-                // Each room entry in Redis represents 1 unit (no quantity field)
-                $isRoomMatch = $lockedRoom['room_id'] == $roomSlug;
-                $isDateMatch = false;
-                
-                // Handle date matching based on booking type
-                if ($booking->booking_type === 'day_tour') {
-                    // For Day Tour: check if the locked date matches our start date
-                    $isDateMatch = $lock['check_in_date'] == $startDate;
-                } else {
-                    // For Overnight: check if dates overlap
-                    $isDateMatch = $lock['check_in_date'] < $endDate && $lock['check_out_date'] > $startDate;
-                }
-                
-                if ($isRoomMatch && $isDateMatch) {
-                    Log::info('Locked unit found - Room Slug: ' . $lockedRoom['room_id'] . ', Dates: ' . $lock['check_in_date'] . ' to ' . $lock['check_out_date'] . ', Type: ' . ($booking->booking_type ?? 'overnight') . ', Count: 1 unit');
-                    $lockedUnits += 1; // Each room entry = 1 unit
-                }
-            }
-        }
+            ->count();
 
-        // Calculate units in maintenance or blocked status
+        // 4. Count unavailable units from room_units table (maintenance/blocked)
         $unavailableUnits = DB::table('room_units')
             ->where('room_id', $roomId)
             ->whereIn('status', ['maintenance', 'blocked'])
             ->count();
 
-        // Combine all pending units (locked + pending with proof)
-        $totalPending = $lockedUnits + $pendingWithProof;
-        
-        // Total unavailable = confirmed + pending + maintenance
+        // Calculate totals
+        $totalPending = $pendingWithPayment + $pendingWithoutPayment;
         $totalUnavailable = $confirmedUnits + $totalPending + $unavailableUnits;
         $available = max(0, $room->quantity - $totalUnavailable);
 
         Log::info('Availability breakdown for room ' . $roomId . ' (' . $room->name . '):');
         Log::info('- Total units: ' . $room->quantity);
         Log::info('- Confirmed: ' . $confirmedUnits);
-        Log::info('- Pending (locked + proof): ' . $totalPending . ' (locked: ' . $lockedUnits . ', proof: ' . $pendingWithProof . ')');
-        Log::info('- Maintenance: ' . $unavailableUnits);
+        Log::info('- Pending with payment: ' . $pendingWithPayment);
+        Log::info('- Pending without payment: ' . $pendingWithoutPayment);
+        Log::info('- Total pending: ' . $totalPending);
+        Log::info('- Maintenance/blocked: ' . $unavailableUnits);
         Log::info('- Total unavailable: ' . $totalUnavailable);
         Log::info('- Available: ' . $available);
 

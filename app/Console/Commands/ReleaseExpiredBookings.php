@@ -69,6 +69,7 @@ class ReleaseExpiredBookings extends Command
             }
             
             $booking->status = 'cancelled';
+            $booking->cancelled_at = Carbon::now();
             $booking->cancellation_reason = $cancellationReason;
             $booking->save();
             
