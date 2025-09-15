@@ -8,6 +8,7 @@ use App\Enums\RoomUnitStatusEnum;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\RoomUnit;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -272,8 +273,9 @@ class RoomUnitService
             ->orderByRaw('CAST(unit_number AS UNSIGNED)')
             ->get();
 
-        // Get days in month
-        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        // Get days in month using Carbon
+        $startOfMonth = Carbon::create($year, $month, 1);
+        $daysInMonth = $startOfMonth->daysInMonth;
         $days = [];
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $days[] = $day;
