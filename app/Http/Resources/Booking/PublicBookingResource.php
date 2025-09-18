@@ -88,12 +88,6 @@ class PublicBookingResource extends JsonResource
                     'type'      => 'downpayment',
                     'value'     => 'downpayment',
                 ],
-                [
-                    'label'     => 'Full Payment',
-                    'amount'    => $actualFinalPrice,
-                    'type'      => 'full',
-                    'value'     => 'full',
-                ],
             ],
         ]);
     }

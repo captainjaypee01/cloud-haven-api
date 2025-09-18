@@ -17,7 +17,7 @@ return [
 
     // Optional: quick policy text blocks (edit freely or remove if you don’t want them here)
     'policy' => [
-        'guarantee' => env('RESORT_POLICY_GUARANTEE', 'Full payment is required before the option date or prior to check-in.'),
+        'guarantee' => env('RESORT_POLICY_GUARANTEE', 'Downpayment is required to secure your booking. Remaining balance is due at the resort during check-in.'),
         'non_refundable' => env('RESORT_POLICY_NON_REFUNDABLE', 'All paid bookings are non-refundable.'),
         'no_show' => env('RESORT_POLICY_NO_SHOW', 'Guests will be charged the full amount in the event of a No Show.'),
         'force_majeure' => env('RESORT_POLICY_FORCE_MAJEURE', 'The resort is not liable for services not rendered due to Force Majeure.'),
