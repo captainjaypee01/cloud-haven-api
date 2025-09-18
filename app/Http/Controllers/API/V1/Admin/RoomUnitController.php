@@ -200,6 +200,41 @@ class RoomUnitController extends Controller
     }
 
     /**
+     * Get booking details for a specific room unit and date.
+     */
+    public function getBookingDetails(Request $request, RoomUnit $roomUnit): JsonResponse
+    {
+        $request->validate([
+            'date' => ['required', 'date', 'date_format:Y-m-d'],
+        ]);
+
+        try {
+            $bookingData = $this->roomUnitService->getBookingDataForUnitAndDate(
+                $roomUnit->id,
+                $request->input('date')
+            );
+
+            if (!$bookingData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No booking found for this unit on the specified date.',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $bookingData,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get booking details: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Remove the specified room unit.
      */
     public function destroy(RoomUnit $roomUnit): JsonResponse

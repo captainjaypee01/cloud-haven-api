@@ -264,8 +264,8 @@ class RoomUnitService
      */
     public function getRoomUnitCalendarData(int $year, int $month): array
     {
-        // Get all overnight room units
-        $roomUnits = RoomUnit::with(['room', 'bookingRooms.booking'])
+        // Get all overnight room units (without booking details for performance)
+        $roomUnits = RoomUnit::with(['room'])
             ->whereHas('room', function ($query) {
                 $query->where('room_type', 'overnight');
             })
@@ -299,10 +299,12 @@ class RoomUnitService
             $dayStatuses = [];
             foreach ($days as $day) {
                 $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+                $status = $unit->getStatusForDate($date);
+                
                 $dayStatuses[] = [
                     'day' => $day,
                     'date' => $date,
-                    'status' => $unit->getStatusForDate($date)
+                    'status' => $status
                 ];
             }
 
@@ -324,6 +326,80 @@ class RoomUnitService
             'month' => $month,
             'days' => $days,
             'rooms' => array_values($roomsData)
+        ];
+    }
+
+    /**
+     * Get booking data for a specific unit and date.
+     * This method is called on-demand when user clicks on a booked date.
+     */
+    public function getBookingDataForUnitAndDate(int $unitId, string $date): ?array
+    {
+        $unit = RoomUnit::with([
+            'room',
+            'bookingRooms.booking' => function ($query) {
+                $query->with(['payments', 'otherCharges']);
+            }
+        ])->find($unitId);
+
+        if (!$unit) {
+            return null;
+        }
+
+        return $this->getBookingDataForDate($unit, $date);
+    }
+
+    /**
+     * Get booking data for a specific unit and date (private helper).
+     */
+    private function getBookingDataForDate(RoomUnit $unit, string $date): ?array
+    {
+        $bookingRoom = $unit->bookingRooms()
+            ->whereHas('booking', function ($query) use ($date) {
+                $query->whereIn('status', ['paid', 'downpayment', 'pending'])
+                      ->where('check_in_date', '<=', $date)
+                      ->where('check_out_date', '>', $date);
+            })
+            ->with(['booking.payments', 'booking.otherCharges'])
+            ->first();
+
+        if (!$bookingRoom) {
+            return null;
+        }
+
+        $booking = $bookingRoom->booking;
+        
+        // Calculate remaining balance
+        $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
+        $otherCharges = $booking->otherCharges->sum('amount');
+        $totalPayable = $booking->final_price + $otherCharges;
+        $remainingBalance = max(0, $totalPayable - $totalPaid);
+        
+        // Calculate nights
+        $checkIn = Carbon::parse($booking->check_in_date);
+        $checkOut = Carbon::parse($booking->check_out_date);
+        $nights = $checkIn->diffInDays($checkOut);
+
+        return [
+            'id' => $booking->id,
+            'reference_number' => $booking->reference_number,
+            'guest_name' => $booking->guest_name,
+            'guest_email' => $booking->guest_email,
+            'check_in_date' => $booking->check_in_date,
+            'check_out_date' => $booking->check_out_date,
+            'nights' => $nights,
+            'adults' => $booking->adults,
+            'children' => $booking->children,
+            'total_guests' => $booking->total_guests,
+            'room_price' => $booking->total_price,
+            'meal_price' => $booking->meal_price,
+            'final_price' => $booking->final_price,
+            'other_charges' => $otherCharges,
+            'total_payable' => $totalPayable,
+            'total_paid' => $totalPaid,
+            'remaining_balance' => $remainingBalance,
+            'status' => $booking->status,
+            'booking_type' => $booking->booking_type
         ];
     }
 }
