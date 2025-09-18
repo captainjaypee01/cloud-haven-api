@@ -19,6 +19,7 @@ return [
         // System automatic cancellation reasons
         'no_payment_received' => 'No proof of payment received within the required timeframe',
         'rejected_proof_expired' => 'Proof of payment rejected and grace period expired',
+        'proof_rejected_invalid' => 'Proof of payment rejected - invalid or unacceptable',
         
         // Manual admin cancellation reasons
         'guest_request' => 'Cancelled at guest request',

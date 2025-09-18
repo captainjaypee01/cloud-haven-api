@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Booking;
 use App\Mail\ProofPaymentAcceptedMail;
 use App\Mail\ProofPaymentRejectedMail;
+use App\Services\Bookings\BookingCancellationService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,10 @@ use Illuminate\Support\Str;
 
 class PaymentProofService
 {
+    public function __construct(
+        private BookingCancellationService $cancellationService
+    ) {}
+
     /**
      * Upload proof of payment for a specific payment
      */
@@ -193,6 +198,8 @@ class PaymentProofService
                 $updateData['proof_rejected_reason'] = $reason;
                 $updateData['proof_rejected_by'] = $adminUserId;
                 $updateData['proof_rejected_at'] = now();
+                // Set payment status to failed when proof is rejected
+                $updateData['status'] = 'failed';
             } else {
                 // Clear rejection data when accepting
                 $updateData['proof_rejected_reason'] = null;
@@ -221,6 +228,7 @@ class PaymentProofService
                         ]
                     );
                 } else if ($status === 'rejected') {
+                    // Send proof rejection email first
                     EmailTrackingService::sendWithTracking(
                         $guestEmail,
                         new ProofPaymentRejectedMail($payment, $reason),
@@ -234,6 +242,9 @@ class PaymentProofService
                             'admin_user_id' => $adminUserId
                         ]
                     );
+
+                    // Automatically cancel the booking when proof is rejected
+                    $this->cancelBookingForRejectedProof($payment->booking, $reason, $adminUserId);
                 }
             } else {
                 Log::warning("No guest email found for payment {$payment->id} - skipping notification", [
@@ -246,15 +257,20 @@ class PaymentProofService
 
             Log::info("Payment proof status updated for payment {$payment->id}", [
                 'payment_id' => $payment->id,
-                'status' => $status,
+                'proof_status' => $status,
+                'payment_status' => $status === 'rejected' ? 'failed' : $payment->status,
                 'reason' => $reason,
                 'admin_user_id' => $adminUserId,
             ]);
 
+            $message = $status === 'rejected' 
+                ? "Proof rejected and payment marked as failed."
+                : "Proof status updated to {$status}.";
+
             return [
                 'success' => true,
                 'payment' => $payment->fresh(),
-                'message' => "Proof status updated to {$status}."
+                'message' => $message
             ];
 
         } catch (\Exception $e) {
@@ -369,6 +385,64 @@ class PaymentProofService
             }
         } catch (\Exception $e) {
             Log::warning("Failed to delete proof file: {$filePath}. Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Automatically cancel booking when proof of payment is rejected
+     */
+    private function cancelBookingForRejectedProof(Booking $booking, ?string $rejectionReason, ?int $adminUserId): void
+    {
+        try {
+            // Check if booking can be cancelled
+            if (!$this->cancellationService->canCancel($booking)) {
+                Log::warning("Cannot cancel booking {$booking->id} - booking status: {$booking->status}", [
+                    'booking_id' => $booking->id,
+                    'booking_reference' => $booking->reference_number,
+                    'booking_status' => $booking->status,
+                    'admin_user_id' => $adminUserId
+                ]);
+                return;
+            }
+
+            // Create cancellation reason combining the proof rejection reason
+            $cancellationReason = config('booking.cancellation_reasons.proof_rejected_invalid');
+            if ($rejectionReason) {
+                $cancellationReason .= " - {$rejectionReason}";
+            }
+
+            // Cancel the booking
+            $result = $this->cancellationService->cancelBooking(
+                $booking,
+                $cancellationReason,
+                $adminUserId ?? 0 // Use 0 for system cancellation if no admin user
+            );
+
+            if ($result['success']) {
+                Log::info("Booking automatically cancelled due to rejected proof", [
+                    'booking_id' => $booking->id,
+                    'booking_reference' => $booking->reference_number,
+                    'cancellation_reason' => $cancellationReason,
+                    'admin_user_id' => $adminUserId,
+                    'proof_rejection_reason' => $rejectionReason
+                ]);
+            } else {
+                Log::error("Failed to automatically cancel booking for rejected proof", [
+                    'booking_id' => $booking->id,
+                    'booking_reference' => $booking->reference_number,
+                    'error_code' => $result['error_code'] ?? 'unknown',
+                    'error_message' => $result['message'] ?? 'Unknown error',
+                    'admin_user_id' => $adminUserId
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Exception occurred while cancelling booking for rejected proof", [
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'error' => $e->getMessage(),
+                'admin_user_id' => $adminUserId
+            ]);
         }
     }
 }

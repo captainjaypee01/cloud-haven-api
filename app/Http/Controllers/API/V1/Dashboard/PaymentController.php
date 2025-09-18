@@ -80,6 +80,15 @@ class PaymentController extends Controller
         // Find the booking by reference number
         $booking = \App\Models\Booking::where('reference_number', $referenceNumber)->firstOrFail();
         
+        // Check if booking is cancelled - prevent proof uploads for cancelled bookings
+        if ($booking->status === 'cancelled') {
+            return response()->json([
+                'success' => false,
+                'error_code' => 'booking_cancelled',
+                'message' => 'Cannot upload proof - booking has been cancelled.'
+            ], JsonResponse::HTTP_BAD_REQUEST);
+        }
+        
         // If paymentId is provided, find specific payment; otherwise create new one (legacy behavior)
         if ($paymentId) {
             $payment = \App\Models\Payment::where('id', $paymentId)
