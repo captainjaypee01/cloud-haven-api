@@ -10,6 +10,7 @@ use App\Http\Resources\Room\RoomAvailabilityResource;
 use App\Http\Responses\CollectionResponse;
 use App\Http\Responses\ErrorResponse;
 use App\Http\Responses\ItemResponse;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -67,6 +68,15 @@ class RoomController extends Controller
             'check_in' => 'required|date',
             'check_out' => 'required|date|after:check_in',
         ]);
+
+        // Validate 5-day maximum limit for overnight bookings
+        $checkInDate = \Carbon\Carbon::parse($request->input('check_in'));
+        $checkOutDate = \Carbon\Carbon::parse($request->input('check_out'));
+        $daysDifference = $checkInDate->diffInDays($checkOutDate);
+        
+        if ($daysDifference > 5) {
+            return new ErrorResponse('Overnight bookings are limited to a maximum of 5 days.', 422);
+        }
 
         try {
             $room = $this->roomService->showBySlug($roomSlug);

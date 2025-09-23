@@ -13,6 +13,7 @@ use App\Models\Booking;
 use App\Models\BookingRoom;
 use App\Models\Room;
 use App\Models\DayTourPricing;
+use App\Models\Promo;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -136,6 +137,44 @@ class CreateDayTourBookingAction
 
             $grandTotal = $roomTotal + $mealTotal;
 
+            // Apply promo discount if present
+            $discount = 0;
+            if (!empty($request->promo_id)) {
+                $promo = Promo::find($request->promo_id);
+                
+                // Use booking date for promo validation instead of current date
+                $validationDate = Carbon::parse($request->date);
+                
+                if (
+                    $promo && $promo->active
+                    && (!$promo->starts_at || $validationDate->gte($promo->starts_at))
+                    && (!$promo->ends_at || $validationDate->lte($promo->ends_at))
+                    && (!$promo->expires_at || $validationDate->lte($promo->expires_at))
+                    && (!$promo->max_uses || $promo->uses_count < $promo->max_uses)
+                ) {
+                    // For Day Tour, only allow 'total' scope promos
+                    // Room and meal scopes don't make sense for Day Tour structure
+                    if ($promo->scope === 'total') {
+                        // Calculate discount based on total amount
+                        if ($promo->discount_type === 'percentage') {
+                            $discount = $grandTotal * ($promo->discount_value / 100);
+                        } else if ($promo->discount_type === 'fixed') {
+                            $discount = min($promo->discount_value, $grandTotal);
+                        }
+                        $discount = round($discount, 2);
+                        $promo->increment('uses_count', 1);
+                    } else {
+                        // Reject room/meal scope promos for Day Tour
+                        throw new \InvalidArgumentException(
+                            "Promo code '{$promo->code}' cannot be used for Day Tour bookings. " .
+                            "Only total discount promos are supported for Day Tours."
+                        );
+                    }
+                } else {
+                    throw new \InvalidArgumentException('Invalid or expired promo code for the selected date.');
+                }
+            }
+
             // Create booking with correct calculated totals
             $booking = Booking::create([
                 'user_id' => $userId,
@@ -153,8 +192,9 @@ class CreateDayTourBookingAction
                 'total_guests' => $totalAdults + $totalChildren,
                 'total_price' => $roomTotal,
                 'meal_price' => $mealTotal,
-                'discount_amount' => 0, // No promo support for Day Tour initially
-                'final_price' => $grandTotal,
+                'promo_id' => $request->promo_id,
+                'discount_amount' => $discount,
+                'final_price' => $grandTotal - $discount,
                 'status' => 'pending',
                 'reserved_until' => now()->addHours(config('booking.reservation_hold_duration_hours', 2)),
                 'meal_quote_data' => json_encode($this->extractDayTourMealData($request, $dayTourPricing, $mealPricingTier)),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Booking;
 
+use App\Rules\MaxDaysFromCheckIn;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BookingRequest extends FormRequest
@@ -24,7 +25,7 @@ class BookingRequest extends FormRequest
         return [
             'check_in_date' => 'required|date',
             'check_in_time' => 'sometimes',
-            'check_out_date' => 'required|date|after:check_in_date',
+            'check_out_date' => ['required', 'date', 'after:check_in_date', new MaxDaysFromCheckIn(5)],
             'check_out_time' => 'sometimes',
             'rooms' => 'required|array|min:1',
             'rooms.*.room_id' => 'required|string|exists:rooms,slug',

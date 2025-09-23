@@ -26,17 +26,57 @@ class PromoController extends Controller
     }
 
 
-    public function showByCode(string $code): ItemResponse|ErrorResponse
+    public function showByCode(Request $request, string $code): ItemResponse|ErrorResponse
     {
         try {
             $promo = $this->promoService->showByCode($code);
 
+            // Check if promo is active
+            if (!$promo->active) {
+                return new ErrorResponse('Promo code is not active.', JsonResponse::HTTP_BAD_REQUEST);
+            }
+
+            // Get booking dates from request (optional parameters)
+            $checkInDate = $request->query('check_in_date');
+            $checkOutDate = $request->query('check_out_date');
+            $dayTourDate = $request->query('day_tour_date');
+
+            // Determine the booking date to validate against
+            $bookingDate = null;
+            if ($dayTourDate) {
+                $bookingDate = \Carbon\Carbon::parse($dayTourDate);
+            } elseif ($checkInDate) {
+                $bookingDate = \Carbon\Carbon::parse($checkInDate);
+            }
+
+            // If booking dates are provided, validate against them; otherwise use current date
+            $validationDate = $bookingDate ?: now();
+
+            // Check if promo has started
+            if ($promo->starts_at && $validationDate->lt($promo->starts_at)) {
+                return new ErrorResponse('Promo code is not yet active for your selected dates.', JsonResponse::HTTP_BAD_REQUEST);
+            }
+
+            // Check if promo has ended
+            if ($promo->ends_at && $validationDate->gt($promo->ends_at)) {
+                return new ErrorResponse('Promo code has ended before your selected dates.', JsonResponse::HTTP_BAD_REQUEST);
+            }
+
             // Check expiration and usage
-            if ($promo->expires_at && now()->gt($promo->expires_at)) {
-                return new ErrorResponse('Promo code has expired.', JsonResponse::HTTP_BAD_REQUEST);
+            if ($promo->expires_at && $validationDate->gt($promo->expires_at)) {
+                return new ErrorResponse('Promo code has expired before your selected dates.', JsonResponse::HTTP_BAD_REQUEST);
             }
             if ($promo->max_uses && $promo->uses_count >= $promo->max_uses) {
                 return new ErrorResponse('Promo code is no longer available (usage limit reached).', JsonResponse::HTTP_BAD_REQUEST);
+            }
+
+            // Check if this is a Day Tour booking and validate promo scope
+            $isDayTourBooking = !empty($dayTourDate) && empty($checkInDate);
+            if ($isDayTourBooking && $promo->scope !== 'total') {
+                return new ErrorResponse(
+                    "Promo code '{$promo->code}' cannot be used for Day Tour bookings. Only total discount promos are supported for Day Tours.",
+                    JsonResponse::HTTP_BAD_REQUEST
+                );
             }
 
             // Return relevant promo info for frontend

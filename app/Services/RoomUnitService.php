@@ -385,6 +385,8 @@ class RoomUnitService
             'reference_number' => $booking->reference_number,
             'guest_name' => $booking->guest_name,
             'guest_email' => $booking->guest_email,
+            'guest_phone' => $booking->guest_phone,
+            'special_requests' => $booking->special_requests,
             'check_in_date' => $booking->check_in_date,
             'check_out_date' => $booking->check_out_date,
             'nights' => $nights,

@@ -18,7 +18,8 @@ class DayTourBookingRequestDTO extends Data
         public array $selections,
         public DayTourGuestDTO $guest,
         public ?string $specialRequests = null,
-        public ?array $totals = null
+        public ?array $totals = null,
+        public ?int $promo_id = null
     ) {}
 
     public static function rules(): array
@@ -43,6 +44,7 @@ class DayTourBookingRequestDTO extends Data
             'totals.room_total' => ['nullable', 'numeric', 'min:0'],
             'totals.meal_total' => ['nullable', 'numeric', 'min:0'],
             'totals.grand_total' => ['nullable', 'numeric', 'min:0'],
+            'promo_id' => ['nullable', 'integer', 'exists:promos,id'],
         ];
     }
 }

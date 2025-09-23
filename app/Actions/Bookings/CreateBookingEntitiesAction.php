@@ -20,9 +20,15 @@ class CreateBookingEntitiesAction
         $discount = 0;
         if (!empty($bookingData->promo_id)) {
             $promo = Promo::find($bookingData->promo_id);
+            
+            // Use booking check-in date for promo validation instead of current date
+            $validationDate = \Carbon\Carbon::parse($bookingData->check_in_date);
+            
             if (
                 $promo && $promo->active
-                && (!$promo->expires_at || $promo->expires_at->isFuture())
+                && (!$promo->starts_at || $validationDate->gte($promo->starts_at))
+                && (!$promo->ends_at || $validationDate->lte($promo->ends_at))
+                && (!$promo->expires_at || $validationDate->lte($promo->expires_at))
                 && (!$promo->max_uses || $promo->uses_count < $promo->max_uses)
             ) {
                 // Determine base amount for discount

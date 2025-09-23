@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Room\BatchAvailabilityResource;
 use App\Http\Responses\CollectionResponse;
 use App\Models\Room;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class RoomAvailabilityController extends Controller
@@ -16,11 +17,23 @@ class RoomAvailabilityController extends Controller
     public function batchCheck(Request $request)
     {
         $request->validate([
-            'check_in'  => 'required',
-            'check_out'  => 'required',
+            'check_in'  => 'required|date',
+            'check_out'  => 'required|date|after:check_in',
         ]);
+        
         $checkIn = $request->input('check_in');
         $checkOut = $request->input('check_out');
+        
+        // Validate 5-day maximum limit for overnight bookings
+        $checkInDate = \Carbon\Carbon::parse($checkIn);
+        $checkOutDate = \Carbon\Carbon::parse($checkOut);
+        $daysDifference = $checkInDate->diffInDays($checkOutDate);
+        
+        if ($daysDifference > 5) {
+            return response()->json([
+                'error' => 'Overnight bookings are limited to a maximum of 5 days.'
+            ], 422);
+        }
         $items = $request->input('items', []);
         $response = [];
         $grouped = collect($items)->groupBy('room_id')->map->count();
