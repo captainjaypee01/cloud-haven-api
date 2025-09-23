@@ -79,34 +79,33 @@
                     @if(!empty($booking->bookingRooms) && $booking->bookingRooms->count())
                     <div class="section">
                         <div class="section-title">Rooms Booked</div>
-                        <table class="table">
-                        <thead>
-                            <tr>
-                            <th>Room</th>
-                            <th class="right">Qty</th>
-                            <th class="right">Room Number(s)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($roomLines as $line)
-                            <tr>
-                                <td style="padding: 12px 12px;border:1px solid #bbb;">{{ $line->name ?? 'Room' }}</td>
-                                <td style="padding: 12px 12px;border:1px solid #bbb;" class="left">{{ $line->qty ?? 1 }}</td>
-                                <td style="padding: 12px 12px;border:1px solid #bbb;" class="left">
-                                    @if($line->has_room_numbers)
-                                        {{ implode(', ', $line->room_numbers) }}
-                                    @else
-                                        <em style="color:#666;">To be assigned</em>
-                                    @endif
-                                </td>
-                            </tr>
-                            @empty
-                                <tr>
-                                <td colspan="3">No rooms found</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                        </table>
+                        <div class="box">
+                            <div class="box-inner">
+                                <p class="m-0" style="font-size:13px; color:#666; margin-bottom:12px;">
+                                    <em>Room assignments will be provided upon check-in.</em>
+                                </p>
+                                <table class="table">
+                                <thead>
+                                    <tr>
+                                    <th>Room</th>
+                                    <th class="right">Qty</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($roomLines as $line)
+                                    <tr>
+                                        <td style="padding: 12px 12px;border:1px solid #bbb;">{{ $line->name ?? 'Room' }}</td>
+                                        <td style="padding: 12px 12px;border:1px solid #bbb;" class="left">{{ $line->qty ?? 1 }}</td>
+                                    </tr>
+                                    @empty
+                                        <tr>
+                                        <td colspan="2">No rooms found</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                     @endif
 

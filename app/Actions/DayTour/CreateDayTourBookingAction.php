@@ -14,8 +14,10 @@ use App\Models\BookingRoom;
 use App\Models\Room;
 use App\Models\DayTourPricing;
 use App\Models\Promo;
+use App\Services\RoomUnitService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class CreateDayTourBookingAction
@@ -26,7 +28,8 @@ class CreateDayTourBookingAction
         private MealCalendarServiceInterface $calendarService,
         private BookingLockServiceInterface $lockService,
         private CheckRoomAvailabilityAction $checkAvailability,
-        private ComputeDayTourQuoteAction $computeQuoteAction
+        private ComputeDayTourQuoteAction $computeQuoteAction,
+        private RoomUnitService $roomUnitService
     ) {}
 
     public function execute(DayTourBookingRequestDTO $request, ?int $userId = null): Booking
@@ -200,8 +203,25 @@ class CreateDayTourBookingAction
                 'meal_quote_data' => json_encode($this->extractDayTourMealData($request, $dayTourPricing, $mealPricingTier)),
             ]);
 
-            // Use createMany for cleaner Laravel approach
-            $booking->bookingRooms()->createMany($bookingRoomsData);
+            // Create booking rooms with room unit assignment
+            foreach ($bookingRoomsData as $roomData) {
+                // Try to assign a room unit immediately for Day Tour bookings
+                $assignedUnit = $this->roomUnitService->assignUnitToBooking(
+                    $roomData['room_id'],
+                    $request->date,
+                    $request->date // Same date for Day Tour
+                );
+
+                $roomData['room_unit_id'] = $assignedUnit?->id; // Assign unit immediately if available
+                
+                $bookingRoom = $booking->bookingRooms()->create($roomData);
+
+                if ($assignedUnit) {
+                    Log::info("Assigned unit {$assignedUnit->unit_number} to Day Tour booking room {$bookingRoom->id} for booking {$booking->reference_number}");
+                } else {
+                    Log::warning("No available units found for Day Tour room ID {$roomData['room_id']} during booking creation for booking {$booking->reference_number}");
+                }
+            }
             
             // Create Redis lock for the booking (same as overnight bookings)
             $this->createBookingLock($booking, $request->selections, $request->date);

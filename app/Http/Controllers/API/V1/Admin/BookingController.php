@@ -9,9 +9,11 @@ use App\Http\Resources\Booking\BookingResource;
 use App\Http\Responses\CollectionResponse;
 use App\Http\Responses\ErrorResponse;
 use App\Http\Responses\ItemResponse;
+use App\Services\RoomUnitService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,7 +21,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class BookingController extends Controller
 {
     public function __construct(
-        private readonly BookingServiceInterface $bookingService
+        private readonly BookingServiceInterface $bookingService,
+        private readonly RoomUnitService $roomUnitService
     ) {}
     /**
      * Display a listing of the resource.
@@ -104,7 +107,7 @@ class BookingController extends Controller
         ]);
         
         Log::info('Admin adding other charge to booking', [
-            'admin_user_id' => auth()->id(),
+            'admin_user_id' => Auth::user()->id,
             'booking_id' => $booking,
             'charge_amount' => $validated['amount'],
             'remarks' => $validated['remarks'] ?? null
@@ -115,7 +118,7 @@ class BookingController extends Controller
             $otherCharge = $data->otherCharges()->create($validated);
             
             Log::info('Other charge added successfully', [
-                'admin_user_id' => auth()->id(),
+                'admin_user_id' => Auth::user()->id,
                 'booking_id' => $data->id,
                 'booking_reference' => $data->reference_number,
                 'charge_id' => $otherCharge->id,
@@ -126,7 +129,7 @@ class BookingController extends Controller
             return new ItemResponse(new BookingResource($data), JsonResponse::HTTP_CREATED);
         } catch (ModelNotFoundException $e) {
             Log::warning('Booking not found for other charge', [
-                'admin_user_id' => auth()->id(),
+                'admin_user_id' => Auth::user()->id,
                 'booking_id' => $booking
             ]);
             return new ErrorResponse('Booking not found.');
@@ -161,7 +164,7 @@ class BookingController extends Controller
         $newNights = Carbon::parse($validated['check_in_date'])->diffInDays(Carbon::parse($validated['check_out_date']));
 
         Log::info('Admin rescheduling booking', [
-            'admin_user_id' => auth()->id(),
+            'admin_user_id' => Auth::user()->id,
             'booking_id' => $bookingModel->id,
             'booking_reference' => $bookingModel->reference_number,
             'booking_type' => $bookingModel->booking_type,
@@ -176,7 +179,7 @@ class BookingController extends Controller
         // For overnight bookings, check that duration matches
         if ($bookingModel->booking_type !== 'day_tour' && $newNights !== $originalNights) {
             Log::warning('Reschedule rejected - duration mismatch', [
-                'admin_user_id' => auth()->id(),
+                'admin_user_id' => Auth::user()->id,
                 'booking_id' => $bookingModel->id,
                 'booking_reference' => $bookingModel->reference_number,
                 'original_nights' => $originalNights,
@@ -195,7 +198,7 @@ class BookingController extends Controller
             DB::commit();
             
             Log::info('Booking rescheduled successfully', [
-                'admin_user_id' => auth()->id(),
+                'admin_user_id' => Auth::user()->id,
                 'booking_id' => $bookingModel->id,
                 'booking_reference' => $bookingModel->reference_number,
                 'new_check_in' => $validated['check_in_date'],
@@ -207,7 +210,7 @@ class BookingController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Failed to reschedule booking', [
-                'admin_user_id' => auth()->id(),
+                'admin_user_id' => Auth::user()->id,
                 'booking_id' => $bookingModel->id,
                 'booking_reference' => $bookingModel->reference_number,
                 'error' => $e->getMessage()
@@ -239,5 +242,98 @@ class BookingController extends Controller
         }
 
         return response()->json($data);
+    }
+
+    /**
+     * Get available room units for a specific room type and date range.
+     * Used for room unit assignment in admin booking details.
+     */
+    public function getAvailableRoomUnits(Request $request, $bookingId)
+    {
+        $validated = $request->validate([
+            'room_id' => 'required|integer|exists:rooms,id',
+            'check_in_date' => 'required|date',
+            'check_out_date' => 'required|date|after_or_equal:check_in_date',
+        ]);
+
+        try {
+            $booking = $this->bookingService->show($bookingId);
+            
+            // Get available units for the room and date range using the proper availability logic
+            $availableUnits = $this->roomUnitService->getAvailableUnitsForReassignment(
+                $validated['room_id'],
+                $validated['check_in_date'],
+                $validated['check_out_date']
+            )
+            ->map(function ($unit) {
+                return [
+                    'id' => $unit->id,
+                    'unit_number' => $unit->unit_number,
+                    'status' => $unit->status->value,
+                    'notes' => $unit->notes,
+                ];
+            })
+            ->values();
+
+            return response()->json([
+                'available_units' => $availableUnits,
+                'room_id' => $validated['room_id'],
+                'check_in_date' => $validated['check_in_date'],
+                'check_out_date' => $validated['check_out_date'],
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking not found.');
+        } catch (\Exception $e) {
+            Log::error('Failed to get available room units', [
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse('Unable to get available room units', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Change room unit assignment for a specific booking room.
+     */
+    public function changeRoomUnit(Request $request, $bookingId, $bookingRoomId)
+    {
+        $validated = $request->validate([
+            'room_unit_id' => 'required|integer|exists:room_units,id',
+        ]);
+
+        try {
+            $booking = $this->bookingService->show($bookingId);
+            $bookingRoom = $booking->bookingRooms()->findOrFail($bookingRoomId);
+
+            DB::beginTransaction();
+
+            // Update the booking room with the new unit assignment
+            $bookingRoom->room_unit_id = $validated['room_unit_id'];
+            $bookingRoom->save();
+
+            DB::commit();
+
+            Log::info('Room unit assignment changed', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'booking_room_id' => $bookingRoomId,
+                'old_unit_id' => $bookingRoom->getOriginal('room_unit_id'),
+                'new_unit_id' => $validated['room_unit_id'],
+            ]);
+
+            return new ItemResponse(new BookingResource($booking->refresh()));
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking or booking room not found.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to change room unit assignment', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'booking_room_id' => $bookingRoomId,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse('Unable to change room unit assignment', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

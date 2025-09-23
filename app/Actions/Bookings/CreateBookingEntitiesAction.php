@@ -7,10 +7,16 @@ use App\Models\Booking;
 use App\Models\BookingRoom;
 use App\Models\Promo;
 use App\Models\Room;
+use App\Services\RoomUnitService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CreateBookingEntitiesAction
 {
+    public function __construct(
+        private readonly RoomUnitService $roomUnitService
+    ) {}
+
     public function execute(BookingData $bookingData, array $roomDataArr, $userId, $totals): Booking
     {
         // Prevent mixing room types
@@ -79,14 +85,29 @@ class CreateBookingEntitiesAction
 
         foreach ($roomDataArr as $roomData) {
             $room = $rooms[$roomData->room_id];
-            BookingRoom::create([
+            
+            // Try to assign a room unit immediately for both overnight and day tour bookings
+            $assignedUnit = $this->roomUnitService->assignUnitToBooking(
+                $room->id,
+                $bookingData->check_in_date,
+                $bookingData->check_out_date
+            );
+
+            $bookingRoom = BookingRoom::create([
                 'booking_id' => $booking->id,
                 'room_id' => $room->id,
+                'room_unit_id' => $assignedUnit?->id, // Assign unit immediately if available
                 'price_per_night' => $room->price_per_night,
                 'adults' => $roomData->adults,
                 'children' => $roomData->children,
                 'total_guests' => $roomData->adults + $roomData->children,
             ]);
+
+            if ($assignedUnit) {
+                Log::info("Assigned unit {$assignedUnit->unit_number} to booking room {$bookingRoom->id} for booking {$booking->reference_number}");
+            } else {
+                Log::warning("No available units found for room {$room->name} (ID: {$room->id}) during booking creation for booking {$booking->reference_number}");
+            }
         }
         return $booking;
     }

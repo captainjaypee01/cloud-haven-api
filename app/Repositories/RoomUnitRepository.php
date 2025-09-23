@@ -74,16 +74,31 @@ class RoomUnitRepository implements RoomUnitRepositoryInterface
         return DB::transaction(function () use ($roomId, $checkInDate, $checkOutDate) {
             // Find units that are available for the given date range
             return RoomUnit::where('room_id', $roomId)
-                          // Exclude units that have conflicting bookings
+                          // Exclude units that have conflicting bookings (paid, downpayment, and pending with assigned units)
                           ->whereNotExists(function ($query) use ($checkInDate, $checkOutDate) {
                               $query->select(DB::raw(1))
                                    ->from('booking_rooms')
                                    ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
                                    ->whereColumn('booking_rooms.room_unit_id', 'room_units.id')
-                                   ->whereIn('bookings.status', ['paid', 'downpayment'])
+                                   ->where(function ($statusQuery) {
+                                       $statusQuery->whereIn('bookings.status', ['paid', 'downpayment'])
+                                                  ->orWhere(function ($pendingQuery) {
+                                                      // Include pending bookings that have room units assigned
+                                                      $pendingQuery->where('bookings.status', 'pending')
+                                                                  ->whereNotNull('booking_rooms.room_unit_id');
+                                                  });
+                                   })
                                    ->where(function ($q) use ($checkInDate, $checkOutDate) {
-                                       $q->where('bookings.check_in_date', '<', $checkOutDate)
-                                         ->where('bookings.check_out_date', '>', $checkInDate);
+                                       // Handle both overnight and day tour bookings
+                                       $q->where(function ($overnightQuery) use ($checkInDate, $checkOutDate) {
+                                           // Overnight bookings: check_in < endDate AND check_out > startDate
+                                           $overnightQuery->where('bookings.check_in_date', '<', $checkOutDate)
+                                                         ->where('bookings.check_out_date', '>', $checkInDate);
+                                       })->orWhere(function ($dayTourQuery) use ($checkInDate) {
+                                           // Day tour bookings: check_in_date = startDate (same day booking)
+                                           $dayTourQuery->where('bookings.booking_type', 'day_tour')
+                                                       ->where('bookings.check_in_date', $checkInDate);
+                                       });
                                    });
                           })
                           // Exclude units that are in maintenance during the booking period

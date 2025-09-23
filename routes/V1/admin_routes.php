@@ -39,8 +39,13 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
         Route::patch('bookings/{booking}/reschedule', 'BookingController@reschedule')->middleware('role:admin,superadmin');
         Route::delete('bookings/{booking}/other-charges/{charge}', 'OtherChargeController@destroy')->middleware('role:admin,superadmin');
         
+        // Room unit management for bookings
+        Route::get('bookings/{booking}/available-room-units', 'BookingController@getAvailableRoomUnits')->middleware('role:admin,superadmin');
+        Route::patch('bookings/{booking}/booking-rooms/{bookingRoom}/change-room-unit', 'BookingController@changeRoomUnit')->middleware('role:admin,superadmin');
+        
         // Payment management routes
         Route::get('payments', 'PaymentController@index')->middleware('role:admin,superadmin');
+        Route::get('bookings/{booking}/payments', 'PaymentController@getByBooking')->middleware('role:admin,superadmin');
         Route::post('payments/pay', 'PaymentController@pay')->middleware('role:admin,superadmin');
         Route::put('payments/{payment}', 'PaymentController@update')->middleware('role:admin,superadmin');
         

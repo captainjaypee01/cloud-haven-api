@@ -6,6 +6,7 @@ use App\Contracts\Repositories\RoomUnitRepositoryInterface;
 use App\DTO\RoomUnits\GenerateUnitsData;
 use App\Enums\RoomUnitStatusEnum;
 use App\Models\Booking;
+use App\Models\BookingRoom;
 use App\Models\Room;
 use App\Models\RoomUnit;
 use Carbon\Carbon;
@@ -328,6 +329,44 @@ class RoomUnitService
             'rooms' => array_values($roomsData)
         ];
     }
+
+    /**
+     * Get available room units for a specific room and date range.
+     * This method is used by the admin interface to show available units for reassignment.
+     * Uses efficient database-level filtering instead of PHP filtering.
+     */
+    public function getAvailableUnitsForReassignment(int $roomId, string $checkInDate, string $checkOutDate): Collection
+    {
+        return RoomUnit::query()
+            ->where('room_id', $roomId)
+            ->whereNotIn('status', ['maintenance', 'blocked'])
+            ->whereDoesntHave('bookingRooms.booking', function ($q) use ($checkInDate, $checkOutDate) {
+                // Include only bookings that can block a unit
+                $q->where(function ($statusQ) {
+                    $statusQ->whereIn('status', ['paid', 'downpayment'])
+                            ->orWhere(function ($p) {
+                                $p->where('status', 'pending')
+                                  ->whereNotNull('booking_rooms.room_unit_id'); // already assigned
+                            });
+                })
+                // Date overlap: overnight OR day-tour same day
+                ->where(function ($dateQ) use ($checkInDate, $checkOutDate) {
+                    $dateQ->where(function ($overnight) use ($checkInDate, $checkOutDate) {
+                            $overnight->where('booking_type', '<>', 'day_tour')
+                                      ->where('check_in_date', '<', $checkOutDate)
+                                      ->where('check_out_date', '>', $checkInDate);
+                        })
+                        ->orWhere(function ($dayTour) use ($checkInDate) {
+                            $dayTour->where('booking_type', 'day_tour')
+                                    ->where('check_in_date', $checkInDate);
+                        });
+                });
+            })
+            // Avoid CAST if possible by storing unit_number as INT; otherwise keep this:
+            ->orderByRaw('CAST(unit_number AS UNSIGNED)')
+            ->get();
+    }
+
 
     /**
      * Get booking data for a specific unit and date.
