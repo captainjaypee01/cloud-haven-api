@@ -12,9 +12,12 @@ class Review extends Model
         'booking_id',
         'user_id',
         'room_id',
+        'first_name',
+        'last_name',
         'type',
         'rating',
-        'comment'
+        'comment',
+        'is_testimonial'
     ];
 
     public function booking()

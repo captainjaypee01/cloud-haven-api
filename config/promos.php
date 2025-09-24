@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'max_exclusive_active'  => 3,
+    'max_exclusive_active'  => env('MAX_EXCLUSIVE_PROMOS', 3),
 ];

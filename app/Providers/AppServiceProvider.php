@@ -62,6 +62,7 @@ class AppServiceProvider extends ServiceProvider
         $this->bindUsers();
         $this->bindMealPrices();
         $this->bindPromos();
+        $this->bindReviews();
         $this->app->bind(
             \App\Contracts\Services\DashboardServiceInterface::class,
             \App\Services\DashboardService::class
@@ -111,5 +112,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Contracts\MealPrices\CreateMealPriceContract::class, \App\Actions\MealPrices\CreateMealPriceAction::class);
         $this->app->bind(\App\Contracts\MealPrices\UpdateMealPriceContract::class, \App\Actions\MealPrices\UpdateMealPriceAction::class);
         $this->app->bind(\App\Contracts\MealPrices\DeleteMealPriceContract::class, \App\Actions\MealPrices\DeleteMealPriceAction::class);
+    }
+
+    public function bindReviews(): void
+    {
+        $this->app->bind(\App\Contracts\Repositories\ReviewRepositoryInterface::class, \App\Repositories\ReviewRepository::class);
+        $this->app->bind(\App\Contracts\Services\ReviewServiceInterface::class, \App\Services\ReviewService::class);
     }
 }

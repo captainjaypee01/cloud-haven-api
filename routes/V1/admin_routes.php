@@ -76,4 +76,6 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
 
         Route::apiResource('images', 'ImageController')->only(['index', 'store', 'destroy'])->middleware('role:admin,superadmin');
 
+        Route::apiResource('reviews', 'ReviewController')->middleware('role:admin,superadmin');
+
     });
