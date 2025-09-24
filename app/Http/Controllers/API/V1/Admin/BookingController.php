@@ -10,6 +10,7 @@ use App\Http\Responses\CollectionResponse;
 use App\Http\Responses\ErrorResponse;
 use App\Http\Responses\ItemResponse;
 use App\Services\RoomUnitService;
+use App\Services\EmailTrackingService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -141,11 +142,20 @@ class BookingController extends Controller
     {
         $bookingModel = $this->bookingService->show($booking);
         
+        // Calculate 30-day limit from original check-in date
+        $originalCheckIn = Carbon::parse($bookingModel->check_in_date);
+        $maxRescheduleDate = $originalCheckIn->copy()->addDays(30);
+        
         // Handle validation based on booking type
         if ($bookingModel->booking_type === 'day_tour') {
             // For Day Tour, only validate the tour date (same for check-in and check-out)
             $validated = $request->validate([
-                'tour_date' => 'required|date|after_or_equal:today',
+                'tour_date' => [
+                    'required',
+                    'date',
+                    'after_or_equal:today',
+                    'before_or_equal:' . $maxRescheduleDate->toDateString()
+                ],
             ]);
             
             // Set both check-in and check-out to the same date for Day Tour
@@ -154,7 +164,12 @@ class BookingController extends Controller
         } else {
             // For overnight bookings, validate check-in and check-out dates
             $validated = $request->validate([
-                'check_in_date' => 'required|date|after_or_equal:today',
+                'check_in_date' => [
+                    'required',
+                    'date',
+                    'after_or_equal:today',
+                    'before_or_equal:' . $maxRescheduleDate->toDateString()
+                ],
                 'check_out_date' => 'required|date|after:check_in_date',
             ]);
         }
@@ -173,7 +188,8 @@ class BookingController extends Controller
             'new_check_in' => $validated['check_in_date'],
             'new_check_out' => $validated['check_out_date'],
             'original_nights' => $originalNights,
-            'new_nights' => $newNights
+            'new_nights' => $newNights,
+            'max_reschedule_date' => $maxRescheduleDate->toDateString()
         ]);
 
         // For overnight bookings, check that duration matches
@@ -188,19 +204,84 @@ class BookingController extends Controller
             return new ErrorResponse("The reschedule duration must match the original booking duration ({$originalNights} night(s)).", 422);
         }
 
+        // Check room availability for the new dates
+        try {
+            $checkAvailabilityAction = app(\App\Actions\Bookings\CheckRoomAvailabilityAction::class);
+            
+            // Load booking rooms with room relationship to get the slug
+            $bookingModel->load('bookingRooms.room');
+            
+            $bookingRoomArr = $bookingModel->bookingRooms->map(function ($br) {
+                return (object) [
+                    'room_id' => $br->room->slug, // Use room slug, not numeric ID
+                    'quantity' => 1,
+                    'adults' => $br->adults,
+                    'children' => $br->children,
+                    'total_guests' => $br->total_guests,
+                ];
+            })->toArray();
+            
+            $checkAvailabilityAction->execute(
+                $bookingRoomArr,
+                $validated['check_in_date'],
+                $validated['check_out_date']
+            );
+        } catch (\App\Exceptions\RoomNotAvailableException $e) {
+            Log::warning('Reschedule rejected - room not available', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingModel->id,
+                'booking_reference' => $bookingModel->reference_number,
+                'new_check_in' => $validated['check_in_date'],
+                'new_check_out' => $validated['check_out_date'],
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse("One or more rooms are not available for the selected dates. Please choose different dates.", 422);
+        }
+
         // Proceed to update booking dates in a transaction
         DB::beginTransaction();
         try {
+            $oldCheckIn = $bookingModel->check_in_date;
+            $oldCheckOut = $bookingModel->check_out_date;
+            
             $bookingModel->update([
                 'check_in_date' => $validated['check_in_date'],
                 'check_out_date' => $validated['check_out_date'],
             ]);
+            
+            // Send reschedule email notification
+            try {
+                EmailTrackingService::sendWithTracking(
+                    $bookingModel->guest_email,
+                    new \App\Mail\BookingReschedule($bookingModel, $oldCheckIn, $oldCheckOut),
+                    'booking_reschedule',
+                    [
+                        'booking_id' => $bookingModel->id,
+                        'reference_number' => $bookingModel->reference_number,
+                        'guest_name' => $bookingModel->guest_name,
+                        'old_check_in' => $oldCheckIn,
+                        'old_check_out' => $oldCheckOut,
+                        'new_check_in' => $validated['check_in_date'],
+                        'new_check_out' => $validated['check_out_date']
+                    ]
+                );
+            } catch (\Exception $emailError) {
+                Log::warning('Failed to send reschedule email', [
+                    'booking_id' => $bookingModel->id,
+                    'reference_number' => $bookingModel->reference_number,
+                    'error' => $emailError->getMessage()
+                ]);
+                // Don't fail the reschedule if email fails
+            }
+            
             DB::commit();
             
             Log::info('Booking rescheduled successfully', [
                 'admin_user_id' => Auth::user()->id,
                 'booking_id' => $bookingModel->id,
                 'booking_reference' => $bookingModel->reference_number,
+                'old_check_in' => $oldCheckIn,
+                'old_check_out' => $oldCheckOut,
                 'new_check_in' => $validated['check_in_date'],
                 'new_check_out' => $validated['check_out_date'],
                 'nights' => $newNights
