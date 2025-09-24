@@ -59,8 +59,8 @@ class BookingConfirmation extends Mailable implements ShouldQueue
     {
         try {
             $pdfService = app(ResortPoliciesPdfService::class);
-            $pdfPath = $pdfService->generatePdf();
-            $filename = $pdfService->getFilename();
+            $pdfPath = $pdfService->generatePdf($this->booking);
+            $filename = $pdfService->getFilename($this->booking);
             
             return [
                 Attachment::fromPath($pdfPath)

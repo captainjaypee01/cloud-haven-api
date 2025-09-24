@@ -167,7 +167,6 @@
         <div class="subsection-title">Additional Child Policies</div>
         <ul>
             <li>Final number of children and headcount must be confirmed one week before the booking schedule.</li>
-            <li>Drivers are included in the final head count.</li>
             <li>The resort reserves the right to verify age with valid identification if needed.</li>
             <li>Children must be supervised by adults at all times, especially around water areas.</li>
             <li>Parents/guardians are responsible for their children's safety and conduct during the stay.</li>

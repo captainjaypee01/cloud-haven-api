@@ -9,9 +9,15 @@ class ResortPoliciesPdfService
     /**
      * Generate the resort policies PDF
      */
-    public function generatePdf(): string
+    public function generatePdf($booking = null): string
     {
-        $pdf = Pdf::loadView('pdfs.resort_policies');
+        if ($booking) {
+            // Generate PDF with booking details and policies
+            $pdf = Pdf::loadView('pdfs.booking_with_policies', compact('booking'));
+        } else {
+            // Generate PDF with policies only
+            $pdf = Pdf::loadView('pdfs.resort_policies');
+        }
         
         // Set paper size and orientation
         $pdf->setPaper('A4', 'portrait');
@@ -29,8 +35,11 @@ class ResortPoliciesPdfService
     /**
      * Get the PDF filename
      */
-    public function getFilename(): string
+    public function getFilename($booking = null): string
     {
+        if ($booking) {
+            return 'Booking_' . $booking->reference_number . '_Policies_' . date('Y-m-d') . '.pdf';
+        }
         return 'Netania_De_Laiya_Resort_Policies_' . date('Y-m-d') . '.pdf';
     }
 }

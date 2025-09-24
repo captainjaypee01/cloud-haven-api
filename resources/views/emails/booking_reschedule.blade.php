@@ -50,45 +50,14 @@
                     <p style="margin-bottom:12px;font-size:15px;padding-left:16px;">Your {{ $isDayTour ? 'Day Tour' : 'accommodation' }} booking has been <strong>rescheduled</strong> by our staff.</p>
                     <p style="margin-bottom:16px;font-size:15px;padding-left:16px;">Here are the updated details</p>
 
-                    <!-- Reschedule Notice -->
+                    <!-- Status + Reschedule Notice -->
                     <div class="section" style="padding-top:0;">
-                    <div class="section-title">Reschedule Notice</div>
+                    <div class="section-title">Booking Status</div>
                     <div class="box">
                         <div class="box-inner">
-                        <p class="m-0"><strong>Status:</strong> Booking Rescheduled</p>
+                        <p class="m-0"><strong>Status:</strong> Rescheduled</p>
                         <p class="m-0"><strong>Rescheduled By:</strong> Resort Staff</p>
                         <p class="m-0"><strong>Rescheduled At:</strong> {{ $fmtDateTime(now()) }}</p>
-                        </div>
-                    </div>
-                    </div>
-
-                    <!-- Date Changes -->
-                    <div class="section">
-                    <div class="section-title">Date Changes</div>
-                    <div class="box">
-                        <div class="box-inner">
-                            <table width="100%">
-                                <tr>
-                                    <td style="width:50%;vertical-align:top;">
-                                        <p class="m-0" style="color: #dc2626;"><strong>Previous Dates:</strong></p>
-                                        @if($isDayTour)
-                                            <p class="m-0">Tour Date: {{ $fmtDate($oldCheckIn) }}</p>
-                                        @else
-                                            <p class="m-0">Check-In: {{ $fmtDate($oldCheckIn) }}</p>
-                                            <p class="m-0">Check-Out: {{ $fmtDate($oldCheckOut) }}</p>
-                                        @endif
-                                    </td>
-                                    <td style="width:50%;vertical-align:top;">
-                                        <p class="m-0" style="color: #059669;"><strong>New Dates:</strong></p>
-                                        @if($isDayTour)
-                                            <p class="m-0">Tour Date: {{ $fmtDate($booking->check_in_date) }}</p>
-                                        @else
-                                            <p class="m-0">Check-In: {{ $fmtDate($booking->check_in_date) }}</p>
-                                            <p class="m-0">Check-Out: {{ $fmtDate($booking->check_out_date) }}</p>
-                                        @endif
-                                    </td>
-                                </tr>
-                            </table>
                         </div>
                     </div>
                     </div>
@@ -97,11 +66,14 @@
                     <div class="panel" style="margin-bottom:24px;margin-left:16px;margin-right:16px;">
                         <div class="kv"><strong>Reference Number:</strong> {{ $booking->reference_number }}</div>
                         @if($isDayTour)
-                            <div class="kv"><strong>Day Tour Date:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
+                            <div class="kv"><strong>Original Tour Date:</strong> <span style="color:#ef4444;">{{ $fmtDate($oldCheckIn) }}</span></div>
+                            <div class="kv"><strong>New Tour Date:</strong> <span style="color:#059669;">{{ $fmtDate($booking->check_in_date) }}</span></div>
                             <div class="kv"><strong>Tour Hours:</strong> 8:00 AM - 5:00 PM</div>
                         @else
-                            <div class="kv"><strong>Check-In:</strong> {{ $fmtDate($booking->check_in_date) }}</div>
-                            <div class="kv"><strong>Check-Out:</strong> {{ $fmtDate($booking->check_out_date) }}</div>
+                            <div class="kv"><strong>Original Check-In:</strong> <span style="color:#ef4444;">{{ $fmtDate($oldCheckIn) }}</span></div>
+                            <div class="kv"><strong>New Check-In:</strong> <span style="color:#059669;">{{ $fmtDate($booking->check_in_date) }}</span></div>
+                            <div class="kv"><strong>Original Check-Out:</strong> <span style="color:#ef4444;">{{ $fmtDate($oldCheckOut) }}</span></div>
+                            <div class="kv"><strong>New Check-Out:</strong> <span style="color:#059669;">{{ $fmtDate($booking->check_out_date) }}</span></div>
                             <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
                         @endif
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
