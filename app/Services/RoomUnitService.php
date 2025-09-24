@@ -411,7 +411,9 @@ class RoomUnitService
         // Calculate remaining balance
         $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
         $otherCharges = $booking->otherCharges->sum('amount');
-        $totalPayable = $booking->final_price + $otherCharges;
+        // Calculate actual final price after discount, then add other charges
+        $actualFinalPrice = $booking->final_price - $booking->discount_amount;
+        $totalPayable = $actualFinalPrice + $otherCharges;
         $remainingBalance = max(0, $totalPayable - $totalPaid);
         
         // Calculate nights
