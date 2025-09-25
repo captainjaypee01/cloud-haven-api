@@ -27,15 +27,20 @@ class CreateBookingEntitiesAction
         if (!empty($bookingData->promo_id)) {
             $promo = Promo::find($bookingData->promo_id);
             
-            // Use booking check-in date for promo validation instead of current date
-            $validationDate = \Carbon\Carbon::parse($bookingData->check_in_date);
+            // Use booking check-in date for promo validation (matching PromoController logic)
+            $validationDate = \Carbon\Carbon::parse($bookingData->check_in_date)->startOfDay();
+            $currentDate = now()->startOfDay();
+            
+            // Check if this is a Day Tour booking (Day Tours have same check-in and check-out date)
+            $isDayTourBooking = $bookingData->check_in_date === $bookingData->check_out_date;
             
             if (
                 $promo && $promo->active
-                && (!$promo->starts_at || $validationDate->gte($promo->starts_at))
-                && (!$promo->ends_at || $validationDate->lte($promo->ends_at))
-                && (!$promo->expires_at || $validationDate->lte($promo->expires_at))
+                && (!$promo->starts_at || $validationDate->gte($promo->starts_at->startOfDay()))
+                && (!$promo->ends_at || $validationDate->lte($promo->ends_at->startOfDay()))
+                && (!$promo->expires_at || $currentDate->lte($promo->expires_at->startOfDay()))
                 && (!$promo->max_uses || $promo->uses_count < $promo->max_uses)
+                && (!$isDayTourBooking || $promo->scope === 'total')
             ) {
                 // Determine base amount for discount
                 $baseAmount = $totals['final_price'];
@@ -57,6 +62,12 @@ class CreateBookingEntitiesAction
                 // Adjust totals
             }
         }
+        
+        // Calculate downpayment amount
+        $actualFinalPrice = $totals['final_price'] - $discount;
+        $dpPercent = config('booking.downpayment_percent', 0.5);
+        $downpaymentAmount = $actualFinalPrice * $dpPercent;
+        
         $booking = Booking::create([
             'user_id' => $userId,
             'check_in_date' => $bookingData->check_in_date,
@@ -73,8 +84,11 @@ class CreateBookingEntitiesAction
             'promo_id' => $bookingData->promo_id,
             'total_price' => $totals['total_room'],
             'meal_price' => $totals['meal_total'],
+            'extra_guest_fee' => $totals['extra_guest_fee'],
+            'extra_guest_count' => $totals['extra_guest_count'],
             'discount_amount' => $discount,
             'final_price' => $totals['final_price'],
+            'downpayment_amount' => $downpaymentAmount,
             'status' => 'pending',
             'reserved_until' => now()->addHours(config('booking.reservation_hold_duration_hours', 2)),
             'meal_quote_data' => isset($totals['meal_quote']) ? json_encode($totals['meal_quote']->toArray()) : null,

@@ -73,7 +73,14 @@
                             <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
                         @endif
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
-                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0)) }}</div>
+                        <div class="kv"><strong>Total Price:</strong> {{ $fmtMoney($booking->final_price) }}</div>
+                        @if($booking->discount_amount > 0)
+                        <div class="kv"><strong>Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</div>
+                        @endif
+                        <div class="kv"><strong>Total Amount to Pay:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0)) }}</div>
+                        @if($booking->downpayment_amount > 0)
+                        <div class="kv"><strong>Downpayment Amount:</strong> {{ $fmtMoney($booking->downpayment_amount) }}</div>
+                        @endif
                     </div>
 
                     @if(!empty($booking->bookingRooms) && $booking->bookingRooms->count())
@@ -244,11 +251,23 @@
                                 
                                 @endif
                                 
-                                @if(!empty($mealQuote['meal_subtotal']) || $booking->meal_price > 0)
+                                @if(isset($mealQuote['meal_subtotal']) || $booking->meal_price > 0)
                                 <div style="border-top: 2px solid #e5e7eb; padding-top: 12px; margin-top: 12px;">
                                     <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; color: #111827;">
                                         <span>Total Meal Cost:</span>
                                         <span>{{ $fmtMoney($mealQuote['meal_subtotal'] ?? $booking->meal_price) }}</span>
+                                    </div>
+                                </div>
+                                @endif
+                                
+                                @if($booking->extra_guest_fee > 0 && $booking->extra_guest_count > 0)
+                                <div style="border-top: 2px solid #e5e7eb; padding-top: 12px; margin-top: 12px;">
+                                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; color: #7c3aed;">
+                                        <span>Extra Guest Fees ({{ $booking->extra_guest_count }} guest{{ $booking->extra_guest_count > 1 ? 's' : '' }}):</span>
+                                        <span>{{ $fmtMoney($booking->extra_guest_fee) }}</span>
+                                    </div>
+                                    <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">
+                                        Additional fees for extra guests beyond room capacity on buffet days (entrance fees, extra mattresses, etc.)
                                     </div>
                                 </div>
                                 @endif

@@ -26,11 +26,19 @@ class CalculateBookingTotalAction
         
         // Calculate meal total based on actual guest counts and room capacity
         $mealTotal = $this->calculateMealTotalForBooking($mealQuote, $bookingRoomArr, $rooms);
+        
+        // Calculate extra guest fees for buffet days
+        $extraGuestData = $this->calculateExtraGuestFees($mealQuote, $bookingRoomArr, $rooms);
 
-        $finalTotal = $totalRoom + $mealTotal;
+        // Update the meal quote with calculated totals for email/PDF templates
+        $mealQuote->mealSubtotal = $mealTotal;
+
+        $finalTotal = $totalRoom + $mealTotal + $extraGuestData['total_fee'];
         return [
             'total_room' => $totalRoom,
             'meal_total' => $mealTotal,
+            'extra_guest_fee' => $extraGuestData['total_fee'],
+            'extra_guest_count' => $extraGuestData['total_count'],
             'final_price' => $finalTotal,
             'meal_quote' => $mealQuote // Include meal quote for email templates
         ];
@@ -47,20 +55,23 @@ class CalculateBookingTotalAction
             $nightCost = 0;
 
             foreach ($bookingRoomArr as $roomData) {
-                $room = $rooms[$roomData->room_id];
+                $room = $rooms[$roomData->room_id] ?? null;
+                if (!$room) {
+                    continue; // Skip if room not found
+                }
                 $adults = $roomData->adults ?? 0;
                 $children = $roomData->children ?? 0;
 
                 if ($night->type === 'buffet') {
-                    // Buffet: all guests pay
+                    // Buffet: ALL guests (including extra guests) pay the buffet meal price
+                    $totalGuests = $adults + $children;
                     $nightCost += ($adults * ($night->adultPrice ?? 0)) + ($children * ($night->childPrice ?? 0));
                 } else {
-                    // Free breakfast: only extra guests pay
+                    // Free breakfast: only extra guests pay for breakfast
                     $totalGuests = $adults + $children;
                     $extraGuests = max(0, $totalGuests - $room->max_guests);
                     
-                    // For simplicity, use adult breakfast price for extra guests
-                    // (as discussed, we don't differentiate adult/child for extra guests)
+                    // Use adult breakfast price for extra guests
                     $nightCost += $extraGuests * ($night->adultBreakfastPrice ?? 0);
                 }
             }
@@ -69,5 +80,48 @@ class CalculateBookingTotalAction
         }
 
         return round($totalMealCost, 2);
+    }
+
+    /**
+     * Calculate extra guest fees for buffet days only
+     */
+    private function calculateExtraGuestFees($mealQuote, array $bookingRoomArr, $rooms): array
+    {
+        $totalExtraGuestFee = 0;
+        $totalExtraGuestCount = 0;
+
+        foreach ($mealQuote->nights as $night) {
+            // Only calculate extra guest fees for buffet days
+            if ($night->type === 'buffet' && $night->extraGuestFee > 0) {
+                $nightExtraGuestCount = 0;
+                $nightExtraGuestFee = 0;
+
+                foreach ($bookingRoomArr as $roomData) {
+                    $room = $rooms[$roomData->room_id] ?? null;
+                    if (!$room) {
+                        continue; // Skip if room not found
+                    }
+                    $adults = $roomData->adults ?? 0;
+                    $children = $roomData->children ?? 0;
+                    $totalGuests = $adults + $children;
+                    
+                    // Calculate extra guests for this room
+                    $extraGuestsInRoom = max(0, $totalGuests - $room->max_guests);
+                    
+                    if ($extraGuestsInRoom > 0) {
+                        $nightExtraGuestCount += $extraGuestsInRoom;
+                        $nightExtraGuestFee += $extraGuestsInRoom * $night->extraGuestFee;
+                    }
+                }
+
+                $totalExtraGuestCount += $nightExtraGuestCount;
+                $totalExtraGuestFee += $nightExtraGuestFee;
+            }
+        }
+
+        return [
+            'total_fee' => round($totalExtraGuestFee, 2),
+            'total_count' => $totalExtraGuestCount
+        ];
     }
 }

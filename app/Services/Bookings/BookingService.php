@@ -114,6 +114,8 @@ class BookingService implements BookingServiceInterface
             'total_price' => $booking->total_price,
             'final_price' => $booking->final_price,
             'meal_price' => $booking->meal_price,
+            'extra_guest_fee' => $booking->extra_guest_fee,
+            'extra_guest_count' => $booking->extra_guest_count,
             'guest_name' => $bookingData->guest_name,
             'check_in_date' => $bookingData->check_in_date,
             'check_out_date' => $bookingData->check_out_date

@@ -35,6 +35,8 @@ class PublicBookingResource extends JsonResource
             'total_guests'          => $this->total_guests,
             'total_price'          => (float) $this->total_price,
             'meal_price'          => (float) $this->meal_price,
+            'extra_guest_fee'      => (float) $this->extra_guest_fee,
+            'extra_guest_count'    => (int) $this->extra_guest_count,
             'meal_quote_data'      => $this->meal_quote_data,
             'discount_amount'          => $this->discount_amount,
             'payment_option'          => $this->payment_option,

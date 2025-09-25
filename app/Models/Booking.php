@@ -32,6 +32,8 @@ class Booking extends Model
         'promo_id',
         'total_price',
         'meal_price',
+        'extra_guest_fee',
+        'extra_guest_count',
         'discount_amount',
         'payment_option',
         'downpayment_amount',
@@ -69,6 +71,7 @@ class Booking extends Model
             'final_price' => 'decimal:2',
             'total_price' => 'decimal:2',
             'meal_price' => 'decimal:2',
+            'extra_guest_fee' => 'decimal:2',
             'downpayment_amount' => 'decimal:2',
             'paid_amount' => 'decimal:2',
         ];
@@ -120,6 +123,11 @@ class Booking extends Model
     public function cancelledByUser()
     {
         return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    public function promo()
+    {
+        return $this->belongsTo(Promo::class);
     }
 
     protected static function booted()

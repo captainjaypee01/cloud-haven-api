@@ -209,13 +209,18 @@
             
             <div class="detail-group">
                 <h4>Payment Information</h4>
-                <p><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0)) }}</p>
+                <p><strong>Room Price:</strong> {{ $fmtMoney($booking->total_price) }}</p>
+                <p><strong>Meal Price:</strong> {{ $fmtMoney($booking->meal_price) }}</p>
+                @if($booking->extra_guest_fee > 0 && $booking->extra_guest_count > 0)
+                <p><strong>Extra Guest Fees:</strong> {{ $fmtMoney($booking->extra_guest_fee) }} ({{ $booking->extra_guest_count }} guest{{ $booking->extra_guest_count > 1 ? 's' : '' }})</p>
+                @endif
+                <p><strong>Total Price:</strong> {{ $fmtMoney($booking->final_price) }}</p>
                 @if($booking->discount_amount > 0)
                 <p><strong>Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</p>
                 @endif
-                <p><strong>Payment Option:</strong> {{ $booking->payment_option ? strtoupper($booking->payment_option) : 'N/A' }}</p>
+                <p><strong>Total Amount to Pay:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0)) }}</p>
                 @if($booking->downpayment_amount > 0)
-                <p><strong>Downpayment:</strong> {{ $fmtMoney($booking->downpayment_amount) }}</p>
+                <p><strong>Downpayment Amount:</strong> {{ $fmtMoney($booking->downpayment_amount) }}</p>
                 @endif
             </div>
         </div>
@@ -259,7 +264,13 @@
             </tbody>
         </table>
         @endif
+    </div>
 
+    <!-- PAGE BREAK -->
+    <div class="page-break"></div>
+
+    <!-- MEAL INFORMATION SECTION -->
+    <div class="section">
         @if(!empty($booking->meal_quote_data))
         <div class="meal-breakdown">
             <h4>Meal Information</h4>
@@ -295,6 +306,11 @@
                     <p><strong>Free Breakfast:</strong> {{ $freeBreakfastNights->count() }} day{{ $freeBreakfastNights->count() > 1 ? 's' : '' }}</p>
                 @endif
                 <p><strong>Total Meal Cost: {{ $fmtMoney($mealQuote['meal_subtotal'] ?? $booking->meal_price) }}</strong></p>
+                
+                @if($booking->extra_guest_fee > 0 && $booking->extra_guest_count > 0)
+                    <p><strong>Extra Guest Fees (Buffet Days):</strong> {{ $fmtMoney($booking->extra_guest_fee) }}</p>
+                    <p><em>Additional fees for {{ $booking->extra_guest_count }} extra guest{{ $booking->extra_guest_count > 1 ? 's' : '' }} beyond room capacity on buffet days (entrance fees, extra mattresses, etc.)</em></p>
+                @endif
             @endif
         </div>
         @endif
