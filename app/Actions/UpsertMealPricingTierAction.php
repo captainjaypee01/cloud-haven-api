@@ -29,8 +29,7 @@ class UpsertMealPricingTierAction
                 'child_dinner_price' => $dto->childDinnerPrice,
                 'adult_breakfast_price' => $dto->adultBreakfastPrice,
                 'child_breakfast_price' => $dto->childBreakfastPrice,
-                'adult_extra_guest_fee' => $dto->adultExtraGuestFee,
-                'child_extra_guest_fee' => $dto->childExtraGuestFee,
+                'extra_guest_fee' => $dto->extraGuestFee,
                 'effective_from' => $dto->effectiveFrom,
                 'effective_to' => $dto->effectiveTo,
             ];

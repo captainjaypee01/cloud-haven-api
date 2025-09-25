@@ -61,8 +61,7 @@ class MealPricingService implements MealPricingServiceInterface
                         nightTotal: 0.0,
                         adultBreakfastPrice: (float) ($tier->adult_breakfast_price ?? 0),
                         childBreakfastPrice: (float) ($tier->child_breakfast_price ?? 0),
-                        adultExtraGuestFee: (float) ($tier->adult_extra_guest_fee ?? 0),
-                        childExtraGuestFee: (float) ($tier->child_extra_guest_fee ?? 0),
+                        extraGuestFee: (float) ($tier->extra_guest_fee ?? 0),
                         extraAdults: 0,
                         extraChildren: 0,
                         breakfastTotal: 0.0,
@@ -140,7 +139,7 @@ class MealPricingService implements MealPricingServiceInterface
                     $extraAdults = 0;
                     $extraChildren = 0;
                     
-                    if ($rooms && $tier->adult_extra_guest_fee !== null) {
+                    if ($rooms && $tier->extra_guest_fee !== null) {
                         // Calculate total extra guests across all rooms
                         $totalExtraGuests = 0;
                         
@@ -157,10 +156,9 @@ class MealPricingService implements MealPricingServiceInterface
                         }
                         
                         if ($totalExtraGuests > 0) {
-                            // Use adult extra guest fee for all extra guests (simplified)
-                            $adultExtraGuestFee = (float) $tier->adult_extra_guest_fee;
-                            $childExtraGuestFee = (float) ($tier->child_extra_guest_fee ?? $tier->adult_extra_guest_fee);
-                            $extraGuestFeeTotal = $totalExtraGuests * $adultExtraGuestFee;
+                            // Use single extra guest fee for all extra guests
+                            $extraGuestFee = (float) $tier->extra_guest_fee;
+                            $extraGuestFeeTotal = $totalExtraGuests * $extraGuestFee;
                             
                             // For display purposes, show all extras as "extra adults"
                             $extraAdults = $totalExtraGuests;
@@ -176,8 +174,7 @@ class MealPricingService implements MealPricingServiceInterface
                         adults: $adults,
                         children: $children,
                         nightTotal: $nightTotal,
-                        adultExtraGuestFee: $tier->adult_extra_guest_fee ? (float) $tier->adult_extra_guest_fee : null,
-                        childExtraGuestFee: $tier->child_extra_guest_fee ? (float) $tier->child_extra_guest_fee : null,
+                        extraGuestFee: $tier->extra_guest_fee ? (float) $tier->extra_guest_fee : null,
                         extraAdults: $extraAdults,
                         extraChildren: $extraChildren,
                         extraGuestFeeTotal: $extraGuestFeeTotal

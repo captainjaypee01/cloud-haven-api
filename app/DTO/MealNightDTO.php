@@ -16,8 +16,7 @@ class MealNightDTO
         public float $nightTotal = 0.00,
         public ?float $adultBreakfastPrice = null,
         public ?float $childBreakfastPrice = null,
-        public ?float $adultExtraGuestFee = null,
-        public ?float $childExtraGuestFee = null,
+        public ?float $extraGuestFee = null,
         public int $extraAdults = 0,
         public int $extraChildren = 0,
         public float $breakfastTotal = 0.00,
@@ -44,9 +43,8 @@ class MealNightDTO
         }
 
         // Include extra guest fee pricing (if available)
-        if ($this->adultExtraGuestFee !== null || $this->childExtraGuestFee !== null) {
-            $data['adult_extra_guest_fee'] = round($this->adultExtraGuestFee ?? 0, 2);
-            $data['child_extra_guest_fee'] = round($this->childExtraGuestFee ?? 0, 2);
+        if ($this->extraGuestFee !== null) {
+            $data['extra_guest_fee'] = round($this->extraGuestFee, 2);
         }
 
         return $data;
