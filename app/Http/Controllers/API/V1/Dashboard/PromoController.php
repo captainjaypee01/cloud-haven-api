@@ -41,30 +41,33 @@ class PromoController extends Controller
             $checkOutDate = $request->query('check_out_date');
             $dayTourDate = $request->query('day_tour_date');
 
-            // Determine the booking date to validate against
+            // Determine the booking date to validate against (for start/end date validation)
             $bookingDate = null;
             if ($dayTourDate) {
-                $bookingDate = \Carbon\Carbon::parse($dayTourDate);
+                $bookingDate = \Carbon\Carbon::parse($dayTourDate)->startOfDay();
             } elseif ($checkInDate) {
-                $bookingDate = \Carbon\Carbon::parse($checkInDate);
+                $bookingDate = \Carbon\Carbon::parse($checkInDate)->startOfDay();
             }
 
-            // If booking dates are provided, validate against them; otherwise use current date
-            $validationDate = $bookingDate ?: now();
+            // For start/end date validation, use booking date or current date
+            $validationDate = $bookingDate ?: now()->startOfDay();
+            
+            // For expiration check, always use current date (date only)
+            $currentDate = now()->startOfDay();
 
-            // Check if promo has started
-            if ($promo->starts_at && $validationDate->lt($promo->starts_at)) {
+            // Check if promo has started (date only comparison)
+            if ($promo->starts_at && $validationDate->lt($promo->starts_at->startOfDay())) {
                 return new ErrorResponse('Promo code is not yet active for your selected dates.', JsonResponse::HTTP_BAD_REQUEST);
             }
 
-            // Check if promo has ended
-            if ($promo->ends_at && $validationDate->gt($promo->ends_at)) {
+            // Check if promo has ended (date only comparison)
+            if ($promo->ends_at && $validationDate->gt($promo->ends_at->startOfDay())) {
                 return new ErrorResponse('Promo code has ended before your selected dates.', JsonResponse::HTTP_BAD_REQUEST);
             }
 
-            // Check expiration and usage
-            if ($promo->expires_at && $validationDate->gt($promo->expires_at)) {
-                return new ErrorResponse('Promo code has expired before your selected dates.', JsonResponse::HTTP_BAD_REQUEST);
+            // Check expiration against current date (not booking date)
+            if ($promo->expires_at && $currentDate->gt($promo->expires_at->startOfDay())) {
+                return new ErrorResponse('Promo code has expired.', JsonResponse::HTTP_BAD_REQUEST);
             }
             if ($promo->max_uses && $promo->uses_count >= $promo->max_uses) {
                 return new ErrorResponse('Promo code is no longer available (usage limit reached).', JsonResponse::HTTP_BAD_REQUEST);
