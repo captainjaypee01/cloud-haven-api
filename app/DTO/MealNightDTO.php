@@ -16,9 +16,12 @@ class MealNightDTO
         public float $nightTotal = 0.00,
         public ?float $adultBreakfastPrice = null,
         public ?float $childBreakfastPrice = null,
+        public ?float $adultExtraGuestFee = null,
+        public ?float $childExtraGuestFee = null,
         public int $extraAdults = 0,
         public int $extraChildren = 0,
-        public float $breakfastTotal = 0.00
+        public float $breakfastTotal = 0.00,
+        public float $extraGuestFeeTotal = 0.00
     ) {}
 
     public function toArray(): array
@@ -38,6 +41,12 @@ class MealNightDTO
         if ($this->adultBreakfastPrice !== null || $this->childBreakfastPrice !== null) {
             $data['adult_breakfast_price'] = round($this->adultBreakfastPrice ?? 0, 2);
             $data['child_breakfast_price'] = round($this->childBreakfastPrice ?? 0, 2);
+        }
+
+        // Include extra guest fee pricing (if available)
+        if ($this->adultExtraGuestFee !== null || $this->childExtraGuestFee !== null) {
+            $data['adult_extra_guest_fee'] = round($this->adultExtraGuestFee ?? 0, 2);
+            $data['child_extra_guest_fee'] = round($this->childExtraGuestFee ?? 0, 2);
         }
 
         return $data;

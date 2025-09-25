@@ -31,6 +31,8 @@ class MealPricingTierRequest extends FormRequest
             'child_dinner_price' => 'nullable|numeric|min:0|max:999999.99',
             'adult_breakfast_price' => 'nullable|numeric|min:0|max:999999.99',
             'child_breakfast_price' => 'nullable|numeric|min:0|max:999999.99',
+            'adult_extra_guest_fee' => 'nullable|numeric|min:0|max:999999.99',
+            'child_extra_guest_fee' => 'nullable|numeric|min:0|max:999999.99',
             'effective_from' => 'nullable|date',
             'effective_to' => 'nullable|date|after:effective_from',
         ];

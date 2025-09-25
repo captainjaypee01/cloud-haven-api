@@ -61,9 +61,12 @@ class MealPricingService implements MealPricingServiceInterface
                         nightTotal: 0.0,
                         adultBreakfastPrice: (float) ($tier->adult_breakfast_price ?? 0),
                         childBreakfastPrice: (float) ($tier->child_breakfast_price ?? 0),
+                        adultExtraGuestFee: (float) ($tier->adult_extra_guest_fee ?? 0),
+                        childExtraGuestFee: (float) ($tier->child_extra_guest_fee ?? 0),
                         extraAdults: 0,
                         extraChildren: 0,
-                        breakfastTotal: 0.0
+                        breakfastTotal: 0.0,
+                        extraGuestFeeTotal: 0.0
                     );
                 } else {
                     // No pricing tier found, but program exists
@@ -72,7 +75,8 @@ class MealPricingService implements MealPricingServiceInterface
                         type: 'free_breakfast',
                         adults: 0,
                         children: 0,
-                        nightTotal: 0.0
+                        nightTotal: 0.0,
+                        extraGuestFeeTotal: 0.0
                     );
                 }
             } else {
@@ -82,7 +86,8 @@ class MealPricingService implements MealPricingServiceInterface
                     type: 'free_breakfast',
                     adults: 0,
                     children: 0,
-                    nightTotal: 0.0
+                    nightTotal: 0.0,
+                        extraGuestFeeTotal: 0.0
                 );
             }
             
@@ -126,7 +131,42 @@ class MealPricingService implements MealPricingServiceInterface
                 $tier = $this->getPricingTierForDate($program->id, $current);
                 
                 if ($tier) {
+                    // Calculate buffet meal total for all guests (including extra guests)
+                    $totalGuests = $adults + $children;
                     $nightTotal = ($adults * $tier->adult_price) + ($children * $tier->child_price);
+                    
+                    // Calculate extra guest fees (entrance fees, extra mattresses, etc.) if there are extra guests
+                    $extraGuestFeeTotal = 0.0;
+                    $extraAdults = 0;
+                    $extraChildren = 0;
+                    
+                    if ($rooms && $tier->adult_extra_guest_fee !== null) {
+                        // Calculate total extra guests across all rooms
+                        $totalExtraGuests = 0;
+                        
+                        foreach ($rooms as $roomData) {
+                            $roomAdults = $roomData['adults'] ?? 0;
+                            $roomChildren = $roomData['children'] ?? 0;
+                            $roomMaxGuests = $roomData['max_guests'] ?? 2;
+                            $totalGuestsInRoom = $roomAdults + $roomChildren;
+                            
+                            if ($totalGuestsInRoom > $roomMaxGuests) {
+                                $extraGuestsInRoom = $totalGuestsInRoom - $roomMaxGuests;
+                                $totalExtraGuests += $extraGuestsInRoom;
+                            }
+                        }
+                        
+                        if ($totalExtraGuests > 0) {
+                            // Use adult extra guest fee for all extra guests (simplified)
+                            $adultExtraGuestFee = (float) $tier->adult_extra_guest_fee;
+                            $childExtraGuestFee = (float) ($tier->child_extra_guest_fee ?? $tier->adult_extra_guest_fee);
+                            $extraGuestFeeTotal = $totalExtraGuests * $adultExtraGuestFee;
+                            
+                            // For display purposes, show all extras as "extra adults"
+                            $extraAdults = $totalExtraGuests;
+                            $extraChildren = 0;
+                        }
+                    }
                     
                     $nights[] = new MealNightDTO(
                         date: $current->copy(),
@@ -135,10 +175,15 @@ class MealPricingService implements MealPricingServiceInterface
                         childPrice: (float) $tier->child_price,
                         adults: $adults,
                         children: $children,
-                        nightTotal: $nightTotal
+                        nightTotal: $nightTotal,
+                        adultExtraGuestFee: $tier->adult_extra_guest_fee ? (float) $tier->adult_extra_guest_fee : null,
+                        childExtraGuestFee: $tier->child_extra_guest_fee ? (float) $tier->child_extra_guest_fee : null,
+                        extraAdults: $extraAdults,
+                        extraChildren: $extraChildren,
+                        extraGuestFeeTotal: $extraGuestFeeTotal
                     );
                     
-                    $mealSubtotal += $nightTotal;
+                    $mealSubtotal += $nightTotal + $extraGuestFeeTotal;
                 } else {
                     // No pricing tier found, default to free breakfast
                     $nights[] = new MealNightDTO(
@@ -146,7 +191,8 @@ class MealPricingService implements MealPricingServiceInterface
                         type: 'free_breakfast',
                         adults: $adults,
                         children: $children,
-                        nightTotal: 0.0
+                        nightTotal: 0.0,
+                        extraGuestFeeTotal: 0.0
                     );
                 }
             } else {
@@ -201,7 +247,8 @@ class MealPricingService implements MealPricingServiceInterface
                     childBreakfastPrice: $childBreakfastPrice,
                     extraAdults: $extraAdults,
                     extraChildren: $extraChildren,
-                    breakfastTotal: $breakfastTotal
+                    breakfastTotal: $breakfastTotal,
+                        extraGuestFeeTotal: 0.0
                 );
                 
                 $mealSubtotal += $breakfastTotal;

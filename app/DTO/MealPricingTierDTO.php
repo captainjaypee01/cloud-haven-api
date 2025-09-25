@@ -36,6 +36,10 @@ class MealPricingTierDTO extends Data
         public ?float $adultBreakfastPrice,
         #[MapInputName('child_breakfast_price')]
         public ?float $childBreakfastPrice,
+        #[MapInputName('adult_extra_guest_fee')]
+        public ?float $adultExtraGuestFee,
+        #[MapInputName('child_extra_guest_fee')]
+        public ?float $childExtraGuestFee,
         #[MapInputName('effective_from')]
         #[WithCast(DateTimeInterfaceCast::class, format: 'Y-m-d', type: Carbon::class)]
         public ?Carbon $effectiveFrom,
@@ -60,6 +64,8 @@ class MealPricingTierDTO extends Data
             childDinnerPrice: $tier->child_dinner_price ? (float) $tier->child_dinner_price : null,
             adultBreakfastPrice: $tier->adult_breakfast_price ? (float) $tier->adult_breakfast_price : null,
             childBreakfastPrice: $tier->child_breakfast_price ? (float) $tier->child_breakfast_price : null,
+            adultExtraGuestFee: $tier->adult_extra_guest_fee ? (float) $tier->adult_extra_guest_fee : null,
+            childExtraGuestFee: $tier->child_extra_guest_fee ? (float) $tier->child_extra_guest_fee : null,
             effectiveFrom: $tier->effective_from,
             effectiveTo: $tier->effective_to
         );

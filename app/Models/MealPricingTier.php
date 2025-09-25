@@ -23,6 +23,8 @@ class MealPricingTier extends Model
         'child_dinner_price',
         'adult_breakfast_price',
         'child_breakfast_price',
+        'adult_extra_guest_fee',
+        'child_extra_guest_fee',
         'effective_from',
         'effective_to',
     ];
@@ -38,6 +40,8 @@ class MealPricingTier extends Model
         'child_dinner_price' => 'decimal:2',
         'adult_breakfast_price' => 'decimal:2',
         'child_breakfast_price' => 'decimal:2',
+        'adult_extra_guest_fee' => 'decimal:2',
+        'child_extra_guest_fee' => 'decimal:2',
         'effective_from' => 'date',
         'effective_to' => 'date',
     ];
