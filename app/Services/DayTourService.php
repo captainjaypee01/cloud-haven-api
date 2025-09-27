@@ -27,9 +27,8 @@ class DayTourService implements DayTourServiceInterface
 
     public function getAvailabilityForDate(Carbon $date): DayTourAvailabilityResponseDTO
     {
-        // Get property timezone
-        $timezone = config('resort.timezone', 'Asia/Singapore');
-        $localDate = $date->copy()->setTimezone($timezone)->startOfDay();
+        // Parse the date without timezone conversion since meal programs are date-based, not time-based
+        $localDate = $date->copy()->startOfDay();
         
         // Check buffet active status
         $buffetActive = $this->calendarService->isBuffetActiveOn($localDate);
@@ -91,9 +90,8 @@ class DayTourService implements DayTourServiceInterface
         $roomSlugs = array_map(fn($selection) => $selection->room_id, $request->selections);
         $this->validateDayTourRooms($roomSlugs);
         
-        // Get property timezone
-        $timezone = config('resort.timezone', 'Asia/Singapore');
-        $localDate = Carbon::parse($request->date)->setTimezone($timezone)->startOfDay();
+        // Parse the date without timezone conversion since meal programs are date-based, not time-based
+        $localDate = Carbon::parse($request->date)->startOfDay();
         
         // Check buffet active status
         $buffetActive = $this->calendarService->isBuffetActiveOn($localDate);

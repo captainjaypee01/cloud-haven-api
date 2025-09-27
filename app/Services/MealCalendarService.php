@@ -24,7 +24,30 @@ class MealCalendarService implements MealCalendarServiceInterface
             return false;
         }
 
-        return $this->isProgramActiveOnDate($program, $date);
+        // 1. Check for calendar overrides first (highest precedence)
+        $override = $this->getOverrideForDate($program->id, $date);
+        if ($override) {
+            return $override->is_active;
+        }
+
+        // 2. Check if program scope applies to this date (date range + months)
+        if (!$this->programScopeMatches($program, $date)) {
+            return false;
+        }
+
+        // 3. Check if buffet is enabled for this program (default to true for backward compatibility)
+        if ($program->buffet_enabled === false) {
+            return false;
+        }
+
+        // 4. For composite programs, check weekly pattern to determine if buffet is active
+        // For other scope types (date_range, months, weekly, always), buffet is active if program is active
+        if ($program->scope_type === 'composite') {
+            return $this->isInWeeklyPattern($program, $date);
+        }
+
+        // For non-composite programs, buffet is active if the program is active
+        return true;
     }
 
     public function getAvailabilityForDateRange(Carbon $startDate, Carbon $endDate): array
@@ -471,7 +494,8 @@ class MealCalendarService implements MealCalendarServiceInterface
                 return $this->isInWeeklyPattern($program, $date);
                 
             case 'composite':
-                // For composite, ALL applicable rules must be satisfied
+                // For composite, check date range and months but NOT weekly patterns
+                // Weekly patterns only determine buffet availability, not program activity
                 
                 // Check date range if specified
                 if ($program->date_start && $program->date_end && !$this->isInDateRange($program, $date)) {
@@ -483,10 +507,7 @@ class MealCalendarService implements MealCalendarServiceInterface
                     return false;
                 }
                 
-                // Check weekly pattern - this includes both custom weekdays and weekend definitions
-                if (!$this->isInWeeklyPattern($program, $date)) {
-                    return false;
-                }
+                // Program is active within scope regardless of weekly pattern
                 return true;
                 
             default:

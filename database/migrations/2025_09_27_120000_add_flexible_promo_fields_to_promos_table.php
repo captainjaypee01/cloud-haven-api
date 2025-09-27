@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('promos', function (Blueprint $table) {
             // Add new fields for flexible promo logic
-            $table->json('excluded_days')->nullable()->after('ends_at')->comment('Array of day numbers to exclude (0=Sunday, 1=Monday, ..., 6=Saturday)');
+            $table->json('excluded_days')->nullable()->after('expires_at')->comment('Array of day numbers to exclude (0=Sunday, 1=Monday, ..., 6=Saturday)');
             $table->boolean('per_night_calculation')->default(false)->after('excluded_days')->comment('Whether to apply discount per night vs entire booking');
             
             // Add index for per-night calculation queries

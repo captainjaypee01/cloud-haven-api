@@ -319,9 +319,8 @@ class MealPricingService implements MealPricingServiceInterface
         bool $includePmSnack,
         string $pmSnackPolicy
     ): DayTourMealBreakdownDTO {
-        // Get property timezone
-        $timezone = config('resort.timezone', 'Asia/Singapore');
-        $localDate = $date->copy()->setTimezone($timezone)->startOfDay();
+        // Parse the date without timezone conversion since meal programs are date-based, not time-based
+        $localDate = $date->copy()->startOfDay();
         
         $program = $this->calendarService->getActiveProgramForDate($localDate);
         
@@ -540,9 +539,8 @@ class MealPricingService implements MealPricingServiceInterface
 
     public function getLunchAndSnackPrices(Carbon $date): array
     {
-        // Get property timezone
-        $timezone = config('resort.timezone', 'Asia/Singapore');
-        $localDate = $date->copy()->setTimezone($timezone)->startOfDay();
+        // Parse the date without timezone conversion since meal programs are date-based, not time-based
+        $localDate = $date->copy()->startOfDay();
         
         // Get active meal program for this specific date
         $program = $this->calendarService->getActiveProgramForDate($localDate);

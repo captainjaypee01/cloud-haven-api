@@ -30,6 +30,7 @@ it('respects calendar overrides with highest precedence', function () {
         'status' => 'active',
         'scope_type' => 'always',
     ]);
+    $program->id = 1; // Ensure ID is set for the override lookup
 
     $override = new MealCalendarOverride([
         'is_active' => false,
@@ -37,7 +38,7 @@ it('respects calendar overrides with highest precedence', function () {
 
     $this->programRepository->shouldReceive('getActive')
         ->once()
-        ->andReturn(collect([$program]));
+        ->andReturn(new Collection([$program]));
 
     $this->overrideRepository->shouldReceive('getByProgramAndDate')
         ->once()
@@ -57,11 +58,14 @@ it('checks date range correctly', function () {
         'date_start' => Carbon::parse('2025-10-01'),
         'date_end' => Carbon::parse('2025-10-31'),
     ]);
+    $program->id = 1; // Ensure ID is set for the override lookup
 
     $this->programRepository->shouldReceive('getActive')
-        ->andReturn(collect([$program]));
+        ->andReturn(new Collection([$program]));
 
     $this->overrideRepository->shouldReceive('getByProgramAndDate')
+        ->andReturn(null);
+    $this->overrideRepository->shouldReceive('getByProgramAndMonth')
         ->andReturn(null);
 
     // Within range
@@ -80,11 +84,14 @@ it('checks monthly patterns correctly', function () {
         'scope_type' => 'months',
         'months' => [3, 4, 5], // March, April, May
     ]);
+    $program->id = 1; // Ensure ID is set for the override lookup
 
     $this->programRepository->shouldReceive('getActive')
-        ->andReturn(collect([$program]));
+        ->andReturn(new Collection([$program]));
 
     $this->overrideRepository->shouldReceive('getByProgramAndDate')
+        ->andReturn(null);
+    $this->overrideRepository->shouldReceive('getByProgramAndMonth')
         ->andReturn(null);
 
     // In specified months
@@ -104,11 +111,14 @@ it('checks weekly patterns with FRI_SUN weekend definition', function () {
         'weekend_definition' => 'FRI_SUN',
         'weekdays' => null,
     ]);
+    $program->id = 1; // Ensure ID is set for the override lookup
 
     $this->programRepository->shouldReceive('getActive')
-        ->andReturn(collect([$program]));
+        ->andReturn(new Collection([$program]));
 
     $this->overrideRepository->shouldReceive('getByProgramAndDate')
+        ->andReturn(null);
+    $this->overrideRepository->shouldReceive('getByProgramAndMonth')
         ->andReturn(null);
 
     // Friday (should be active)
@@ -128,11 +138,14 @@ it('handles custom weekday patterns', function () {
         'weekend_definition' => 'CUSTOM',
         'weekdays' => ['MON', 'WED', 'FRI'],
     ]);
+    $program->id = 1; // Ensure ID is set for the override lookup
 
     $this->programRepository->shouldReceive('getActive')
-        ->andReturn(collect([$program]));
+        ->andReturn(new Collection([$program]));
 
     $this->overrideRepository->shouldReceive('getByProgramAndDate')
+        ->andReturn(null);
+    $this->overrideRepository->shouldReceive('getByProgramAndMonth')
         ->andReturn(null);
 
     // Monday (should be active)
@@ -145,10 +158,11 @@ it('handles custom weekday patterns', function () {
 });
 
 it('logs warning when multiple active programs exist', function () {
-    $programs = collect([
-        new MealProgram(['id' => 1, 'status' => 'active', 'updated_at' => now()]),
-        new MealProgram(['id' => 2, 'status' => 'active', 'updated_at' => now()->subDay()]),
-    ]);
+    $program1 = new MealProgram(['id' => 1, 'status' => 'active', 'updated_at' => now()]);
+    $program1->id = 1;
+    $program2 = new MealProgram(['id' => 2, 'status' => 'active', 'updated_at' => now()->subDay()]);
+    $program2->id = 2;
+    $programs = new Collection([$program1, $program2]);
 
     $this->programRepository->shouldReceive('getActive')
         ->once()
@@ -160,6 +174,9 @@ it('logs warning when multiple active programs exist', function () {
 
     $this->overrideRepository->shouldReceive('getByProgramAndDate')
         ->andReturn(null);
+    $this->overrideRepository->shouldReceive('getByProgramAndMonth')
+        ->andReturn(null);
 
-    $this->service->isBuffetActiveOn(Carbon::parse('2025-10-03'));
+    // Call getAvailabilityForDateRange which uses getActiveProgram() and will trigger the warning
+    $this->service->getAvailabilityForDateRange(Carbon::parse('2025-10-01'), Carbon::parse('2025-10-31'));
 });
