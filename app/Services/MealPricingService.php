@@ -38,22 +38,29 @@ class MealPricingService implements MealPricingServiceInterface
         // Get property timezone from config
         $timezone = config('resort.timezone', 'Asia/Singapore');
         
-        // Iterate breakfast days (check-in + 1 day to check-out)
-        $current = $checkIn->copy()->setTimezone($timezone)->startOfDay()->addDay(); // Start from next day
-        $end = $checkOut->copy()->setTimezone($timezone)->startOfDay();
+        // Iterate stay nights (check-in to check-out)
+        // For a stay Oct 3-6: 3 nights (Oct 3-4, Oct 4-5, Oct 5-6)
+        // Each night corresponds to breakfast the next day
+        $current = $checkIn->copy()->setTimezone($timezone)->startOfDay();
+        $end = $checkOut->copy()->setTimezone($timezone)->startOfDay()->subDay();
         while ($current->lte($end)) {
-            // Find the active meal program for this breakfast date
+            // Breakfast date is the next day after the stay night
+            $breakfastDate = $current->copy()->addDay();
+            
+            // Check if buffet is active on the stay night (for buffet dinner)
+            $isBuffetActive = $this->calendarService->isBuffetActiveOn($current);
+            
+            // Find the active meal program for this stay night
             $program = $this->findActiveProgramForDate($current);
             if ($program) {
-                // Check if buffet is active on this breakfast date
-                $isBuffetActive = $this->calendarService->isBuffetActiveOn($current);
-                
-                // Get pricing tier for this date
+                // Get pricing tier for this stay night
                 $tier = $this->getPricingTierForDate($program->id, $current);
                 if ($tier) {
                     $nights[] = new MealNightDTO(
-                        date: $current->copy(),
+                        date: $current->copy(), // stay night date
                         type: $isBuffetActive ? 'buffet' : 'free_breakfast',
+                        startDate: $isBuffetActive ? $current->copy() : $breakfastDate->copy(), // buffet: stay night, breakfast: breakfast day
+                        endDate: $isBuffetActive ? $breakfastDate->copy() : $breakfastDate->copy(), // buffet: breakfast day, breakfast: breakfast day
                         adultPrice: $isBuffetActive ? (float) $tier->adult_price : null,
                         childPrice: $isBuffetActive ? (float) $tier->child_price : null,
                         adults: 0, // No calculations, just program info
@@ -70,8 +77,10 @@ class MealPricingService implements MealPricingServiceInterface
                 } else {
                     // No pricing tier found, but program exists
                     $nights[] = new MealNightDTO(
-                        date: $current->copy(),
+                        date: $current->copy(), // stay night date
                         type: 'free_breakfast',
+                        startDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
+                        endDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
                         adults: 0,
                         children: 0,
                         nightTotal: 0.0,
@@ -81,12 +90,14 @@ class MealPricingService implements MealPricingServiceInterface
             } else {
                 // No active program for this date
                 $nights[] = new MealNightDTO(
-                    date: $current->copy(),
+                    date: $current->copy(), // stay night date
                     type: 'free_breakfast',
+                    startDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
+                    endDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
                     adults: 0,
                     children: 0,
                     nightTotal: 0.0,
-                        extraGuestFeeTotal: 0.0
+                    extraGuestFeeTotal: 0.0
                 );
             }
             
@@ -116,17 +127,22 @@ class MealPricingService implements MealPricingServiceInterface
         // Get property timezone from config
         $timezone = config('resort.timezone', 'Asia/Singapore');
         
-        // Iterate breakfast days (check-in + 1 day to check-out)
-        // Same logic as simplified method: breakfast is for the next day
-        $current = $checkIn->copy()->setTimezone($timezone)->startOfDay()->addDay();
-        $end = $checkOut->copy()->setTimezone($timezone)->startOfDay();
+        // Iterate stay nights (check-in to check-out)
+        // For a stay Oct 3-6: 3 nights (Oct 3-4, Oct 4-5, Oct 5-6)
+        // Each night corresponds to breakfast the next day
+        $current = $checkIn->copy()->setTimezone($timezone)->startOfDay();
+        $end = $checkOut->copy()->setTimezone($timezone)->startOfDay()->subDay();
         
         while ($current->lte($end)) {
+            // Breakfast date is the next day after the stay night
+            $breakfastDate = $current->copy()->addDay();
+            
+            // Check if buffet is active on the stay night (for buffet dinner)
             $isBuffetActive = $this->calendarService->isBuffetActiveOn($current);
             $program = $this->calendarService->getActiveProgramForDate($current);
             
             if ($isBuffetActive && $program) {
-                // Get pricing tier for this date
+                // Get pricing tier for this stay night (buffet dinner date)
                 $tier = $this->getPricingTierForDate($program->id, $current);
                 
                 if ($tier) {
@@ -167,8 +183,10 @@ class MealPricingService implements MealPricingServiceInterface
                     }
                     
                     $nights[] = new MealNightDTO(
-                        date: $current->copy(),
+                        date: $current->copy(), // stay night date
                         type: 'buffet',
+                        startDate: $current->copy(), // buffet dinner day (stay night)
+                        endDate: $breakfastDate->copy(), // buffet breakfast day (next day)
                         adultPrice: (float) $tier->adult_price,
                         childPrice: (float) $tier->child_price,
                         adults: $adults,
@@ -184,8 +202,10 @@ class MealPricingService implements MealPricingServiceInterface
                 } else {
                     // No pricing tier found, default to free breakfast
                     $nights[] = new MealNightDTO(
-                        date: $current->copy(),
+                        date: $current->copy(), // stay night date
                         type: 'free_breakfast',
+                        startDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
+                        endDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
                         adults: $adults,
                         children: $children,
                         nightTotal: 0.0,
@@ -200,7 +220,7 @@ class MealPricingService implements MealPricingServiceInterface
                 $adultBreakfastPrice = null;
                 $childBreakfastPrice = null;
 
-                // For breakfast pricing, look for any program that covers this date
+                // For breakfast pricing, look for any program that covers this stay night
                 // (even if buffet is not active due to weekly patterns)
                 $breakfastProgram = $this->findProgramForBreakfastPricing($current);
 
@@ -235,8 +255,10 @@ class MealPricingService implements MealPricingServiceInterface
                 }
 
                 $nights[] = new MealNightDTO(
-                    date: $current->copy(),
+                    date: $current->copy(), // stay night date
                     type: 'free_breakfast',
+                    startDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
+                    endDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
                     adults: $adults,
                     children: $children,
                     nightTotal: $breakfastTotal,
@@ -245,7 +267,7 @@ class MealPricingService implements MealPricingServiceInterface
                     extraAdults: $extraAdults,
                     extraChildren: $extraChildren,
                     breakfastTotal: $breakfastTotal,
-                        extraGuestFeeTotal: 0.0
+                    extraGuestFeeTotal: 0.0
                 );
                 
                 $mealSubtotal += $breakfastTotal;
