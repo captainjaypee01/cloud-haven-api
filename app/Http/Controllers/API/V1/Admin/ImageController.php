@@ -42,7 +42,7 @@ class ImageController extends Controller
             Log::info('Image upload completed successfully', [
                 'admin_user_id' => auth()->id(),
                 'uploaded_count' => count($images),
-                'image_ids' => $images->pluck('id')->toArray()
+                'image_ids' => collect($images)->pluck('id')->toArray()
             ]);
             
             return new CollectionResponse(ImageResource::collection($images), 201);
