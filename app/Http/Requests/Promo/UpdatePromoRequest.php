@@ -53,10 +53,10 @@ class UpdatePromoRequest extends FormRequest
             'scope'          => 'nullable|string|max:100',
             'discount_type'  => ['required', Rule::in(['fixed', 'percentage'])],
             'discount_value' => 'required|numeric|min:0',
-            'starts_at'      => 'nullable|date_format:Y-m-d\TH:i',
+            'starts_at'      => 'nullable|date_format:Y-m-d',
             'ends_at'        => [
                 'nullable',
-                'date_format:Y-m-d\TH:i',
+                'date_format:Y-m-d',
                 function ($attribute, $value, $fail) {
                     $startsAt = $this->input('starts_at');
                     if ($startsAt && $value && strtotime($value) < strtotime($startsAt)) {

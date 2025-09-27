@@ -59,8 +59,8 @@ class MealPricingService implements MealPricingServiceInterface
                     $nights[] = new MealNightDTO(
                         date: $current->copy(), // stay night date
                         type: $isBuffetActive ? 'buffet' : 'free_breakfast',
-                        startDate: $isBuffetActive ? $current->copy() : $breakfastDate->copy(), // buffet: stay night, breakfast: breakfast day
-                        endDate: $isBuffetActive ? $breakfastDate->copy() : $breakfastDate->copy(), // buffet: breakfast day, breakfast: breakfast day
+                        startDate: $isBuffetActive ? $current->copy() : $current->copy(), // buffet: stay night, free breakfast: stay night
+                        endDate: $isBuffetActive ? $breakfastDate->copy() : $breakfastDate->copy(), // buffet: breakfast day, free breakfast: breakfast day
                         adultPrice: $isBuffetActive ? (float) $tier->adult_price : null,
                         childPrice: $isBuffetActive ? (float) $tier->child_price : null,
                         adults: 0, // No calculations, just program info
@@ -75,12 +75,12 @@ class MealPricingService implements MealPricingServiceInterface
                         extraGuestFeeTotal: 0.0
                     );
                 } else {
-                    // No pricing tier found, but program exists
+                        // No pricing tier found, but program exists
                     $nights[] = new MealNightDTO(
                         date: $current->copy(), // stay night date
                         type: 'free_breakfast',
-                        startDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
-                        endDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
+                        startDate: $current->copy(), // stay night (when they check in and start consuming)
+                        endDate: $breakfastDate->copy(), // breakfast day (when they finish breakfast)
                         adults: 0,
                         children: 0,
                         nightTotal: 0.0,
@@ -88,12 +88,12 @@ class MealPricingService implements MealPricingServiceInterface
                     );
                 }
             } else {
-                // No active program for this date
+                    // No active program for this date
                 $nights[] = new MealNightDTO(
                     date: $current->copy(), // stay night date
                     type: 'free_breakfast',
-                    startDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
-                    endDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
+                    startDate: $current->copy(), // stay night (when they check in and start consuming)
+                    endDate: $breakfastDate->copy(), // breakfast day (when they finish breakfast)
                     adults: 0,
                     children: 0,
                     nightTotal: 0.0,
@@ -204,8 +204,8 @@ class MealPricingService implements MealPricingServiceInterface
                     $nights[] = new MealNightDTO(
                         date: $current->copy(), // stay night date
                         type: 'free_breakfast',
-                        startDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
-                        endDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
+                        startDate: $current->copy(), // stay night (when they check in and start consuming)
+                        endDate: $breakfastDate->copy(), // breakfast day (when they finish breakfast)
                         adults: $adults,
                         children: $children,
                         nightTotal: 0.0,
@@ -257,8 +257,8 @@ class MealPricingService implements MealPricingServiceInterface
                 $nights[] = new MealNightDTO(
                     date: $current->copy(), // stay night date
                     type: 'free_breakfast',
-                    startDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
-                    endDate: $breakfastDate->copy(), // breakfast day (when they eat breakfast)
+                    startDate: $current->copy(), // stay night (when they check in and start consuming)
+                    endDate: $breakfastDate->copy(), // breakfast day (when they finish breakfast)
                     adults: $adults,
                     children: $children,
                     nightTotal: $breakfastTotal,

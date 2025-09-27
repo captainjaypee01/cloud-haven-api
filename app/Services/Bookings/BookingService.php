@@ -13,6 +13,7 @@ use App\DTO\Bookings\BookingRoomData;
 use App\Exceptions\BookingAlreadyClaimedException;
 use App\Models\Booking;
 use App\Models\BookingRoom;
+use App\Models\Promo;
 use App\Models\RoomUnit;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Services\EmailTrackingService;
+use App\Services\PromoCalculationService;
 
 class BookingService implements BookingServiceInterface
 {
@@ -29,6 +31,7 @@ class BookingService implements BookingServiceInterface
         private CreateBookingEntitiesAction $createEntities,
         private SetBookingLockAction $setLock,
         private BookingRepositoryInterface $bookingRepo,
+        private PromoCalculationService $promoCalculationService,
     ) {}
 
     /**
@@ -86,18 +89,47 @@ class BookingService implements BookingServiceInterface
                 $bookingData->check_in_date,
                 $bookingData->check_out_date
             );
-            // 2. Calculate total price (rooms + meals)
+            
+            // 2. Validate promo if provided (separate validation)
+            $promo = null;
+            if (!empty($bookingData->promo_id)) {
+                $promo = Promo::find($bookingData->promo_id);
+                if (!$promo) {
+                    throw new \InvalidArgumentException('Promo code not found.');
+                }
+                
+                // Validate promo using PromoCalculationService
+                $validation = $this->promoCalculationService->validatePromoForDateRange(
+                    $promo, 
+                    $bookingData->check_in_date, 
+                    $bookingData->check_out_date
+                );
+                
+                if (!$validation['is_valid']) {
+                    throw new \InvalidArgumentException('Promo code is not valid for the selected dates: ' . implode(' ', $validation['errors']));
+                }
+                
+                Log::info('Promo validated successfully for booking', [
+                    'promo_id' => $promo->id,
+                    'promo_code' => $promo->code,
+                    'check_in_date' => $bookingData->check_in_date,
+                    'check_out_date' => $bookingData->check_out_date
+                ]);
+            }
+            
+            // 3. Calculate total price (rooms + meals) with promo
             $totals = $this->calcTotal->execute(
                 $bookingRoomArr,
                 $bookingData->check_in_date,
                 $bookingData->check_out_date,
                 $bookingData->total_adults,
-                $bookingData->total_children
+                $bookingData->total_children,
+                $promo
             );
-            // 3. Create booking + booking_rooms
+            // 4. Create booking + booking_rooms
             $booking = $this->createEntities->execute($bookingData, $bookingRoomArr, $userId, $totals);
 
-            // 4. Lock the booking in Redis
+            // 5. Lock the booking in Redis
             $this->setLock->execute(
                 $booking->id,
                 $bookingRoomArr,

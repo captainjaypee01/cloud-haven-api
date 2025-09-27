@@ -94,7 +94,7 @@ class PromoDtoFactory
     }
 
     /**
-     * Convert datetime from user timezone (Asia/Singapore or Asia/Manila) to UTC
+     * Convert date from user input to database format (no timezone conversion)
      *
      * @param string|null $datetime
      * @return string|null
@@ -106,13 +106,20 @@ class PromoDtoFactory
         }
 
         try {
-            // Create Carbon instance from the datetime string, assuming it's in Asia/Singapore timezone
-            $carbon = \Carbon\Carbon::createFromFormat('Y-m-d\TH:i', $datetime, 'Asia/Singapore');
+            // Handle Y-m-d format (new format)
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $datetime)) {
+                return $datetime . ' 00:00:00';
+            }
             
-            // Convert to UTC
-            $carbon->utc();
+            // Handle Y-m-d\TH:i format (old format) for backward compatibility
+            if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $datetime)) {
+                $carbon = \Carbon\Carbon::createFromFormat('Y-m-d\TH:i', $datetime, 'Asia/Singapore');
+                $carbon->utc();
+                return $carbon->format('Y-m-d H:i:s');
+            }
             
-            return $carbon->format('Y-m-d H:i:s');
+            // If neither format matches, return null
+            return null;
         } catch (\Exception $e) {
             // If parsing fails, return null
             return null;

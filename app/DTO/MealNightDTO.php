@@ -57,6 +57,9 @@ class MealNightDTO
             $data['extra_guest_fee'] = round($this->extraGuestFee, 2);
         }
 
+        // Include the total cost for this night (for promo calculations)
+        $data['night_total'] = round($this->nightTotal, 2);
+
         return $data;
     }
 }

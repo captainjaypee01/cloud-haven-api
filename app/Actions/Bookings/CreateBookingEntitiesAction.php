@@ -22,50 +22,21 @@ class CreateBookingEntitiesAction
         // Prevent mixing room types
         $this->validateRoomTypes($roomDataArr);
         
-        // Before creating the Booking, compute totals and apply promo if present
+        // Extract discount from totals (calculated in CalculateBookingTotalAction)
         $discount = 0;
         $promoDiscountData = null;
         
-        if (!empty($bookingData->promo_id)) {
-            $promo = Promo::find($bookingData->promo_id);
+        if (isset($totals['promo_discount']) && $totals['promo_discount']) {
+            // Use the promo discount calculated by CalculateBookingTotalAction
+            $promoDiscountData = $totals['promo_discount'];
+            $discount = $promoDiscountData['discount_amount'];
             
-            // Use booking check-in date for promo validation (matching PromoController logic)
-            $validationDate = \Carbon\Carbon::parse($bookingData->check_in_date)->startOfDay();
-            $currentDate = now()->startOfDay();
-            
-            // Check if this is a Day Tour booking (Day Tours have same check-in and check-out date)
-            $isDayTourBooking = $bookingData->check_in_date === $bookingData->check_out_date;
-            
-            if (
-                $promo && $promo->active
-                && (!$promo->starts_at || $validationDate->gte($promo->starts_at->startOfDay()))
-                && (!$promo->ends_at || $validationDate->lte($promo->ends_at->startOfDay()))
-                && (!$promo->expires_at || $currentDate->lte($promo->expires_at->startOfDay()))
-                && (!$promo->max_uses || $promo->uses_count < $promo->max_uses)
-                && (!$isDayTourBooking || $promo->scope === 'total')
-            ) {
-                // Use the new promo calculation service if promo_discount data is available
-                if (isset($totals['promo_discount']) && $totals['promo_discount']) {
-                    $promoDiscountData = $totals['promo_discount'];
-                    $discount = $promoDiscountData['discount_amount'];
-                } else {
-                    // Fallback to traditional calculation for backward compatibility
-                    $baseAmount = $totals['final_price'];
-                    if ($promo->scope === 'room') {
-                        $baseAmount = $totals['total_room'];
-                    } elseif ($promo->scope === 'meal') {
-                        $baseAmount = $totals['meal_total'];
-                    }
-                    // Calculate discount
-                    if ($promo->discount_type === 'percentage') {
-                        $discount = $baseAmount * ($promo->discount_value / 100);
-                    } else if ($promo->discount_type === 'fixed') {
-                        $discount = min($promo->discount_value, $baseAmount);
-                    }
-                    $discount = round($discount, 2);
+            // Increment promo usage count
+            if (!empty($bookingData->promo_id)) {
+                $promo = Promo::find($bookingData->promo_id);
+                if ($promo) {
+                    $promo->increment('uses_count', 1);
                 }
-                
-                $promo->increment('uses_count', 1);
             }
         }
         

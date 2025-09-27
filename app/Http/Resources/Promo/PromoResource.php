@@ -18,10 +18,10 @@ class PromoResource extends JsonResource
             'description'       => $this->description,
             'image_url'         => $this->image_url,
             'starts_at'         => $this->starts_at
-                ? $this->convertToUserTimezone($this->starts_at)
+                ? $this->starts_at->format('Y-m-d H:i:s')
                 : null,
             'ends_at'           => $this->ends_at
-                ? $this->convertToUserTimezone($this->ends_at)
+                ? $this->ends_at->format('Y-m-d H:i:s')
                 : null,
             'expires_at'        => $this->expires_at
                 ? $this->expires_at->format('Y-m-d H:i:s')

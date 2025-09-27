@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Promo;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class PromoCalculationService
 {
@@ -16,6 +17,7 @@ class PromoCalculationService
      * @param array $totals Array containing 'total_room', 'meal_total', 'final_price'
      * @param array $bookingRoomArr Array of booking room data
      * @param array $rooms Array of room models keyed by slug
+     * @param object|null $mealQuote Optional meal quote object with detailed breakdown
      * @return array
      */
     public function calculateDiscount(
@@ -24,7 +26,8 @@ class PromoCalculationService
         string $checkOutDate,
         array $totals,
         array $bookingRoomArr = [],
-        array $rooms = []
+        array $rooms = [],
+        $mealQuote = null
     ): array {
         // If promo doesn't use per-night calculation, use traditional logic
         if (!$promo->usesPerNightCalculation()) {
@@ -32,7 +35,7 @@ class PromoCalculationService
         }
 
         // Calculate per-night discount
-        return $this->calculatePerNightDiscount($promo, $checkInDate, $checkOutDate, $totals, $bookingRoomArr, $rooms);
+        return $this->calculatePerNightDiscount($promo, $checkInDate, $checkOutDate, $totals, $bookingRoomArr, $rooms, $mealQuote);
     }
 
     /**
@@ -71,6 +74,7 @@ class PromoCalculationService
      * @param array $totals
      * @param array $bookingRoomArr
      * @param array $rooms
+     * @param object|null $mealQuote
      * @return array
      */
     private function calculatePerNightDiscount(
@@ -79,35 +83,41 @@ class PromoCalculationService
         string $checkOutDate,
         array $totals,
         array $bookingRoomArr,
-        array $rooms
+        array $rooms,
+        $mealQuote = null
     ): array {
         $checkIn = Carbon::parse($checkInDate);
         $checkOut = Carbon::parse($checkOutDate);
         $nights = $checkIn->diffInDays($checkOut);
+
 
         $perNightBreakdown = [];
         $totalDiscountAmount = 0;
         $eligibleNights = 0;
 
         // Calculate per-night amounts
-        $perNightAmounts = $this->calculatePerNightAmounts($totals, $nights, $bookingRoomArr, $rooms);
+        $perNightAmounts = $this->calculatePerNightAmounts($totals, $nights, $bookingRoomArr, $rooms, $mealQuote);
 
         for ($i = 0; $i < $nights; $i++) {
             $currentDate = $checkIn->copy()->addDays($i);
             $isEligible = $promo->isDateEligible($currentDate);
+            
+            // Get the base amount based on promo scope
+            $nightAmounts = $perNightAmounts[$i] ?? ['room' => 0, 'meal' => 0, 'total' => 0];
+            $baseAmount = $this->getBaseAmountForNight($promo, $nightAmounts);
             
             $nightData = [
                 'date' => $currentDate->format('Y-m-d'),
                 'day_of_week' => $currentDate->dayOfWeek,
                 'day_name' => $currentDate->format('l'),
                 'eligible' => $isEligible,
-                'base_amount' => $perNightAmounts[$i] ?? 0,
+                'base_amount' => $baseAmount,
                 'discount_amount' => 0
             ];
 
             if ($isEligible) {
                 $eligibleNights++;
-                $nightData['discount_amount'] = $this->calculateDiscountAmount($promo, $nightData['base_amount']);
+                $nightData['discount_amount'] = $this->calculateDiscountAmount($promo, $baseAmount);
                 $totalDiscountAmount += $nightData['discount_amount'];
             }
 
@@ -129,22 +139,60 @@ class PromoCalculationService
      * @param int $nights
      * @param array $bookingRoomArr
      * @param array $rooms
+     * @param object|null $mealQuote
      * @return array
      */
-    private function calculatePerNightAmounts(array $totals, int $nights, array $bookingRoomArr, array $rooms): array
+    private function calculatePerNightAmounts(array $totals, int $nights, array $bookingRoomArr, array $rooms, $mealQuote = null): array
     {
         $perNightAmounts = [];
 
         // Calculate per-night room cost
         $perNightRoom = $totals['total_room'] / $nights;
         
-        // Calculate per-night meal cost
-        $perNightMeal = $totals['meal_total'] / $nights;
-        
         // Calculate per-night total
         $perNightTotal = $totals['final_price'] / $nights;
 
         for ($i = 0; $i < $nights; $i++) {
+            $perNightMeal = 0;
+            
+            // Calculate actual meal cost for this specific night based on guest counts and room data
+            if ($mealQuote && isset($mealQuote->nights) && is_array($mealQuote->nights) && isset($mealQuote->nights[$i])) {
+                $mealNight = $mealQuote->nights[$i];
+                
+                // Calculate actual meal cost for this night based on guest counts
+                if ($mealNight->type === 'buffet' && $mealNight->adultPrice !== null && $mealNight->childPrice !== null) {
+                    // For buffet nights, calculate cost based on actual guest counts
+                    $totalAdults = 0;
+                    $totalChildren = 0;
+                    
+                    foreach ($bookingRoomArr as $roomData) {
+                        $totalAdults += $roomData->adults ?? 0;
+                        $totalChildren += $roomData->children ?? 0;
+                    }
+                    
+                    $perNightMeal = ($totalAdults * $mealNight->adultPrice) + ($totalChildren * $mealNight->childPrice);
+                } else if ($mealNight->type === 'free_breakfast' && $mealNight->adultBreakfastPrice !== null) {
+                    // For free breakfast nights, calculate extra guest breakfast fees
+                    $totalExtraGuests = 0;
+                    
+                    foreach ($bookingRoomArr as $roomData) {
+                        $roomAdults = $roomData->adults ?? 0;
+                        $roomChildren = $roomData->children ?? 0;
+                        $roomMaxGuests = $rooms[$roomData->room_id]->max_guests ?? 2;
+                        $totalGuestsInRoom = $roomAdults + $roomChildren;
+                        
+                        if ($totalGuestsInRoom > $roomMaxGuests) {
+                            $totalExtraGuests += $totalGuestsInRoom - $roomMaxGuests;
+                        }
+                    }
+                    
+                    $perNightMeal = $totalExtraGuests * $mealNight->adultBreakfastPrice;
+                }
+            } else {
+                // Fallback to simple division if no meal quote data
+                $perNightMeal = $totals['meal_total'] / $nights;
+            }
+
             $perNightAmounts[$i] = [
                 'room' => round($perNightRoom, 2),
                 'meal' => round($perNightMeal, 2),
@@ -172,6 +220,26 @@ class PromoCalculationService
             case 'total':
             default:
                 return $totals['final_price'];
+        }
+    }
+
+    /**
+     * Get the base amount for a specific night based on promo scope
+     *
+     * @param Promo $promo
+     * @param array $nightAmounts
+     * @return float
+     */
+    private function getBaseAmountForNight(Promo $promo, array $nightAmounts): float
+    {
+        switch ($promo->scope) {
+            case 'room':
+                return $nightAmounts['room'];
+            case 'meal':
+                return $nightAmounts['meal'];
+            case 'total':
+            default:
+                return $nightAmounts['total'];
         }
     }
 

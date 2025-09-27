@@ -38,11 +38,20 @@ final class UpdatePromoAction implements UpdatePromoContract
                 'excluded_days'  => $dto->excluded_days,
                 'per_night_calculation' => $dto->per_night_calculation,
             ];
-            // Filter out unchanged values
-            $changes = array_filter($updateData, fn($val, $key) => $val !== $promo->$key, ARRAY_FILTER_USE_BOTH);
+            // Filter out unchanged values - handle null values properly
+            $changes = [];
+            foreach ($updateData as $key => $value) {
+                $currentValue = $promo->$key;
+                // Special handling for null values
+                if ($value !== $currentValue) {
+                    $changes[$key] = $value;
+                }
+            }
+            
             if (empty($changes)) {
                 return $promo; // nothing to update
             }
+            
             $promo->update($changes);
             return $promo->fresh();
         });

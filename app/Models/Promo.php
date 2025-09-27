@@ -41,6 +41,43 @@ class Promo extends Model
     ];
 
     /**
+     * Mutator to ensure starts_at is saved with 00:00:00 time (no timezone conversion)
+     */
+    public function setStartsAtAttribute($value)
+    {
+        if ($value) {
+            // If it's already in YYYY-MM-DD format, append 00:00:00
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+                $this->attributes['starts_at'] = $value . ' 00:00:00';
+            } else {
+                // If it's already a datetime, just use it as-is
+                $this->attributes['starts_at'] = $value;
+            }
+        } else {
+            $this->attributes['starts_at'] = null;
+        }
+    }
+
+    /**
+     * Mutator to ensure ends_at is saved with 00:00:00 time (no timezone conversion)
+     */
+    public function setEndsAtAttribute($value)
+    {
+        if ($value) {
+            // If it's already in YYYY-MM-DD format, append 00:00:00
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+                $this->attributes['ends_at'] = $value . ' 00:00:00';
+            } else {
+                // If it's already a datetime, just use it as-is
+                $this->attributes['ends_at'] = $value;
+            }
+        } else {
+            $this->attributes['ends_at'] = null;
+        }
+    }
+
+
+    /**
      * Relationship: Promo can be used in many bookings.
      */
     public function bookings()
