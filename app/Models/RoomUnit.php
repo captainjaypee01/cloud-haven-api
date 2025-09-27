@@ -100,8 +100,17 @@ class RoomUnit extends Model
             ->whereHas('booking', function ($query) use ($checkInDate, $checkOutDate) {
                 $query->whereIn('status', ['paid', 'downpayment'])
                       ->where(function ($q) use ($checkInDate, $checkOutDate) {
-                          $q->where('check_in_date', '<', $checkOutDate)
-                            ->where('check_out_date', '>', $checkInDate);
+                          // Overnight bookings: check_in < endDate AND check_out > startDate
+                          $q->where(function ($overnight) use ($checkInDate, $checkOutDate) {
+                              $overnight->where('booking_type', '<>', 'day_tour')
+                                        ->where('check_in_date', '<', $checkOutDate)
+                                        ->where('check_out_date', '>', $checkInDate);
+                          })
+                          // Day tour bookings: check_in_date = startDate (same day booking)
+                          ->orWhere(function ($dayTour) use ($checkInDate) {
+                              $dayTour->where('booking_type', 'day_tour')
+                                      ->where('check_in_date', $checkInDate);
+                          });
                       });
             })
             ->exists();
@@ -194,8 +203,19 @@ class RoomUnit extends Model
         $hasBooking = $this->bookingRooms()
             ->whereHas('booking', function ($query) use ($date) {
                 $query->whereIn('status', ['paid', 'downpayment'])
-                      ->where('check_in_date', '<=', $date)
-                      ->where('check_out_date', '>', $date);
+                      ->where(function ($q) use ($date) {
+                          // Overnight bookings: check_in <= date AND check_out > date
+                          $q->where(function ($overnight) use ($date) {
+                              $overnight->where('booking_type', '<>', 'day_tour')
+                                        ->where('check_in_date', '<=', $date)
+                                        ->where('check_out_date', '>', $date);
+                          })
+                          // Day tour bookings: check_in_date = date (same day)
+                          ->orWhere(function ($dayTour) use ($date) {
+                              $dayTour->where('booking_type', 'day_tour')
+                                      ->where('check_in_date', $date);
+                          });
+                      });
             })
             ->exists();
             
@@ -207,8 +227,19 @@ class RoomUnit extends Model
         $hasPendingBooking = $this->bookingRooms()
             ->whereHas('booking', function ($query) use ($date) {
                 $query->where('status', 'pending')
-                      ->where('check_in_date', '<=', $date)
-                      ->where('check_out_date', '>', $date);
+                      ->where(function ($q) use ($date) {
+                          // Overnight bookings: check_in <= date AND check_out > date
+                          $q->where(function ($overnight) use ($date) {
+                              $overnight->where('booking_type', '<>', 'day_tour')
+                                        ->where('check_in_date', '<=', $date)
+                                        ->where('check_out_date', '>', $date);
+                          })
+                          // Day tour bookings: check_in_date = date (same day)
+                          ->orWhere(function ($dayTour) use ($date) {
+                              $dayTour->where('booking_type', 'day_tour')
+                                      ->where('check_in_date', $date);
+                          });
+                      });
             })
             ->exists();
             

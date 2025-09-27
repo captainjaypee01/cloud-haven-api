@@ -331,6 +331,77 @@ class RoomUnitService
     }
 
     /**
+     * Get day tour room unit calendar data for a specific month and year.
+     * Returns data for day tour rooms only.
+     */
+    public function getDayTourRoomUnitCalendarData(int $year, int $month): array
+    {
+        // Get all day tour room units (without booking details for performance)
+        $roomUnits = RoomUnit::with(['room'])
+            ->whereHas('room', function ($query) {
+                $query->where('room_type', 'day_tour');
+            })
+            ->orderBy('room_id')
+            ->orderByRaw('CAST(unit_number AS UNSIGNED)')
+            ->get();
+
+        // Get days in month using Carbon
+        $startOfMonth = Carbon::create($year, $month, 1);
+        $daysInMonth = $startOfMonth->daysInMonth;
+        $days = [];
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $days[] = $day;
+        }
+
+        // Group units by room
+        $roomsData = [];
+        foreach ($roomUnits as $unit) {
+            $roomId = $unit->room_id;
+            $roomName = $unit->room->name;
+
+            if (!isset($roomsData[$roomId])) {
+                $roomsData[$roomId] = [
+                    'room_id' => $roomId,
+                    'room_name' => $roomName,
+                    'units' => []
+                ];
+            }
+
+            // Get status for each day of the month
+            $dayStatuses = [];
+            foreach ($days as $day) {
+                $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+                $status = $unit->getStatusForDate($date);
+                
+                $dayStatuses[] = [
+                    'day' => $day,
+                    'date' => $date,
+                    'status' => $status
+                ];
+            }
+
+            $roomsData[$roomId]['units'][] = [
+                'id' => $unit->id,
+                'unit_number' => $unit->unit_number,
+                'current_status' => $unit->status->value,
+                'notes' => $unit->notes,
+                'maintenance_start_at' => $unit->maintenance_start_at?->format('Y-m-d'),
+                'maintenance_end_at' => $unit->maintenance_end_at?->format('Y-m-d'),
+                'blocked_start_at' => $unit->blocked_start_at?->format('Y-m-d'),
+                'blocked_end_at' => $unit->blocked_end_at?->format('Y-m-d'),
+                'day_statuses' => $dayStatuses
+            ];
+        }
+
+        return [
+            'year' => $year,
+            'month' => $month,
+            'days' => $days,
+            'rooms' => array_values($roomsData)
+        ];
+    }
+
+    /**
      * Get available room units for a specific room and date range.
      * This method is used by the admin interface to show available units for reassignment.
      * Uses efficient database-level filtering instead of PHP filtering.
@@ -386,6 +457,26 @@ class RoomUnitService
         }
 
         return $this->getBookingDataForDate($unit, $date);
+    }
+
+    /**
+     * Get day tour booking data for a specific unit and date.
+     * This method is called on-demand when user clicks on a booked date for day tour units.
+     */
+    public function getDayTourBookingDataForUnitAndDate(int $unitId, string $date): ?array
+    {
+        $unit = RoomUnit::with([
+            'room',
+            'bookingRooms.booking' => function ($query) {
+                $query->with(['payments', 'otherCharges']);
+            }
+        ])->find($unitId);
+
+        if (!$unit) {
+            return null;
+        }
+
+        return $this->getDayTourBookingDataForDate($unit, $date);
     }
 
     /**
@@ -447,6 +538,75 @@ class RoomUnitService
             'remaining_balance' => $remainingBalance,
             'status' => $booking->status,
             'booking_type' => $booking->booking_type
+        ];
+    }
+
+    /**
+     * Get day tour booking data for a specific unit and date (private helper).
+     */
+    private function getDayTourBookingDataForDate(RoomUnit $unit, string $date): ?array
+    {
+        $bookingRoom = $unit->bookingRooms()
+            ->whereHas('booking', function ($query) use ($date) {
+                $query->whereIn('status', ['paid', 'downpayment', 'pending'])
+                      ->where('booking_type', 'day_tour')
+                      ->where('check_in_date', $date); // Day tour bookings are same day
+            })
+            ->with(['booking.payments', 'booking.otherCharges'])
+            ->first();
+
+        if (!$bookingRoom) {
+            return null;
+        }
+
+        $booking = $bookingRoom->booking;
+        
+        // Calculate remaining balance
+        $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
+        $otherCharges = $booking->otherCharges->sum('amount');
+        // Calculate actual final price after discount, then add other charges
+        $actualFinalPrice = $booking->final_price - $booking->discount_amount;
+        $totalPayable = $actualFinalPrice + $otherCharges;
+        $remainingBalance = max(0, $totalPayable - $totalPaid);
+        
+        // Day tour bookings are always 0 nights
+        $nights = 0;
+
+        return [
+            'id' => $booking->id,
+            'reference_number' => $booking->reference_number,
+            'guest_name' => $booking->guest_name,
+            'guest_email' => $booking->guest_email,
+            'guest_phone' => $booking->guest_phone,
+            'special_requests' => $booking->special_requests,
+            'check_in_date' => $booking->check_in_date,
+            'check_out_date' => $booking->check_out_date,
+            'nights' => $nights,
+            'adults' => $booking->adults,
+            'children' => $booking->children,
+            'total_guests' => $booking->total_guests,
+            'room_price' => $booking->total_price,
+            'meal_price' => $booking->meal_price,
+            'final_price' => $booking->final_price,
+            'extra_guest_fee' => $booking->extra_guest_fee,
+            'extra_guest_count' => $booking->extra_guest_count,
+            'discount_amount' => $booking->discount_amount,
+            'downpayment_amount' => $booking->downpayment_amount,
+            'other_charges' => $otherCharges,
+            'total_payable' => $totalPayable,
+            'total_paid' => $totalPaid,
+            'remaining_balance' => $remainingBalance,
+            'status' => $booking->status,
+            'booking_type' => $booking->booking_type,
+            // Day tour specific fields
+            'include_lunch' => $bookingRoom->include_lunch ?? false,
+            'include_pm_snack' => $bookingRoom->include_pm_snack ?? false,
+            'include_dinner' => $bookingRoom->include_dinner ?? false,
+            'lunch_cost' => $bookingRoom->lunch_cost ?? 0,
+            'pm_snack_cost' => $bookingRoom->pm_snack_cost ?? 0,
+            'dinner_cost' => $bookingRoom->dinner_cost ?? 0,
+            'meal_cost' => $bookingRoom->meal_cost ?? 0,
+            'base_price' => $bookingRoom->base_price ?? 0,
         ];
     }
 }

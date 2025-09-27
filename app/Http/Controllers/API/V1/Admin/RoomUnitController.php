@@ -200,6 +200,35 @@ class RoomUnitController extends Controller
     }
 
     /**
+     * Get day tour room unit calendar data for a specific month and year.
+     */
+    public function getDayTourCalendarData(Request $request): JsonResponse
+    {
+        $request->validate([
+            'year' => ['required', 'integer', 'min:2020', 'max:2030'],
+            'month' => ['required', 'integer', 'min:1', 'max:12'],
+        ]);
+
+        try {
+            $calendarData = $this->roomUnitService->getDayTourRoomUnitCalendarData(
+                $request->integer('year'),
+                $request->integer('month')
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => $calendarData,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get day tour calendar data: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get booking details for a specific room unit and date.
      */
     public function getBookingDetails(Request $request, RoomUnit $roomUnit): JsonResponse
@@ -230,6 +259,41 @@ class RoomUnitController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get booking details: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get day tour booking details for a specific room unit and date.
+     */
+    public function getDayTourBookingDetails(Request $request, RoomUnit $roomUnit): JsonResponse
+    {
+        $request->validate([
+            'date' => ['required', 'date', 'date_format:Y-m-d'],
+        ]);
+
+        try {
+            $bookingData = $this->roomUnitService->getDayTourBookingDataForUnitAndDate(
+                $roomUnit->id,
+                $request->input('date')
+            );
+
+            if (!$bookingData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No day tour booking found for this unit on the specified date.',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $bookingData,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get day tour booking details: ' . $e->getMessage(),
             ], 500);
         }
     }
