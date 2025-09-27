@@ -20,6 +20,8 @@ class UpdatePromo extends Data
         public ?string $image_url,
         public bool    $exclusive = false,
         public bool    $active = false,
+        public ?array  $excluded_days = null, // array of day numbers to exclude (0=Sunday, 1=Monday, ..., 6=Saturday)
+        public bool    $per_night_calculation = false, // whether to apply discount per night vs entire booking
         // Note: We exclude 'uses_count' and 'active' here to manage usage count internally and handle activation via separate endpoint.
     ) {}
 }

@@ -27,6 +27,8 @@ class PromoDtoFactory
             exclusive: (bool) ($data['exclusive'] ?? false),
             uses_count: 0,
             active: ($data['active'] ?? 'inactive') === 'active',
+            excluded_days: $this->processExcludedDays($data['excluded_days'] ?? null),
+            per_night_calculation: (bool) ($data['per_night_calculation'] ?? false),
         );
     }
 
@@ -54,7 +56,41 @@ class PromoDtoFactory
             image_url: $data['image_url'] ?? null,
             exclusive: (bool) ($data['exclusive'] ?? false),
             active: ($data['active'] ?? 'inactive') === 'active',
+            excluded_days: $this->processExcludedDays($data['excluded_days'] ?? null),
+            per_night_calculation: (bool) ($data['per_night_calculation'] ?? false),
         );
+    }
+
+    /**
+     * Process excluded days array from request data
+     *
+     * @param mixed $excludedDays
+     * @return array|null
+     */
+    private function processExcludedDays($excludedDays): ?array
+    {
+        if (is_null($excludedDays) || $excludedDays === '') {
+            return null;
+        }
+
+        if (is_string($excludedDays)) {
+            // Handle JSON string input
+            $decoded = json_decode($excludedDays, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return array_map('intval', $decoded);
+            }
+            return null;
+        }
+
+        if (is_array($excludedDays)) {
+            // Ensure all values are integers and within valid range (0-6)
+            $filtered = array_filter($excludedDays, function($day) {
+                return is_numeric($day) && $day >= 0 && $day <= 6;
+            });
+            return empty($filtered) ? null : array_map('intval', $filtered);
+        }
+
+        return null;
     }
 
     /**

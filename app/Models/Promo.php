@@ -25,7 +25,9 @@ class Promo extends Model
         'max_uses',
         'uses_count',
         'exclusive',
-        'active'
+        'active',
+        'excluded_days',
+        'per_night_calculation'
     ];
 
     protected $casts = [
@@ -34,6 +36,8 @@ class Promo extends Model
         'ends_at'    => 'datetime',
         'expires_at' => 'datetime',
         'created_at' => 'datetime',
+        'excluded_days' => 'array',
+        'per_night_calculation' => 'boolean',
     ];
 
     /**
@@ -42,5 +46,57 @@ class Promo extends Model
     public function bookings()
     {
         return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Check if a specific date is eligible for this promo (not in excluded days)
+     *
+     * @param \Carbon\Carbon $date
+     * @return bool
+     */
+    public function isDateEligible(\Carbon\Carbon $date): bool
+    {
+        // If no excluded days are set, all dates are eligible
+        if (empty($this->excluded_days)) {
+            return true;
+        }
+
+        // Check if the day of week (0=Sunday, 1=Monday, ..., 6=Saturday) is in excluded days
+        $dayOfWeek = $date->dayOfWeek;
+        return !in_array($dayOfWeek, $this->excluded_days);
+    }
+
+    /**
+     * Check if this promo uses per-night calculation
+     *
+     * @return bool
+     */
+    public function usesPerNightCalculation(): bool
+    {
+        return $this->per_night_calculation;
+    }
+
+    /**
+     * Get the excluded days as day names for display purposes
+     *
+     * @return array
+     */
+    public function getExcludedDayNames(): array
+    {
+        if (empty($this->excluded_days)) {
+            return [];
+        }
+
+        $dayNames = [
+            0 => 'Sunday',
+            1 => 'Monday', 
+            2 => 'Tuesday',
+            3 => 'Wednesday',
+            4 => 'Thursday',
+            5 => 'Friday',
+            6 => 'Saturday'
+        ];
+
+        return array_map(fn($day) => $dayNames[$day] ?? "Day {$day}", $this->excluded_days);
     }
 }

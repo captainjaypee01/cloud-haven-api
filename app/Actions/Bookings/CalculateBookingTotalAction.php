@@ -4,12 +4,17 @@ namespace App\Actions\Bookings;
 
 use App\Actions\ComputeMealQuoteAction;
 use App\Models\Room;
+use App\Models\Promo;
+use App\Services\PromoCalculationService;
 
 class CalculateBookingTotalAction
 {
-    public function __construct(private ComputeMealQuoteAction $computeMealQuoteAction) {}
+    public function __construct(
+        private ComputeMealQuoteAction $computeMealQuoteAction,
+        private PromoCalculationService $promoCalculationService
+    ) {}
 
-    public function execute(array $bookingRoomArr, string $check_in_date, string $check_out_date, int $adults, int $children): array
+    public function execute(array $bookingRoomArr, string $check_in_date, string $check_out_date, int $adults, int $children, ?Promo $promo = null): array
     {
         $roomIds = array_unique(array_map(fn($r) => $r->room_id, $bookingRoomArr));
         $rooms = Room::whereIn('slug', $roomIds)->get()->keyBy('slug');
@@ -34,7 +39,8 @@ class CalculateBookingTotalAction
         $mealQuote->mealSubtotal = $mealTotal;
 
         $finalTotal = $totalRoom + $mealTotal + $extraGuestData['total_fee'];
-        return [
+        
+        $totals = [
             'total_room' => $totalRoom,
             'meal_total' => $mealTotal,
             'extra_guest_fee' => $extraGuestData['total_fee'],
@@ -42,6 +48,47 @@ class CalculateBookingTotalAction
             'final_price' => $finalTotal,
             'meal_quote' => $mealQuote // Include meal quote for email templates
         ];
+
+        // Calculate promo discount if promo is provided
+        if ($promo) {
+            $promoResult = $this->calculatePromoDiscount($promo, $check_in_date, $check_out_date, $totals, $bookingRoomArr, $rooms->toArray());
+            $totals['promo_discount'] = $promoResult;
+        }
+
+        return $totals;
+    }
+
+    /**
+     * Calculate promo discount using the PromoCalculationService
+     *
+     * @param Promo $promo
+     * @param string $checkInDate
+     * @param string $checkOutDate
+     * @param array $totals
+     * @param array $bookingRoomArr
+     * @param array $rooms
+     * @return array|null
+     */
+    private function calculatePromoDiscount(Promo $promo, string $checkInDate, string $checkOutDate, array $totals, array $bookingRoomArr, array $rooms): ?array
+    {
+        // Validate promo for the date range first
+        $validation = $this->promoCalculationService->validatePromoForDateRange($promo, $checkInDate, $checkOutDate);
+        
+        if (!$validation['is_valid']) {
+            return null; // Promo is not valid for this booking
+        }
+
+        // Calculate the discount
+        $discountResult = $this->promoCalculationService->calculateDiscount(
+            $promo,
+            $checkInDate,
+            $checkOutDate,
+            $totals,
+            $bookingRoomArr,
+            $rooms
+        );
+
+        return $discountResult;
     }
 
     /**

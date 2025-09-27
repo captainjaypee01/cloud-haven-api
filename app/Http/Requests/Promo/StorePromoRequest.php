@@ -63,6 +63,22 @@ class StorePromoRequest extends FormRequest
             'image_url'      => 'nullable|url',
             'exclusive'      => 'sometimes|boolean',
             'active'         => 'sometimes|string',
+            'excluded_days'  => [
+                'nullable',
+                'array',
+                function ($attribute, $value, $fail) {
+                    if (is_array($value)) {
+                        foreach ($value as $day) {
+                            if (!is_numeric($day) || $day < 0 || $day > 6) {
+                                $fail('Each excluded day must be a number between 0 (Sunday) and 6 (Saturday).');
+                                return;
+                            }
+                        }
+                    }
+                },
+            ],
+            'excluded_days.*' => 'integer|min:0|max:6',
+            'per_night_calculation' => 'sometimes|boolean',
         ];
     }
 }

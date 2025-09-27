@@ -1,0 +1,250 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Promo;
+use Carbon\Carbon;
+
+class PromoCalculationService
+{
+    /**
+     * Calculate discount for a booking with per-night logic
+     *
+     * @param Promo $promo
+     * @param string $checkInDate
+     * @param string $checkOutDate
+     * @param array $totals Array containing 'total_room', 'meal_total', 'final_price'
+     * @param array $bookingRoomArr Array of booking room data
+     * @param array $rooms Array of room models keyed by slug
+     * @return array
+     */
+    public function calculateDiscount(
+        Promo $promo,
+        string $checkInDate,
+        string $checkOutDate,
+        array $totals,
+        array $bookingRoomArr = [],
+        array $rooms = []
+    ): array {
+        // If promo doesn't use per-night calculation, use traditional logic
+        if (!$promo->usesPerNightCalculation()) {
+            return $this->calculateTraditionalDiscount($promo, $totals);
+        }
+
+        // Calculate per-night discount
+        return $this->calculatePerNightDiscount($promo, $checkInDate, $checkOutDate, $totals, $bookingRoomArr, $rooms);
+    }
+
+    /**
+     * Calculate traditional discount (entire booking)
+     *
+     * @param Promo $promo
+     * @param array $totals
+     * @return array
+     */
+    private function calculateTraditionalDiscount(Promo $promo, array $totals): array
+    {
+        $baseAmount = $this->getBaseAmount($promo, $totals);
+        $discountAmount = $this->calculateDiscountAmount($promo, $baseAmount);
+
+        return [
+            'discount_amount' => $discountAmount,
+            'eligible_nights' => 1, // Traditional calculation treats entire booking as one unit
+            'total_nights' => 1,
+            'per_night_breakdown' => [
+                [
+                    'date' => null,
+                    'eligible' => true,
+                    'discount_amount' => $discountAmount,
+                    'base_amount' => $baseAmount
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Calculate per-night discount
+     *
+     * @param Promo $promo
+     * @param string $checkInDate
+     * @param string $checkOutDate
+     * @param array $totals
+     * @param array $bookingRoomArr
+     * @param array $rooms
+     * @return array
+     */
+    private function calculatePerNightDiscount(
+        Promo $promo,
+        string $checkInDate,
+        string $checkOutDate,
+        array $totals,
+        array $bookingRoomArr,
+        array $rooms
+    ): array {
+        $checkIn = Carbon::parse($checkInDate);
+        $checkOut = Carbon::parse($checkOutDate);
+        $nights = $checkIn->diffInDays($checkOut);
+
+        $perNightBreakdown = [];
+        $totalDiscountAmount = 0;
+        $eligibleNights = 0;
+
+        // Calculate per-night amounts
+        $perNightAmounts = $this->calculatePerNightAmounts($totals, $nights, $bookingRoomArr, $rooms);
+
+        for ($i = 0; $i < $nights; $i++) {
+            $currentDate = $checkIn->copy()->addDays($i);
+            $isEligible = $promo->isDateEligible($currentDate);
+            
+            $nightData = [
+                'date' => $currentDate->format('Y-m-d'),
+                'day_of_week' => $currentDate->dayOfWeek,
+                'day_name' => $currentDate->format('l'),
+                'eligible' => $isEligible,
+                'base_amount' => $perNightAmounts[$i] ?? 0,
+                'discount_amount' => 0
+            ];
+
+            if ($isEligible) {
+                $eligibleNights++;
+                $nightData['discount_amount'] = $this->calculateDiscountAmount($promo, $nightData['base_amount']);
+                $totalDiscountAmount += $nightData['discount_amount'];
+            }
+
+            $perNightBreakdown[] = $nightData;
+        }
+
+        return [
+            'discount_amount' => round($totalDiscountAmount, 2),
+            'eligible_nights' => $eligibleNights,
+            'total_nights' => $nights,
+            'per_night_breakdown' => $perNightBreakdown
+        ];
+    }
+
+    /**
+     * Calculate per-night amounts for room, meal, and total
+     *
+     * @param array $totals
+     * @param int $nights
+     * @param array $bookingRoomArr
+     * @param array $rooms
+     * @return array
+     */
+    private function calculatePerNightAmounts(array $totals, int $nights, array $bookingRoomArr, array $rooms): array
+    {
+        $perNightAmounts = [];
+
+        // Calculate per-night room cost
+        $perNightRoom = $totals['total_room'] / $nights;
+        
+        // Calculate per-night meal cost
+        $perNightMeal = $totals['meal_total'] / $nights;
+        
+        // Calculate per-night total
+        $perNightTotal = $totals['final_price'] / $nights;
+
+        for ($i = 0; $i < $nights; $i++) {
+            $perNightAmounts[$i] = [
+                'room' => round($perNightRoom, 2),
+                'meal' => round($perNightMeal, 2),
+                'total' => round($perNightTotal, 2)
+            ];
+        }
+
+        return $perNightAmounts;
+    }
+
+    /**
+     * Get the base amount for discount calculation based on promo scope
+     *
+     * @param Promo $promo
+     * @param array $totals
+     * @return float
+     */
+    private function getBaseAmount(Promo $promo, array $totals): float
+    {
+        switch ($promo->scope) {
+            case 'room':
+                return $totals['total_room'];
+            case 'meal':
+                return $totals['meal_total'];
+            case 'total':
+            default:
+                return $totals['final_price'];
+        }
+    }
+
+    /**
+     * Calculate discount amount based on promo type and value
+     *
+     * @param Promo $promo
+     * @param float $baseAmount
+     * @return float
+     */
+    private function calculateDiscountAmount(Promo $promo, float $baseAmount): float
+    {
+        if ($promo->discount_type === 'percentage') {
+            return round($baseAmount * ($promo->discount_value / 100), 2);
+        } else {
+            return round(min($promo->discount_value, $baseAmount), 2);
+        }
+    }
+
+    /**
+     * Validate if promo is applicable for the given date range
+     *
+     * @param Promo $promo
+     * @param string $checkInDate
+     * @param string $checkOutDate
+     * @return array
+     */
+    public function validatePromoForDateRange(Promo $promo, string $checkInDate, string $checkOutDate): array
+    {
+        $checkIn = Carbon::parse($checkInDate);
+        $checkOut = Carbon::parse($checkOutDate);
+        
+        // Check if promo period overlaps with booking dates
+        $promoStart = $promo->starts_at ? $promo->starts_at->startOfDay() : null;
+        $promoEnd = $promo->ends_at ? $promo->ends_at->startOfDay() : null;
+        
+        $isValid = true;
+        $errors = [];
+        
+        // Check if booking starts before promo starts
+        if ($promoStart && $checkIn->lt($promoStart)) {
+            $isValid = false;
+            $errors[] = 'Booking starts before promo period begins.';
+        }
+        
+        // Check if booking starts after promo ends
+        if ($promoEnd && $checkIn->gt($promoEnd)) {
+            $isValid = false;
+            $errors[] = 'Booking starts after promo period ends.';
+        }
+        
+        // If using per-night calculation, check if any nights are eligible
+        if ($promo->usesPerNightCalculation()) {
+            $hasEligibleNights = false;
+            $nights = $checkIn->diffInDays($checkOut);
+            
+            for ($i = 0; $i < $nights; $i++) {
+                $currentDate = $checkIn->copy()->addDays($i);
+                if ($promo->isDateEligible($currentDate)) {
+                    $hasEligibleNights = true;
+                    break;
+                }
+            }
+            
+            if (!$hasEligibleNights) {
+                $isValid = false;
+                $errors[] = 'No nights in the booking period are eligible for this promo.';
+            }
+        }
+        
+        return [
+            'is_valid' => $isValid,
+            'errors' => $errors
+        ];
+    }
+}

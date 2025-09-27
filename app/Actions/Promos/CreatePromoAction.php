@@ -28,6 +28,9 @@ final class CreatePromoAction implements CreatePromoContract
                 'image_url'      => $dto->image_url,
                 'exclusive'      => $dto->exclusive,
                 'active'         => $dto->active,
+                // New fields for flexible promo logic
+                'excluded_days'  => $dto->excluded_days,
+                'per_night_calculation' => $dto->per_night_calculation,
             ]);
             return $promo;
         });

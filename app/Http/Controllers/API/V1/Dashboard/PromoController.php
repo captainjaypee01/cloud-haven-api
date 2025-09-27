@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\V1\Dashboard;
 
 use App\Contracts\Services\PromoServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Services\PromoCalculationService;
 use Illuminate\Http\Request;
 use App\Http\Resources\Promo\PromoCollection;
 use App\Http\Resources\Promo\PromoResource;
@@ -15,7 +16,10 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class PromoController extends Controller
 {
-    public function __construct(private PromoServiceInterface $promoService) {}
+    public function __construct(
+        private PromoServiceInterface $promoService,
+        private PromoCalculationService $promoCalculationService
+    ) {}
 
     public function exclusiveOffers(): CollectionResponse
     {
@@ -71,6 +75,14 @@ class PromoController extends Controller
             }
             if ($promo->max_uses && $promo->uses_count >= $promo->max_uses) {
                 return new ErrorResponse('Promo code is no longer available (usage limit reached).', JsonResponse::HTTP_BAD_REQUEST);
+            }
+
+            // Use new promo validation service for per-night logic
+            if ($checkInDate && $checkOutDate) {
+                $validation = $this->promoCalculationService->validatePromoForDateRange($promo, $checkInDate, $checkOutDate);
+                if (!$validation['is_valid']) {
+                    return new ErrorResponse(implode(' ', $validation['errors']), JsonResponse::HTTP_BAD_REQUEST);
+                }
             }
 
             // Check if this is a Day Tour booking and validate promo scope

@@ -21,5 +21,7 @@ class NewPromo extends Data
         public bool    $exclusive = false,
         public ?int    $uses_count = 0,       // default 0 uses initially
         public bool    $active = false,       // default inactive on creation
+        public ?array  $excluded_days = null, // array of day numbers to exclude (0=Sunday, 1=Monday, ..., 6=Saturday)
+        public bool    $per_night_calculation = false, // whether to apply discount per night vs entire booking
     ) {}
 }

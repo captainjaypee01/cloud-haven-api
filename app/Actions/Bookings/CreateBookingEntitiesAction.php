@@ -24,6 +24,8 @@ class CreateBookingEntitiesAction
         
         // Before creating the Booking, compute totals and apply promo if present
         $discount = 0;
+        $promoDiscountData = null;
+        
         if (!empty($bookingData->promo_id)) {
             $promo = Promo::find($bookingData->promo_id);
             
@@ -42,24 +44,28 @@ class CreateBookingEntitiesAction
                 && (!$promo->max_uses || $promo->uses_count < $promo->max_uses)
                 && (!$isDayTourBooking || $promo->scope === 'total')
             ) {
-                // Determine base amount for discount
-                $baseAmount = $totals['final_price'];
-                if ($promo->scope === 'room') {
-                    $baseAmount = $totals['total_room'];
-                } elseif ($promo->scope === 'meal') {
-                    $baseAmount = $totals['meal_total'];
+                // Use the new promo calculation service if promo_discount data is available
+                if (isset($totals['promo_discount']) && $totals['promo_discount']) {
+                    $promoDiscountData = $totals['promo_discount'];
+                    $discount = $promoDiscountData['discount_amount'];
+                } else {
+                    // Fallback to traditional calculation for backward compatibility
+                    $baseAmount = $totals['final_price'];
+                    if ($promo->scope === 'room') {
+                        $baseAmount = $totals['total_room'];
+                    } elseif ($promo->scope === 'meal') {
+                        $baseAmount = $totals['meal_total'];
+                    }
+                    // Calculate discount
+                    if ($promo->discount_type === 'percentage') {
+                        $discount = $baseAmount * ($promo->discount_value / 100);
+                    } else if ($promo->discount_type === 'fixed') {
+                        $discount = min($promo->discount_value, $baseAmount);
+                    }
+                    $discount = round($discount, 2);
                 }
-                // Calculate discount
-                if ($promo->discount_type === 'percentage') {
-                    $discount = $baseAmount * ($promo->discount_value / 100);
-                } else if ($promo->discount_type === 'fixed') {
-                    $discount = min($promo->discount_value, $baseAmount);
-                }
-                $discount = round($discount, 2);
+                
                 $promo->increment('uses_count', 1);
-                // Mark one usage (will finalize usage count update after payment maybe)
-                // $promo->increment('uses_count');
-                // Adjust totals
             }
         }
         

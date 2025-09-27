@@ -34,6 +34,9 @@ final class UpdatePromoAction implements UpdatePromoContract
                 'image_url'      => $dto->image_url,
                 'exclusive'      => $dto->exclusive,
                 'active'         => $dto->active,
+                // New fields for flexible promo logic
+                'excluded_days'  => $dto->excluded_days,
+                'per_night_calculation' => $dto->per_night_calculation,
             ];
             // Filter out unchanged values
             $changes = array_filter($updateData, fn($val, $key) => $val !== $promo->$key, ARRAY_FILTER_USE_BOTH);
