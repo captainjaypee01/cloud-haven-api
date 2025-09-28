@@ -122,4 +122,16 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Cloud Haven'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Contact Form Admin Email
+    |--------------------------------------------------------------------------
+    |
+    | This email address will receive notifications when someone submits
+    | the contact form. You can change this in your .env file.
+    |
+    */
+
+    'contact_form_admin_email' => env('MAIL_CONTACT_FORM_ADMIN_EMAIL', 'netaniadelaiya@gmail.com'),
+
 ];

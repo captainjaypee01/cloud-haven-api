@@ -41,4 +41,8 @@ Route::prefix('/')->namespace('App\Http\Controllers\API\V1\Dashboard')
         Route::get('/promos/{promoCode}', 'PromoController@showByCode');
 
         Route::get('/reviews/testimonials', 'ReviewController@testimonials');
+
+        // Contact form route with rate limiting
+        Route::post('/contact', 'ContactMessageController@store')
+            ->middleware('throttle:contact-form');
     });
