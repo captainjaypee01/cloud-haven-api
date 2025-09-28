@@ -78,8 +78,7 @@ class PublicBookingResource extends JsonResource
                         'proof_last_uploaded_at' => $payment->proof_last_uploaded_at,
                         // Include booking reference for fallback route
                         'booking' => [
-                            'reference_number' => $this->reference_number,
-                            'id' => $this->id
+                            'reference_number' => $this->reference_number
                         ]
                     ];
                 }),

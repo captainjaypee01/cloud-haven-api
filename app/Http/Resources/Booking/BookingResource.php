@@ -80,6 +80,14 @@ class BookingResource extends JsonResource
             }),
             'other_charges'             => $other_charges,
             'other_charges_list'       => $this->otherCharges,
+            'promo'                     => $this->promo ? [
+                'id' => $this->promo->id,
+                'code' => $this->promo->code,
+                'title' => $this->promo->title,
+                'description' => $this->promo->description,
+                'discount_type' => $this->promo->discount_type,
+                'discount_value' => $this->promo->discount_value,
+            ] : null,
         ];
         return $data;
     }
