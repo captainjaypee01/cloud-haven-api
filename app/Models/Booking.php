@@ -18,6 +18,7 @@ class Booking extends Model
         'user_id',
         'reference_number',
         'booking_type',
+        'booking_source',
         'check_in_date',
         'check_in_time',
         'check_out_date',
@@ -225,5 +226,21 @@ class Booking extends Model
     public function isOvernight(): bool
     {
         return $this->booking_type === 'overnight';
+    }
+    
+    /**
+     * Check if this booking was made online
+     */
+    public function isOnline(): bool
+    {
+        return $this->booking_source === 'online';
+    }
+    
+    /**
+     * Check if this booking was made as walk-in
+     */
+    public function isWalkIn(): bool
+    {
+        return $this->booking_source === 'walkin';
     }
 }

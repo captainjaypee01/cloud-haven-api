@@ -182,6 +182,7 @@ class CreateDayTourBookingAction
             $booking = Booking::create([
                 'user_id' => $userId,
                 'booking_type' => 'day_tour',
+                'booking_source' => 'online', // Default to online for all current bookings
                 'check_in_date' => $request->date,
                 'check_in_time' => $checkInTime,
                 'check_out_date' => $request->date, // Same day for Day Tour

@@ -47,6 +47,7 @@ class CreateBookingEntitiesAction
         
         $booking = Booking::create([
             'user_id' => $userId,
+            'booking_source' => 'online', // Default to online for all current bookings
             'check_in_date' => $bookingData->check_in_date,
             'check_in_time' => '06:00',
             'check_out_date' => $bookingData->check_out_date,
