@@ -189,7 +189,7 @@ class CreateDayTourBookingAction
                 'guest_name' => $request->guest->name,
                 'guest_email' => $request->guest->email,
                 'guest_phone' => $request->guest->phone,
-                'special_requests' => $request->specialRequests,
+                'special_requests' => $request->special_requests,
                 'adults' => $totalAdults,
                 'children' => $totalChildren,
                 'total_guests' => $totalAdults + $totalChildren,

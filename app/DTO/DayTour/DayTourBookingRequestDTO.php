@@ -10,14 +10,14 @@ class DayTourBookingRequestDTO extends Data
      * @param string $date
      * @param DayTourRoomSelectionDTO[] $selections
      * @param DayTourGuestDTO $guest
-     * @param string|null $specialRequests
+     * @param string|null $special_requests
      * @param array|null $totals
      */
     public function __construct(
         public string $date,
         public array $selections,
         public DayTourGuestDTO $guest,
-        public ?string $specialRequests = null,
+        public ?string $special_requests = null,
         public ?array $totals = null,
         public ?int $promo_id = null
     ) {}
