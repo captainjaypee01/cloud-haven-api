@@ -16,5 +16,8 @@ class BookingData extends Data
         public int $total_adults,
         public int $total_children,
         public ?int $promo_id = null,
+        public ?string $booking_type = 'overnight',
+        public ?string $booking_source = 'online',
+        public ?int $user_id = null,
     ) {}
 }

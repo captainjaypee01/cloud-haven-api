@@ -21,7 +21,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             Route::get('bookings/{booking}', 'BookingController@show');
             
             // Walk-in booking creation - Available to all admin roles
-            // Route::post('bookings/walk-in', 'BookingController@storeWalkIn');
+            Route::post('bookings/walk-in', 'BookingController@storeWalkIn');
             
             // Room Units Calendar - All roles can view
             Route::get('room-units/calendar', 'RoomUnitController@getCalendarData');

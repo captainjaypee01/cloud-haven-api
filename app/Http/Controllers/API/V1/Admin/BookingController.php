@@ -11,6 +11,9 @@ use App\Http\Responses\ErrorResponse;
 use App\Http\Responses\ItemResponse;
 use App\Services\RoomUnitService;
 use App\Services\EmailTrackingService;
+use App\DTO\Bookings\BookingData;
+use App\Http\Requests\Booking\WalkInBookingRequest;
+use App\Services\Bookings\WalkInBookingService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -23,7 +26,8 @@ class BookingController extends Controller
 {
     public function __construct(
         private readonly BookingServiceInterface $bookingService,
-        private readonly RoomUnitService $roomUnitService
+        private readonly RoomUnitService $roomUnitService,
+        private readonly WalkInBookingService $walkInBookingService
     ) {}
     /**
      * Display a listing of the resource.
@@ -54,6 +58,65 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         //
+    }
+
+    /**
+     * Create a walk-in booking for today only.
+     */
+    public function storeWalkIn(WalkInBookingRequest $request)
+    {
+        $validated = $request->validated();
+        $bookingData = BookingData::from($validated);
+
+        Log::info('Admin creating walk-in booking', [
+            'admin_user_id' => Auth::id(),
+            'guest_name' => $bookingData->guest_name,
+            'guest_email' => $bookingData->guest_email,
+            'booking_type' => $bookingData->booking_type,
+            'check_in_date' => $bookingData->check_in_date,
+            'check_out_date' => $bookingData->check_out_date,
+            'total_adults' => $bookingData->total_adults,
+            'total_children' => $bookingData->total_children,
+            'room_count' => count($bookingData->rooms)
+        ]);
+        
+        try {
+            // Use the new WalkInBookingService which handles both overnight and day tour bookings
+            $booking = $this->walkInBookingService->createWalkInBooking($bookingData);
+            
+            Log::info('Walk-in booking created successfully', [
+                'admin_user_id' => Auth::id(),
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'guest_name' => $booking->guest_name,
+                'booking_type' => $booking->booking_type,
+                'check_in_date' => $booking->check_in_date,
+                'check_out_date' => $booking->check_out_date,
+                'final_price' => $booking->final_price
+            ]);
+
+            return new ItemResponse(new BookingResource($booking), JsonResponse::HTTP_CREATED);
+        } catch (\App\Exceptions\RoomNotAvailableException $e) {
+            Log::warning('Walk-in booking failed - room not available', [
+                'admin_user_id' => Auth::id(),
+                'guest_name' => $bookingData->guest_name,
+                'booking_type' => $bookingData->booking_type,
+                'check_in_date' => $bookingData->check_in_date,
+                'check_out_date' => $bookingData->check_out_date,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse($e->getMessage(), JsonResponse::HTTP_CONFLICT);
+        } catch (\Exception $e) {
+            Log::error('Walk-in booking creation failed', [
+                'admin_user_id' => Auth::id(),
+                'guest_name' => $bookingData->guest_name,
+                'booking_type' => $bookingData->booking_type,
+                'check_in_date' => $bookingData->check_in_date,
+                'check_out_date' => $bookingData->check_out_date,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse('Unable to create walk-in booking. Please try again.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
