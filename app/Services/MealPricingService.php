@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\MealPricingTierRepositoryInterface;
 use App\Contracts\Repositories\MealProgramRepositoryInterface;
+use App\Contracts\Repositories\MealCalendarOverrideRepositoryInterface;
 use App\Contracts\Services\MealCalendarServiceInterface;
 use App\Contracts\Services\MealPricingServiceInterface;
 use App\DTO\DayTour\DayTourMealBreakdownDTO;
@@ -20,7 +21,8 @@ class MealPricingService implements MealPricingServiceInterface
     public function __construct(
         private MealCalendarServiceInterface $calendarService,
         private MealProgramRepositoryInterface $programRepository,
-        private MealPricingTierRepositoryInterface $pricingTierRepository
+        private MealPricingTierRepositoryInterface $pricingTierRepository,
+        private MealCalendarOverrideRepositoryInterface $overrideRepository
     ) {}
 
     /**
@@ -47,14 +49,18 @@ class MealPricingService implements MealPricingServiceInterface
             // Breakfast date is the next day after the stay night
             $breakfastDate = $current->copy()->addDay();
             
-            // Check if buffet is active on the stay night (for buffet dinner)
-            $isBuffetActive = $this->calendarService->isBuffetActiveOn($current);
-            
-            // Find the active meal program for this stay night
+            // Find the active meal program for this stay night FIRST
             $program = $this->findActiveProgramForDate($current);
+            
             if ($program) {
+                \Log::info('Active program found', ['program_id' => $program->id, 'program_name' => $program->name, 'date' => $current->format('Y-m-d')]);
+                
                 // Get pricing tier for this stay night
                 $tier = $this->getPricingTierForDate($program->id, $current);
+                
+                // NOW check if buffet is active for this specific program and date
+                // Use a more direct approach - check overrides for this specific program
+                $isBuffetActive = $this->isBuffetActiveForProgramAndDate($program, $current);
                 if ($tier) {
                     $nights[] = new MealNightDTO(
                         date: $current->copy(), // stay night date
@@ -383,6 +389,7 @@ class MealPricingService implements MealPricingServiceInterface
     {
         $activePrograms = $this->programRepository->getActive();
         foreach ($activePrograms as $program) {
+            // \Log::info('program', ['program' => $program->id, 'date' => $date->format('Y-m-d')]);
             if ($this->isProgramActiveForDate($program, $date)) {
                 return $program;
             }
@@ -582,5 +589,102 @@ class MealPricingService implements MealPricingServiceInterface
             'lunch' => $lunchPrices,
             'snack' => $snackPrices
         ];
+    }
+
+    /**
+     * Check if buffet is active for a specific program and date
+     * This bypasses the program lookup in isBuffetActiveOn() since we already have the program
+     */
+    private function isBuffetActiveForProgramAndDate(MealProgram $program, Carbon $date): bool
+    {
+        \Log::info('Checking buffet active for specific program', [
+            'program_id' => $program->id,
+            'program_name' => $program->name,
+            'date' => $date->format('Y-m-d')
+        ]);
+
+        // 1. Check for calendar overrides first (highest precedence)
+        // Access override repository directly since getOverrideForDate is private
+        $override = $this->checkOverrideForProgramAndDate($program->id, $date);
+        if ($override) {
+            \Log::info('Override found for program', [
+                'program_id' => $program->id,
+                'override_id' => $override->id,
+                'is_active' => $override->is_active,
+                'date' => $date->format('Y-m-d')
+            ]);
+            return $override->is_active;
+        }
+
+        // 2. Check if program scope applies to this date (date range + months)
+        if (!$this->isProgramActiveForDate($program, $date)) {
+            \Log::info('Program not active for date', [
+                'program_id' => $program->id,
+                'date' => $date->format('Y-m-d')
+            ]);
+            return false;
+        }
+
+        // 3. Check if buffet is enabled for this program (default to true for backward compatibility)
+        if ($program->buffet_enabled === false) {
+            \Log::info('Program buffet disabled', [
+                'program_id' => $program->id,
+                'date' => $date->format('Y-m-d')
+            ]);
+            return false;
+        }
+
+        // 4. For composite programs, check weekly pattern to determine if buffet is active
+        if ($program->scope_type === 'composite') {
+            $weeklyActive = $this->isInWeeklyPattern($program, $date);
+            \Log::info('Composite program weekly pattern check', [
+                'program_id' => $program->id,
+                'date' => $date->format('Y-m-d'),
+                'weekly_active' => $weeklyActive
+            ]);
+            return $weeklyActive;
+        }
+
+        // For non-composite programs, buffet is active if the program is active
+        \Log::info('Non-composite program - buffet is active', [
+            'program_id' => $program->id,
+            'date' => $date->format('Y-m-d')
+        ]);
+        return true;
+    }
+
+    /**
+     * Check for calendar override for a specific program and date
+     * Replicates the logic from MealCalendarService::getOverrideForDate
+     */
+    private function checkOverrideForProgramAndDate(int $programId, Carbon $date)
+    {
+        \Log::info('Checking override directly', [
+            'program_id' => $programId,
+            'date' => $date->format('Y-m-d')
+        ]);
+
+        // First check for date-specific override
+        $dateOverride = $this->overrideRepository->getByProgramAndDate($programId, $date);
+        
+        \Log::info('Direct override check result', [
+            'program_id' => $programId,
+            'date' => $date->format('Y-m-d'),
+            'override_found' => $dateOverride ? 'YES' : 'NO',
+            'override_id' => $dateOverride?->id,
+            'is_active' => $dateOverride?->is_active
+        ]);
+        
+        if ($dateOverride) {
+            return $dateOverride;
+        }
+
+        // Then check for month-wide override
+        $monthOverride = $this->overrideRepository->getByProgramAndMonth($programId, $date->month, $date->year);
+        if ($monthOverride) {
+            return $monthOverride;
+        }
+
+        return null;
     }
 }

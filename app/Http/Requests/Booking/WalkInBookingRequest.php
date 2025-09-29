@@ -28,11 +28,14 @@ class WalkInBookingRequest extends FormRequest
         return [
             'booking_type' => 'required|in:day_tour,overnight',
             'nights' => 'required_if:booking_type,overnight|integer|min:1|max:' . $maxNights,
+            'local_date' => 'required|date',
             'rooms' => 'required|array|min:1',
             'rooms.*.room_id' => 'required|string|exists:rooms,slug',
             'rooms.*.quantity' => 'required|integer|min:1|max:10',
             'rooms.*.adults' => 'required|integer|min:1|max:20',
             'rooms.*.children' => 'required|integer|min:0|max:20',
+            'rooms.*.include_lunch' => 'nullable|boolean',
+            'rooms.*.include_pm_snack' => 'nullable|boolean',
             'guest_name' => 'required|string|max:255',
             'guest_email' => 'required|email|max:255',
             'guest_phone' => 'required|string|max:20',
@@ -51,6 +54,8 @@ class WalkInBookingRequest extends FormRequest
             'booking_type.in' => 'Booking type must be either Day Tour or Overnight.',
             'nights.required_if' => 'Number of nights is required for overnight bookings.',
             'nights.max' => 'Overnight bookings are limited to a maximum of 5 nights.',
+            'local_date.required' => 'Local date is required.',
+            'local_date.date' => 'Please provide a valid date.',
             'rooms.required' => 'At least one room must be selected.',
             'rooms.*.room_id.required' => 'Room selection is required.',
             'rooms.*.room_id.exists' => 'Selected room does not exist.',
@@ -65,6 +70,7 @@ class WalkInBookingRequest extends FormRequest
         ];
     }
 
+
     /**
      * Get the validated data with additional computed fields.
      */
@@ -72,16 +78,17 @@ class WalkInBookingRequest extends FormRequest
     {
         $validated = parent::validated($key, $default);
         
-        $today = Carbon::today()->format('Y-m-d');
+        // Use the local_date provided by the frontend instead of server's today()
+        $localDate = $validated['local_date'];
         
-        // Ensure dates are set correctly
-        $validated['check_in_date'] = $today;
+        // Ensure dates are set correctly using the local date
+        $validated['check_in_date'] = $localDate;
         
         if ($validated['booking_type'] === 'overnight' && isset($validated['nights'])) {
             $nights = (int) $validated['nights'];
-            $validated['check_out_date'] = Carbon::today()->addDays($nights)->format('Y-m-d');
+            $validated['check_out_date'] = Carbon::parse($localDate)->addDays($nights)->format('Y-m-d');
         } else {
-            $validated['check_out_date'] = $today;
+            $validated['check_out_date'] = $localDate;
         }
 
         // Calculate total guests for each room and overall totals

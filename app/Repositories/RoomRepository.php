@@ -241,7 +241,7 @@ class RoomRepository implements RoomRepositoryInterface
         $startDate = $date->format('Y-m-d');
         $endDate = $date->copy()->addDay()->format('Y-m-d');
         
-        return Room::with(['amenities', 'roomUnits'])
+        return Room::with(['amenities', 'images', 'roomUnits'])
             ->where('room_type', 'day_tour')
             ->where('status', RoomStatusEnum::AVAILABLE)
             ->get()

@@ -70,7 +70,27 @@ class DayTourService implements DayTourServiceInterface
                 pending: $availability['pending'],
                 confirmed: $availability['confirmed'],
                 maintenance: $availability['maintenance'],
-                totalUnits: $availability['total_units']
+                totalUnits: $availability['total_units'],
+                amenities: $room->amenities->map(function ($amenity) {
+                    return [
+                        'name' => $amenity->name,
+                        'icon' => $amenity->icon,
+                    ];
+                })->toArray(),
+                images: $room->images->map(function ($image) {
+                    return [
+                        'id' => $image->id,
+                        'name' => $image->name,
+                        'alt_text' => $image->alt_text,
+                        'image_url' => $image->image_url,
+                        'secure_image_url' => $image->secure_image_url,
+                        'provider' => $image->provider,
+                        'public_id' => $image->public_id,
+                        'width' => $image->width,
+                        'height' => $image->height,
+                        'order' => $image->order,
+                    ];
+                })->toArray()
             );
         }
         

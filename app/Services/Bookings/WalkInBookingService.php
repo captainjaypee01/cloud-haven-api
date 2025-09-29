@@ -6,6 +6,8 @@ use App\Actions\DayTour\CreateDayTourBookingAction;
 use App\Contracts\Services\BookingServiceInterface;
 use App\DTO\Bookings\BookingData;
 use App\DTO\DayTour\DayTourBookingRequestDTO;
+use App\DTO\DayTour\DayTourRoomSelectionDTO;
+use App\DTO\DayTour\DayTourGuestDTO;
 use App\Models\Booking;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -55,26 +57,24 @@ class WalkInBookingService
      */
     private function validateWalkInBookingConstraints(BookingData $bookingData): void
     {
-        $today = Carbon::today()->format('Y-m-d');
+        // For walk-in bookings, we trust the local_date from the frontend
+        // The validation in WalkInBookingRequest already ensures it's today or later
+        $checkInDate = Carbon::parse($bookingData->check_in_date);
+        $checkOutDate = Carbon::parse($bookingData->check_out_date);
         
-        if ($bookingData->booking_type === 'day_tour') {
-            // Day tour: date must be today
-            if ($bookingData->check_in_date !== $today) {
-                throw new \InvalidArgumentException('Day tour walk-in bookings can only be made for today.');
-            }
-        } else {
-            // Overnight: check-in must be today, maximum 5 nights
-            if ($bookingData->check_in_date !== $today) {
-                throw new \InvalidArgumentException('Overnight walk-in bookings can only start today.');
-            }
-            
-            $checkInDate = Carbon::parse($bookingData->check_in_date);
-            $checkOutDate = Carbon::parse($bookingData->check_out_date);
+        if ($bookingData->booking_type === 'overnight') {
+            // Overnight: maximum 5 nights
             $nights = $checkInDate->diffInDays($checkOutDate);
             
             if ($nights > 5) {
                 throw new \InvalidArgumentException('Overnight walk-in bookings cannot exceed 5 nights.');
             }
+        }
+        
+        // Additional validation: ensure the date is not in the past
+        $today = Carbon::today()->format('Y-m-d');
+        if ($bookingData->check_in_date < $today) {
+            throw new \InvalidArgumentException('Walk-in bookings cannot be made for past dates.');
         }
     }
 
@@ -139,10 +139,11 @@ class WalkInBookingService
      */
     private function convertToDayTourRequest(BookingData $bookingData): DayTourBookingRequestDTO
     {
-        // Convert rooms array to selections format expected by DayTourBookingRequestDTO
+        // Convert rooms array to DayTourRoomSelectionDTO objects
+        // Each room item represents one room selection (quantity is handled by multiple items)
         $selections = [];
         foreach ($bookingData->rooms as $room) {
-            $selections[] = [
+            $selections[] = DayTourRoomSelectionDTO::from([
                 'room_id' => $room['room_id'],
                 'adults' => $room['adults'],
                 'children' => $room['children'],
@@ -151,15 +152,15 @@ class WalkInBookingService
                 'lunch_cost' => $room['lunch_cost'] ?? 0,
                 'pm_snack_cost' => $room['pm_snack_cost'] ?? 0,
                 'meal_cost' => $room['meal_cost'] ?? 0,
-            ];
+            ]);
         }
 
-        // Create guest object
-        $guest = [
+        // Create guest DTO
+        $guest = DayTourGuestDTO::from([
             'name' => $bookingData->guest_name,
             'email' => $bookingData->guest_email,
             'phone' => $bookingData->guest_phone,
-        ];
+        ]);
 
         // Create totals object (if needed)
         $totals = [

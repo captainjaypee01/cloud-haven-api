@@ -18,7 +18,9 @@ class DayTourRoomAvailabilityDTO
         public int $pending = 0,
         public int $confirmed = 0,
         public int $maintenance = 0,
-        public int $totalUnits = 0
+        public int $totalUnits = 0,
+        public array $amenities = [],
+        public array $images = []
     ) {}
 
     public function toArray(): array
@@ -38,6 +40,8 @@ class DayTourRoomAvailabilityDTO
             'confirmed' => $this->confirmed,
             'maintenance' => $this->maintenance,
             'total_units' => $this->totalUnits,
+            'amenities' => $this->amenities,
+            'images' => $this->images,
         ];
     }
 }

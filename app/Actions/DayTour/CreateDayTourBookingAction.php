@@ -87,12 +87,11 @@ class CreateDayTourBookingAction
             // Get rooms data first (before the loop)
             $rooms = Room::whereIn('slug', $roomIds)->get()->keyBy('slug');
 
-            // Pre-calculate all totals and prepare booking room data in single loop
-            $roomTotal = $dayTourPricing->price_per_pax * $totalGuests;
+            // Calculate totals and prepare final booking room data in single loop
+            $roomTotal = 0;
             $mealTotal = 0;
             $bookingRoomsData = [];
 
-            // Calculate totals and prepare final booking room data in single loop
             foreach ($request->selections as $selection) {
                 $room = $rooms[$selection->room_id];
                 $selectionGuests = $selection->adults + $selection->children;
@@ -117,6 +116,7 @@ class CreateDayTourBookingAction
                 $selectionTotalPrice = $basePrice + $selectionMealCost;
 
                 // Add to running totals
+                $roomTotal += $basePrice;
                 $mealTotal += $selectionMealCost;
 
                 // Prepare final booking room data (createMany handles timestamps)
@@ -178,6 +178,11 @@ class CreateDayTourBookingAction
                 }
             }
 
+            // Calculate downpayment amount (same logic as overnight bookings)
+            $actualFinalPrice = $grandTotal - $discount;
+            $dpPercent = config('booking.downpayment_percent', 0.5);
+            $downpaymentAmount = $actualFinalPrice * $dpPercent;
+
             // Create booking with correct calculated totals
             $booking = Booking::create([
                 'user_id' => $userId,
@@ -198,7 +203,8 @@ class CreateDayTourBookingAction
                 'meal_price' => $mealTotal,
                 'promo_id' => $request->promo_id,
                 'discount_amount' => $discount,
-                'final_price' => $grandTotal - $discount,
+                'final_price' => $actualFinalPrice,
+                'downpayment_amount' => $downpaymentAmount,
                 'status' => 'pending',
                 'reserved_until' => now()->addHours(config('booking.reservation_hold_duration_hours', 2)),
                 'meal_quote_data' => json_encode($this->extractDayTourMealData($request, $dayTourPricing, $mealPricingTier)),
