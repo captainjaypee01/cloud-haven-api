@@ -17,7 +17,11 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             // Bookings - Staff can view, Admin/Superadmin can manage
             Route::get('bookings/calendar', 'BookingController@calendar');
             Route::get('bookings', 'BookingController@index');
+            Route::get('bookings/cancellation-reasons', 'BookingCancellationController@getCancellationReasons');
             Route::get('bookings/{booking}', 'BookingController@show');
+            
+            // Walk-in booking creation - Available to all admin roles
+            // Route::post('bookings/walk-in', 'BookingController@storeWalkIn');
             
             // Room Units Calendar - All roles can view
             Route::get('room-units/calendar', 'RoomUnitController@getCalendarData');
@@ -50,7 +54,6 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             Route::delete('bookings/{booking}/other-charges/{charge}', 'OtherChargeController@destroy');
             
             // Booking cancellation management
-            Route::get('bookings/cancellation-reasons', 'BookingCancellationController@getCancellationReasons');
             Route::post('bookings/{booking}/cancel', 'BookingCancellationController@cancel');
             Route::get('bookings/{booking}/can-cancel', 'BookingCancellationController@canCancel');
             
