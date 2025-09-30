@@ -92,7 +92,8 @@ class CalculateBookingTotalAction
 
     /**
      * Calculate meal total for booking based on room guests and meal program
-     * Now supports per-night promo calculations
+     * ALWAYS returns the original meal price without any discounts applied
+     * Discounts are calculated separately by PromoCalculationService
      */
     private function calculateMealTotalForBooking($mealQuote, array $bookingRoomArr, $rooms, ?Promo $promo = null): float
     {
@@ -113,32 +114,16 @@ class CalculateBookingTotalAction
                     // Buffet: ALL guests (including extra guests) pay the buffet meal price
                     $totalGuests = $adults + $children;
                     
-                    // Calculate buffet cost per pax and apply discount per pax on eligible nights
-                    if ($promo && $promo->scope === 'meal') {
-                        // Apply discount per pax for buffet meals
-                        $discountedAdultPrice = $this->applyMealPromoDiscountPerPax($night->adultPrice ?? 0, $promo, $night->date);
-                        $discountedChildPrice = $this->applyMealPromoDiscountPerPax($night->childPrice ?? 0, $promo, $night->date);
-                        
-                        $nightCost += ($adults * $discountedAdultPrice) + ($children * $discountedChildPrice);
-                    } else {
-                        // No discount - use regular prices
-                        $nightCost += ($adults * ($night->adultPrice ?? 0)) + ($children * ($night->childPrice ?? 0));
-                    }
+                    // ALWAYS use original prices - discounts are calculated separately
+                    $nightCost += ($adults * ($night->adultPrice ?? 0)) + ($children * ($night->childPrice ?? 0));
                 } else {
                     // Free breakfast: only extra guests pay for breakfast
                     $totalGuests = $adults + $children;
                     $extraGuests = max(0, $totalGuests - $room->max_guests);
                     
-                    // Use adult breakfast price for extra guests
+                    // Use adult breakfast price for extra guests - ALWAYS original price
                     $baseCost = $extraGuests * ($night->adultBreakfastPrice ?? 0);
-                    
-                    // Apply promo discount if applicable (meal scope only)
-                    if ($promo && $promo->scope === 'meal') {
-                        $discountedCost = $this->applyMealPromoDiscount($baseCost, $promo, $night->date);
-                        $nightCost += $discountedCost;
-                    } else {
-                        $nightCost += $baseCost;
-                    }
+                    $nightCost += $baseCost;
                 }
             }
 
@@ -148,58 +133,6 @@ class CalculateBookingTotalAction
         return round($totalMealCost, 2);
     }
 
-    /**
-     * Apply promo discount to meal cost for a specific night
-     * Handles per-night calculation with excluded days
-     */
-    private function applyMealPromoDiscount(float $baseCost, Promo $promo, \Carbon\Carbon $mealDate): float
-    {
-        // Check if this night is eligible for promo (not excluded)
-        $dayOfWeek = $mealDate->dayOfWeek; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        
-        if ($promo->excluded_days && in_array($dayOfWeek, $promo->excluded_days)) {
-            // This day is excluded from promo - no discount
-            return $baseCost;
-        }
-        
-        // Apply discount based on promo type
-        if ($promo->discount_type === 'percentage') {
-            $discount = $baseCost * ($promo->discount_value / 100);
-            return $baseCost - $discount;
-        } else if ($promo->discount_type === 'fixed') {
-            $discount = min($promo->discount_value, $baseCost);
-            return $baseCost - $discount;
-        }
-        
-        return $baseCost;
-    }
-
-    /**
-     * Apply promo discount per pax for buffet meals
-     * Handles per-night calculation with excluded days for individual pricing
-     */
-    private function applyMealPromoDiscountPerPax(float $pricePerPax, Promo $promo, \Carbon\Carbon $mealDate): float
-    {
-        // Check if this night is eligible for promo (not excluded)
-        $dayOfWeek = $mealDate->dayOfWeek; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        
-        if ($promo->excluded_days && in_array($dayOfWeek, $promo->excluded_days)) {
-            // This day is excluded from promo - no discount
-            return $pricePerPax;
-        }
-        
-        // Apply discount based on promo type
-        if ($promo->discount_type === 'percentage') {
-            $discount = $pricePerPax * ($promo->discount_value / 100);
-            return $pricePerPax - $discount;
-        } else if ($promo->discount_type === 'fixed') {
-            // For fixed discount, we need to be careful - we can't discount more than the price per pax
-            $discount = min($promo->discount_value, $pricePerPax);
-            return $pricePerPax - $discount;
-        }
-        
-        return $pricePerPax;
-    }
 
     /**
      * Calculate extra guest fees for buffet days only

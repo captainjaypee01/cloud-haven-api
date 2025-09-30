@@ -86,21 +86,34 @@ class Promo extends Model
     }
 
     /**
-     * Check if a specific date is eligible for this promo (not in excluded days)
+     * Check if a specific date is eligible for this promo
+     * This checks both the promo period dates and excluded days of the week
      *
      * @param \Carbon\Carbon $date
      * @return bool
      */
     public function isDateEligible(\Carbon\Carbon $date): bool
     {
-        // If no excluded days are set, all dates are eligible
-        if (empty($this->excluded_days)) {
-            return true;
+        $dateStartOfDay = $date->startOfDay();
+        
+        // Check if date falls within promo period
+        if ($this->starts_at && $dateStartOfDay->lt($this->starts_at->startOfDay())) {
+            return false;
+        }
+        
+        if ($this->ends_at && $dateStartOfDay->gt($this->ends_at->startOfDay())) {
+            return false;
+        }
+        
+        // Check excluded days of the week
+        if (!empty($this->excluded_days)) {
+            $dayOfWeek = $date->dayOfWeek;
+            if (in_array($dayOfWeek, $this->excluded_days)) {
+                return false;
+            }
         }
 
-        // Check if the day of week (0=Sunday, 1=Monday, ..., 6=Saturday) is in excluded days
-        $dayOfWeek = $date->dayOfWeek;
-        return !in_array($dayOfWeek, $this->excluded_days);
+        return true;
     }
 
     /**

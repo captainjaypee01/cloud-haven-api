@@ -59,15 +59,21 @@ class PromoController extends Controller
             // For expiration check, always use current date (date only)
             $currentDate = now()->startOfDay();
 
-            // Check if promo has started (date only comparison - no time consideration)
-            if ($promo->starts_at && $validationDate->startOfDay()->lt($promo->starts_at->startOfDay())) {
-                return new ErrorResponse('Promo code is not yet active for your selected dates.', JsonResponse::HTTP_BAD_REQUEST);
+            // For Day Tour bookings, check if the date falls within promo period
+            if ($dayTourDate) {
+                $dayTourDateParsed = \Carbon\Carbon::parse($dayTourDate)->startOfDay();
+                
+                // Check if day tour date is before promo starts
+                if ($promo->starts_at && $dayTourDateParsed->lt($promo->starts_at->startOfDay())) {
+                    return new ErrorResponse('Promo code is not yet active for your selected date.', JsonResponse::HTTP_BAD_REQUEST);
+                }
+                
+                // Check if day tour date is after promo ends
+                if ($promo->ends_at && $dayTourDateParsed->gt($promo->ends_at->startOfDay())) {
+                    return new ErrorResponse('Promo code has ended before your selected date.', JsonResponse::HTTP_BAD_REQUEST);
+                }
             }
-
-            // Check if promo has ended (date only comparison - no time consideration)
-            if ($promo->ends_at && $validationDate->startOfDay()->gt($promo->ends_at->startOfDay())) {
-                return new ErrorResponse('Promo code has ended before your selected dates.', JsonResponse::HTTP_BAD_REQUEST);
-            }
+            // For overnight bookings, detailed validation is handled by PromoCalculationService below
 
             // Check expiration against current date (not booking date) - date only
             if ($promo->expires_at && $currentDate->startOfDay()->gt($promo->expires_at->startOfDay())) {

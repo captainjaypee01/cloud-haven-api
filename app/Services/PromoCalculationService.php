@@ -279,16 +279,26 @@ class PromoCalculationService
         $isValid = true;
         $errors = [];
         
-        // Check if booking starts before promo starts
-        if ($promoStart && $checkIn->lt($promoStart)) {
-            $isValid = false;
-            $errors[] = 'Booking starts before promo period begins.';
-        }
-        
-        // Check if booking starts after promo ends
-        if ($promoEnd && $checkIn->gt($promoEnd)) {
-            $isValid = false;
-            $errors[] = 'Booking starts after promo period ends.';
+        // Check if booking period overlaps with promo period
+        // Booking overlaps if: booking starts before promo ends AND booking ends after promo starts
+        if ($promoStart && $promoEnd) {
+            // Check if booking period overlaps with promo period
+            if ($checkOut->lte($promoStart) || $checkIn->gte($promoEnd)) {
+                $isValid = false;
+                $errors[] = 'Booking period does not overlap with promo period.';
+            }
+        } elseif ($promoStart) {
+            // Only start date is set - check if booking ends after promo starts
+            if ($checkOut->lte($promoStart)) {
+                $isValid = false;
+                $errors[] = 'Booking period does not overlap with promo period.';
+            }
+        } elseif ($promoEnd) {
+            // Only end date is set - check if booking starts before promo ends
+            if ($checkIn->gte($promoEnd)) {
+                $isValid = false;
+                $errors[] = 'Booking period does not overlap with promo period.';
+            }
         }
         
         // If using per-night calculation, check if any nights are eligible
