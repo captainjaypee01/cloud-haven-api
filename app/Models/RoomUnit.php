@@ -251,6 +251,82 @@ class RoomUnit extends Model
     }
 
     /**
+     * Get status and booking source for a specific date.
+     * Returns both status and booking_source for calendar display.
+     */
+    public function getStatusAndSourceForDate(string $date): array
+    {
+        // Check maintenance first (highest priority)
+        if ($this->isInMaintenanceOnDate($date)) {
+            return ['status' => 'maintenance', 'booking_source' => null];
+        }
+        
+        // Check blocked second
+        if ($this->isBlockedOnDate($date)) {
+            return ['status' => 'blocked', 'booking_source' => null];
+        }
+        
+        // Check if unit has bookings on this date
+        $booking = $this->bookingRooms()
+            ->whereHas('booking', function ($query) use ($date) {
+                $query->whereIn('status', ['paid', 'downpayment'])
+                      ->where(function ($q) use ($date) {
+                          // Overnight bookings: check_in <= date AND check_out > date
+                          $q->where(function ($overnight) use ($date) {
+                              $overnight->where('booking_type', '<>', 'day_tour')
+                                        ->where('check_in_date', '<=', $date)
+                                        ->where('check_out_date', '>', $date);
+                          })
+                          // Day tour bookings: check_in_date = date (same day)
+                          ->orWhere(function ($dayTour) use ($date) {
+                              $dayTour->where('booking_type', 'day_tour')
+                                      ->where('check_in_date', $date);
+                          });
+                      });
+            })
+            ->with('booking')
+            ->first();
+            
+        if ($booking) {
+            return [
+                'status' => 'booked', 
+                'booking_source' => $booking->booking->booking_source
+            ];
+        }
+        
+        // Check for pending bookings
+        $pendingBooking = $this->bookingRooms()
+            ->whereHas('booking', function ($query) use ($date) {
+                $query->where('status', 'pending')
+                      ->where(function ($q) use ($date) {
+                          // Overnight bookings: check_in <= date AND check_out > date
+                          $q->where(function ($overnight) use ($date) {
+                              $overnight->where('booking_type', '<>', 'day_tour')
+                                        ->where('check_in_date', '<=', $date)
+                                        ->where('check_out_date', '>', $date);
+                          })
+                          // Day tour bookings: check_in_date = date (same day)
+                          ->orWhere(function ($dayTour) use ($date) {
+                              $dayTour->where('booking_type', 'day_tour')
+                                      ->where('check_in_date', $date);
+                          });
+                      });
+            })
+            ->with('booking')
+            ->first();
+            
+        if ($pendingBooking) {
+            return [
+                'status' => 'pending', 
+                'booking_source' => $pendingBooking->booking->booking_source
+            ];
+        }
+        
+        return ['status' => 'available', 'booking_source' => null];
+    }
+
+
+    /**
      * Get the display name for this unit (Room Name + Unit Number).
      */
     protected function displayName(): Attribute

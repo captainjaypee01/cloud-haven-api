@@ -265,28 +265,93 @@ class RoomUnitService
      */
     public function getRoomUnitCalendarData(int $year, int $month): array
     {
-        // Get all overnight room units (without booking details for performance)
-        $roomUnits = RoomUnit::with(['room'])
-            ->whereHas('room', function ($query) {
-                $query->where('room_type', 'overnight');
-            })
-            ->orderBy('room_id')
-            ->orderByRaw('CAST(unit_number AS UNSIGNED)')
-            ->get();
+        $cacheKey = "room_unit_calendar_{$year}_{$month}";
+        
+        // Try to get from cache first
+        $cached = cache()->get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
 
         // Get days in month using Carbon
         $startOfMonth = Carbon::create($year, $month, 1);
+        $endOfMonth = $startOfMonth->copy()->endOfMonth();
         $daysInMonth = $startOfMonth->daysInMonth;
         $days = [];
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $days[] = $day;
         }
 
-        // Group units by room
+        // Step 1: Get all overnight room units with room names in a single optimized query
+        $roomUnits = DB::table('room_units')
+            ->join('rooms', 'room_units.room_id', '=', 'rooms.id')
+            ->where('rooms.room_type', 'overnight')
+            ->orderBy('room_units.room_id')
+            ->orderByRaw('CAST(room_units.unit_number AS UNSIGNED)')
+            ->select([
+                'room_units.id',
+                'room_units.room_id',
+                'room_units.unit_number',
+                'room_units.maintenance_start_at',
+                'room_units.maintenance_end_at',
+                'room_units.blocked_start_at',
+                'room_units.blocked_end_at',
+                'rooms.name as room_name'
+            ])
+            ->get();
+
+        if ($roomUnits->isEmpty()) {
+            $result = [
+                'year' => $year,
+                'month' => $month,
+                'days' => $days,
+                'rooms' => []
+            ];
+            cache()->put($cacheKey, $result, 300); // Cache for 5 minutes
+            return $result;
+        }
+
+        // Extract unit IDs for batch loading
+        $unitIds = $roomUnits->pluck('id')->toArray();
+        
+        // Step 2: Batch load ALL bookings for ALL units for the entire month in ONE optimized query
+        $bookings = DB::table('booking_rooms')
+            ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
+            ->whereIn('booking_rooms.room_unit_id', $unitIds)
+            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                // Overnight bookings that overlap with the month
+                $q->where(function ($overnight) use ($startOfMonth, $endOfMonth) {
+                    $overnight->where('bookings.booking_type', '<>', 'day_tour')
+                              ->where('bookings.check_in_date', '<', $endOfMonth->toDateString())
+                              ->where('bookings.check_out_date', '>', $startOfMonth->toDateString());
+                })
+                // Day tour bookings within the month
+                ->orWhere(function ($dayTour) use ($startOfMonth, $endOfMonth) {
+                    $dayTour->where('bookings.booking_type', 'day_tour')
+                            ->whereBetween('bookings.check_in_date', [
+                                $startOfMonth->toDateString(), 
+                                $endOfMonth->toDateString()
+                            ]);
+                });
+            })
+            ->whereNull('bookings.deleted_at')
+            ->select([
+                'booking_rooms.room_unit_id',
+                'bookings.id as booking_id',
+                'bookings.status',
+                'bookings.booking_type',
+                'bookings.booking_source',
+                'bookings.check_in_date',
+                'bookings.check_out_date'
+            ])
+            ->get()
+            ->groupBy('room_unit_id');
+
+        // Step 3: Process data in memory (no more database queries)
         $roomsData = [];
         foreach ($roomUnits as $unit) {
             $roomId = $unit->room_id;
-            $roomName = $unit->room->name;
+            $roomName = $unit->room_name;
 
             if (!isset($roomsData[$roomId])) {
                 $roomsData[$roomId] = [
@@ -296,38 +361,36 @@ class RoomUnitService
                 ];
             }
 
-            // Get status for each day of the month
-            $dayStatuses = [];
-            foreach ($days as $day) {
-                $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
-                $status = $unit->getStatusForDate($date);
-                
-                $dayStatuses[] = [
-                    'day' => $day,
-                    'date' => $date,
-                    'status' => $status
-                ];
-            }
+            // Get bookings for this unit
+            $unitBookings = $bookings->get($unit->id, collect());
+            
+            // Calculate day statuses using optimized in-memory processing
+            $dayStatuses = $this->calculateDayStatusesOptimized($unit, $unitBookings, $year, $month, $days);
 
             $roomsData[$roomId]['units'][] = [
                 'id' => $unit->id,
                 'unit_number' => $unit->unit_number,
-                'current_status' => $unit->status->value,
-                'notes' => $unit->notes,
-                'maintenance_start_at' => $unit->maintenance_start_at?->format('Y-m-d'),
-                'maintenance_end_at' => $unit->maintenance_end_at?->format('Y-m-d'),
-                'blocked_start_at' => $unit->blocked_start_at?->format('Y-m-d'),
-                'blocked_end_at' => $unit->blocked_end_at?->format('Y-m-d'),
+                'current_status' => 'available', // Default status since we're not loading full model
+                'notes' => null, // Not needed for calendar display
+                'maintenance_start_at' => $unit->maintenance_start_at,
+                'maintenance_end_at' => $unit->maintenance_end_at,
+                'blocked_start_at' => $unit->blocked_start_at,
+                'blocked_end_at' => $unit->blocked_end_at,
                 'day_statuses' => $dayStatuses
             ];
         }
 
-        return [
+        $result = [
             'year' => $year,
             'month' => $month,
             'days' => $days,
             'rooms' => array_values($roomsData)
         ];
+
+        // Cache the result for 5 minutes
+        cache()->put($cacheKey, $result, 300);
+        
+        return $result;
     }
 
     /**
@@ -336,28 +399,82 @@ class RoomUnitService
      */
     public function getDayTourRoomUnitCalendarData(int $year, int $month): array
     {
-        // Get all day tour room units (without booking details for performance)
-        $roomUnits = RoomUnit::with(['room'])
-            ->whereHas('room', function ($query) {
-                $query->where('room_type', 'day_tour');
-            })
-            ->orderBy('room_id')
-            ->orderByRaw('CAST(unit_number AS UNSIGNED)')
-            ->get();
+        $cacheKey = "day_tour_calendar_{$year}_{$month}";
+        
+        // Try to get from cache first
+        $cached = cache()->get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
 
         // Get days in month using Carbon
         $startOfMonth = Carbon::create($year, $month, 1);
+        $endOfMonth = $startOfMonth->copy()->endOfMonth();
         $daysInMonth = $startOfMonth->daysInMonth;
         $days = [];
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $days[] = $day;
         }
 
-        // Group units by room
+        // Step 1: Get all day tour room units with room names in a single optimized query
+        $roomUnits = DB::table('room_units')
+            ->join('rooms', 'room_units.room_id', '=', 'rooms.id')
+            ->where('rooms.room_type', 'day_tour')
+            ->orderBy('room_units.room_id')
+            ->orderByRaw('CAST(room_units.unit_number AS UNSIGNED)')
+            ->select([
+                'room_units.id',
+                'room_units.room_id',
+                'room_units.unit_number',
+                'room_units.maintenance_start_at',
+                'room_units.maintenance_end_at',
+                'room_units.blocked_start_at',
+                'room_units.blocked_end_at',
+                'rooms.name as room_name'
+            ])
+            ->get();
+
+        if ($roomUnits->isEmpty()) {
+            $result = [
+                'year' => $year,
+                'month' => $month,
+                'days' => $days,
+                'rooms' => []
+            ];
+            cache()->put($cacheKey, $result, 300); // Cache for 5 minutes
+            return $result;
+        }
+
+        // Extract unit IDs for batch loading
+        $unitIds = $roomUnits->pluck('id')->toArray();
+        
+        // Step 2: Batch load ALL day tour bookings for ALL units for the entire month in ONE optimized query
+        $bookings = DB::table('booking_rooms')
+            ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
+            ->whereIn('booking_rooms.room_unit_id', $unitIds)
+            ->where('bookings.booking_type', 'day_tour')
+            ->whereBetween('bookings.check_in_date', [
+                $startOfMonth->toDateString(), 
+                $endOfMonth->toDateString()
+            ])
+            ->whereNull('bookings.deleted_at')
+            ->select([
+                'booking_rooms.room_unit_id',
+                'bookings.id as booking_id',
+                'bookings.status',
+                'bookings.booking_type',
+                'bookings.booking_source',
+                'bookings.check_in_date',
+                'bookings.check_out_date'
+            ])
+            ->get()
+            ->groupBy('room_unit_id');
+
+        // Step 3: Process data in memory (no more database queries)
         $roomsData = [];
         foreach ($roomUnits as $unit) {
             $roomId = $unit->room_id;
-            $roomName = $unit->room->name;
+            $roomName = $unit->room_name;
 
             if (!isset($roomsData[$roomId])) {
                 $roomsData[$roomId] = [
@@ -367,38 +484,36 @@ class RoomUnitService
                 ];
             }
 
-            // Get status for each day of the month
-            $dayStatuses = [];
-            foreach ($days as $day) {
-                $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
-                $status = $unit->getStatusForDate($date);
-                
-                $dayStatuses[] = [
-                    'day' => $day,
-                    'date' => $date,
-                    'status' => $status
-                ];
-            }
+            // Get bookings for this unit
+            $unitBookings = $bookings->get($unit->id, collect());
+            
+            // Calculate day statuses using optimized in-memory processing
+            $dayStatuses = $this->calculateDayStatusesOptimized($unit, $unitBookings, $year, $month, $days);
 
             $roomsData[$roomId]['units'][] = [
                 'id' => $unit->id,
                 'unit_number' => $unit->unit_number,
-                'current_status' => $unit->status->value,
-                'notes' => $unit->notes,
-                'maintenance_start_at' => $unit->maintenance_start_at?->format('Y-m-d'),
-                'maintenance_end_at' => $unit->maintenance_end_at?->format('Y-m-d'),
-                'blocked_start_at' => $unit->blocked_start_at?->format('Y-m-d'),
-                'blocked_end_at' => $unit->blocked_end_at?->format('Y-m-d'),
+                'current_status' => 'available', // Default status since we're not loading full model
+                'notes' => null, // Not needed for calendar display
+                'maintenance_start_at' => $unit->maintenance_start_at,
+                'maintenance_end_at' => $unit->maintenance_end_at,
+                'blocked_start_at' => $unit->blocked_start_at,
+                'blocked_end_at' => $unit->blocked_end_at,
                 'day_statuses' => $dayStatuses
             ];
         }
 
-        return [
+        $result = [
             'year' => $year,
             'month' => $month,
             'days' => $days,
             'rooms' => array_values($roomsData)
         ];
+
+        // Cache the result for 5 minutes
+        cache()->put($cacheKey, $result, 300);
+        
+        return $result;
     }
 
     /**
@@ -610,5 +725,125 @@ class RoomUnitService
             'meal_cost' => $bookingRoom->meal_cost ?? 0,
             'base_price' => $bookingRoom->base_price ?? 0,
         ];
+    }
+
+    /**
+     * Calculate day statuses using optimized in-memory processing.
+     * This method processes all days for a unit without additional database queries.
+     */
+    private function calculateDayStatusesOptimized($unit, $unitBookings, int $year, int $month, array $days): array
+    {
+        $dayStatuses = [];
+        $isInMaintenance = $unit->maintenance_start_at && $unit->maintenance_end_at;
+        $isBlocked = $unit->blocked_start_at && $unit->blocked_end_at;
+        
+        // Create a lookup map for bookings by date for O(1) access
+        $bookingMap = [];
+        foreach ($unitBookings as $booking) {
+            if ($booking->status === 'cancelled') {
+                continue;
+            }
+            
+            if ($booking->booking_type === 'day_tour') {
+                // Day tour bookings are for a single day
+                $bookingMap[$booking->check_in_date] = $booking;
+            } else {
+                // Overnight bookings span multiple days
+                $checkIn = Carbon::parse($booking->check_in_date);
+                $checkOut = Carbon::parse($booking->check_out_date);
+                $current = $checkIn->copy();
+                
+                while ($current->lt($checkOut)) {
+                    $dateStr = $current->format('Y-m-d');
+                    if (!isset($bookingMap[$dateStr])) {
+                        $bookingMap[$dateStr] = $booking;
+                    }
+                    $current->addDay();
+                }
+            }
+        }
+        
+        // Process each day
+        foreach ($days as $day) {
+            $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+            
+            // Check maintenance first (highest priority)
+            if ($isInMaintenance) {
+                $maintenanceStart = Carbon::parse($unit->maintenance_start_at);
+                $maintenanceEnd = Carbon::parse($unit->maintenance_end_at);
+                if (Carbon::parse($date)->between($maintenanceStart, $maintenanceEnd)) {
+                    $dayStatuses[] = [
+                        'day' => $day,
+                        'date' => $date,
+                        'status' => 'maintenance',
+                        'booking_source' => null
+                    ];
+                    continue;
+                }
+            }
+            
+            // Check blocked second
+            if ($isBlocked) {
+                $blockedStart = Carbon::parse($unit->blocked_start_at);
+                $blockedEnd = Carbon::parse($unit->blocked_end_at);
+                if (Carbon::parse($date)->between($blockedStart, $blockedEnd)) {
+                    $dayStatuses[] = [
+                        'day' => $day,
+                        'date' => $date,
+                        'status' => 'blocked',
+                        'booking_source' => null
+                    ];
+                    continue;
+                }
+            }
+            
+            // Check for bookings
+            if (isset($bookingMap[$date])) {
+                $booking = $bookingMap[$date];
+                $status = in_array($booking->status, ['paid', 'downpayment']) ? 'booked' : 'pending';
+                $dayStatuses[] = [
+                    'day' => $day,
+                    'date' => $date,
+                    'status' => $status,
+                    'booking_source' => $booking->booking_source
+                ];
+            } else {
+                $dayStatuses[] = [
+                    'day' => $day,
+                    'date' => $date,
+                    'status' => 'available',
+                    'booking_source' => null
+                ];
+            }
+        }
+        
+        return $dayStatuses;
+    }
+
+    /**
+     * Clear calendar cache for a specific month and year.
+     */
+    public function clearCalendarCache(int $year, int $month): void
+    {
+        $overnightCacheKey = "room_unit_calendar_{$year}_{$month}";
+        $dayTourCacheKey = "day_tour_calendar_{$year}_{$month}";
+        
+        cache()->forget($overnightCacheKey);
+        cache()->forget($dayTourCacheKey);
+    }
+
+    /**
+     * Clear all calendar cache for current and next year.
+     */
+    public function clearAllCalendarCache(): void
+    {
+        $currentYear = now()->year;
+        $nextYear = $currentYear + 1;
+        
+        for ($year = $currentYear; $year <= $nextYear; $year++) {
+            for ($month = 1; $month <= 12; $month++) {
+                $this->clearCalendarCache($year, $month);
+            }
+        }
     }
 }

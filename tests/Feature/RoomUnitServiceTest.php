@@ -260,4 +260,105 @@ class RoomUnitServiceTest extends TestCase
 
         $this->assertEquals($expected, $stats);
     }
+
+    /** @test */
+    public function it_includes_booking_source_in_calendar_data()
+    {
+        // Create room units
+        $unit1 = RoomUnit::create([
+            'room_id' => $this->room->id,
+            'unit_number' => '101',
+            'status' => RoomUnitStatusEnum::AVAILABLE
+        ]);
+
+        $unit2 = RoomUnit::create([
+            'room_id' => $this->room->id,
+            'unit_number' => '102',
+            'status' => RoomUnitStatusEnum::AVAILABLE
+        ]);
+
+        // Create online booking
+        $onlineBooking = Booking::factory()->create([
+            'check_in_date' => '2025-01-15',
+            'check_out_date' => '2025-01-17',
+            'status' => 'paid',
+            'booking_source' => 'online',
+            'guest_name' => 'Online Guest',
+        ]);
+
+        BookingRoom::create([
+            'booking_id' => $onlineBooking->id,
+            'room_id' => $this->room->id,
+            'room_unit_id' => $unit1->id,
+            'price_per_night' => 100,
+            'adults' => 2,
+            'children' => 0,
+            'total_guests' => 2,
+        ]);
+
+        // Create walk-in booking
+        $walkinBooking = Booking::factory()->create([
+            'check_in_date' => '2025-01-15',
+            'check_out_date' => '2025-01-17',
+            'status' => 'paid',
+            'booking_source' => 'walkin',
+            'guest_name' => 'Walk-in Guest',
+        ]);
+
+        BookingRoom::create([
+            'booking_id' => $walkinBooking->id,
+            'room_id' => $this->room->id,
+            'room_unit_id' => $unit2->id,
+            'price_per_night' => 100,
+            'adults' => 2,
+            'children' => 0,
+            'total_guests' => 2,
+        ]);
+
+        // Get calendar data for January 2025
+        $calendarData = $this->roomUnitService->getRoomUnitCalendarData(2025, 1);
+
+        $this->assertArrayHasKey('rooms', $calendarData);
+        $this->assertCount(1, $calendarData['rooms']); // One room type
+
+        $room = $calendarData['rooms'][0];
+        $this->assertCount(2, $room['units']); // Two units
+
+        // Find the units
+        $unit1Data = collect($room['units'])->firstWhere('unit_number', '101');
+        $unit2Data = collect($room['units'])->firstWhere('unit_number', '102');
+
+        $this->assertNotNull($unit1Data);
+        $this->assertNotNull($unit2Data);
+
+        // Check January 15th status for both units
+        $unit1Day15 = collect($unit1Data['day_statuses'])->firstWhere('day', 15);
+        $unit2Day15 = collect($unit2Data['day_statuses'])->firstWhere('day', 15);
+
+        $this->assertEquals('booked', $unit1Day15['status']);
+        $this->assertEquals('online', $unit1Day15['booking_source']);
+
+        $this->assertEquals('booked', $unit2Day15['status']);
+        $this->assertEquals('walkin', $unit2Day15['booking_source']);
+
+        // Check January 16th status for both units
+        $unit1Day16 = collect($unit1Data['day_statuses'])->firstWhere('day', 16);
+        $unit2Day16 = collect($unit2Data['day_statuses'])->firstWhere('day', 16);
+
+        $this->assertEquals('booked', $unit1Day16['status']);
+        $this->assertEquals('online', $unit1Day16['booking_source']);
+
+        $this->assertEquals('booked', $unit2Day16['status']);
+        $this->assertEquals('walkin', $unit2Day16['booking_source']);
+
+        // Check January 17th (check-out day) - should be available
+        $unit1Day17 = collect($unit1Data['day_statuses'])->firstWhere('day', 17);
+        $unit2Day17 = collect($unit2Data['day_statuses'])->firstWhere('day', 17);
+
+        $this->assertEquals('available', $unit1Day17['status']);
+        $this->assertNull($unit1Day17['booking_source']);
+
+        $this->assertEquals('available', $unit2Day17['status']);
+        $this->assertNull($unit2Day17['booking_source']);
+    }
 }
