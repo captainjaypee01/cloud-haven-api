@@ -143,7 +143,8 @@
                                     <li><strong>Email:</strong> <a href="mailto:{{ $resort['email'] }}" style="color:#000;text-decoration:underline;">{{ $resort['email'] }}</a></li>
                                 @endif
                                 @if(!empty($resort['phone']))
-                                    <li><strong>Phone:</strong> {{ $resort['phone'] }}</li>
+                                    <li><strong>Phone:</strong> {{ $resort['phone'] }}<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ $resort['phone_alt'] ?? '' }}</li>
                                 @endif
                             </ul>
                         </div></div>

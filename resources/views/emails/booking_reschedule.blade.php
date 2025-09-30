@@ -326,6 +326,7 @@
                                 <td style="width:50%;vertical-align:top;">
                                     <p class="m-0">
                                     <strong>Phone:</strong> {{ $resort['phone'] ?? '' }}<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ $resort['phone_alt'] ?? '' }}<br>
                                     <strong>Email:</strong> <a href="mailto:{{ $resort['email'] ?? '' }}">{{ $resort['email'] ?? '' }}</a><br>
                                                                 @if(!empty($resort['website']))
                                 <strong>Website:</strong> <a href="{{ $frontendBase }}" target="_blank">{{ $frontendBase }}</a>

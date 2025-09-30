@@ -2,6 +2,7 @@
   $resort = (isset($resort) && is_array($resort)) ? $resort : (config('resort') ?: []);
   $name = $resort['name'] ?? (config('app.name') ?? 'Your Resort');
   $phone = $resort['phone'] ?? '';
+  $phoneAlt = $resort['phone_alt'] ?? '';
   $email = $resort['email'] ?? '';
   $facebook = $resort['facebook'] ?? '';
   $website = $resort['frontend_url'] ?? config('app.frontend_url') ?? config('app.url');
@@ -24,7 +25,8 @@
     </div>
     <div style="display: inline-block; width: 48%; vertical-align: top; padding-left: 20px; text-align: right;">
       <strong style="color:#000;">Customer Service</strong><br>
-      @if($phone) Phone: {{ $phone }}<br>@endif
+      @if($phone) Phone: {{ $phone }}<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ $phoneAlt }}<br>@endif
       @if($email) Email: <a href="mailto:{{ $email }}" style="color:#000;text-decoration:underline;">{{ $email }}</a><br>@endif
       @if($facebook) Facebook: <a href="{{ $facebook }}" target="_blank" style="color:#000;text-decoration:underline;">Visit Page</a>@endif
     </div>
