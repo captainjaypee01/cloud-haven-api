@@ -30,6 +30,7 @@ class Payment extends Model
         'proof_rejected_at',
         'last_proof_notification_at',
         'proof_last_uploaded_at',
+        'proof_uploaded_by',
     ];
 
     protected $appends = ['local_created_at', 'proof_image_url'];
@@ -102,5 +103,45 @@ class Payment extends Model
             'proof_last_uploaded_at' => 'datetime',
             'response_data' => 'array',
         ];
+    }
+
+    /**
+     * Check if proof was uploaded by guest
+     */
+    public function isProofUploadedByGuest(): bool
+    {
+        return $this->proof_uploaded_by === 'guest';
+    }
+
+    /**
+     * Check if proof was uploaded by staff
+     */
+    public function isProofUploadedByStaff(): bool
+    {
+        return $this->proof_uploaded_by === 'staff';
+    }
+
+    /**
+     * Check if proof can be modified by staff
+     */
+    public function canModifyProof(): bool
+    {
+        // Can modify if:
+        // 1. No proof uploaded yet
+        // 2. Proof uploaded by staff and not yet approved
+        // 3. Walk-in booking and proof not yet approved
+        if (!$this->proof_last_file_path) {
+            return true;
+        }
+
+        if ($this->isProofUploadedByStaff() && $this->proof_status !== 'accepted') {
+            return true;
+        }
+
+        if ($this->booking && $this->booking->isWalkIn() && $this->proof_status !== 'accepted') {
+            return true;
+        }
+
+        return false;
     }
 }

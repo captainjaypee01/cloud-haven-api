@@ -105,8 +105,25 @@ class PaymentController extends Controller
             'transaction_id' => 'nullable|string',
             'remarks' => 'nullable|string',
             'status' => 'required|in:paid,pending,failed',
-            'notify_guest' => 'sometimes|boolean',
+            'notify_guest' => 'sometimes|in:0,1,true,false',
+            'proof_file' => 'nullable|file|mimes:jpeg,png,jpg|max:10240', // 10MB max
         ]);
+
+        // Convert notify_guest to boolean
+        if (isset($validated['notify_guest'])) {
+            $validated['notify_guest'] = in_array($validated['notify_guest'], ['1', 'true', true], true);
+        }
+
+        // Additional validation: require proof file for GCash and Bank Transfer
+        if (in_array($validated['provider'], ['gcash', 'bank_bdo']) && !$request->hasFile('proof_file')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Proof of payment is required for GCash and Bank Transfer payments.',
+                'errors' => [
+                    'proof_file' => ['Proof of payment is required for GCash and Bank Transfer payments.']
+                ]
+            ], 422);
+        }
 
         Log::info('Admin processing payment', [
             'admin_user_id' => Auth::id(),
@@ -132,13 +149,39 @@ class PaymentController extends Controller
         $result = $this->paymentService->execute($dto);
         
         if ($result->success) {
+            // Handle proof file upload if provided
+            if ($request->hasFile('proof_file') && in_array($validated['provider'], ['gcash', 'bank_bdo'])) {
+                try {
+                    $proofResult = $this->paymentProofService->uploadProof(
+                        $result->payment,
+                        $request->file('proof_file'),
+                        $validated['transaction_id'],
+                        $validated['remarks'],
+                        'staff'
+                    );
+                    
+                    if (!$proofResult['success']) {
+                        Log::warning('Proof upload failed for admin payment', [
+                            'payment_id' => $result->payment->id,
+                            'error' => $proofResult['message']
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Proof upload exception for admin payment', [
+                        'payment_id' => $result->payment->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
             Log::info('Admin payment processed successfully', [
                 'admin_user_id' => Auth::id(),
                 'reference_number' => $validated['reference_number'],
                 'payment_id' => $result->payment->id,
                 'amount' => $validated['amount'],
                 'status' => $validated['status'],
-                'booking_id' => $result->booking->id
+                'booking_id' => $result->booking->id,
+                'has_proof_file' => $request->hasFile('proof_file')
             ]);
         } else {
             Log::error('Admin payment processing failed', [
@@ -182,8 +225,27 @@ class PaymentController extends Controller
             'status' => 'required|string|in:paid,pending,failed',
             'transaction_id' => 'nullable|string',
             'remarks' => 'nullable|string',
-            'notify_guest' => 'sometimes|boolean',
+            'notify_guest' => 'sometimes|in:0,1,true,false',
+            'proof_file' => 'nullable|file|mimes:jpeg,png,jpg|max:10240', // 10MB max
         ]);
+
+        // Convert notify_guest to boolean
+        if (isset($validated['notify_guest'])) {
+            $validated['notify_guest'] = in_array($validated['notify_guest'], ['1', 'true', true], true);
+        }
+
+        // Check if proof can be modified
+        if ($request->hasFile('proof_file')) {
+            if (!$payment->canModifyProof()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot modify proof of payment. ' . $this->getProofModificationReason($payment),
+                    'errors' => [
+                        'proof_file' => ['Cannot modify this proof of payment.']
+                    ]
+                ], 422);
+            }
+        }
 
         // Store the old status to detect changes
         $oldStatus = $payment->status;
@@ -204,6 +266,32 @@ class PaymentController extends Controller
 
         // Update the payment
         $payment->update($validated);
+        
+        // Handle proof file upload if provided
+        if ($request->hasFile('proof_file') && in_array($validated['provider'], ['gcash', 'bank_bdo'])) {
+            try {
+                $proofResult = $this->paymentProofService->uploadProof(
+                    $payment,
+                    $request->file('proof_file'),
+                    $validated['transaction_id'],
+                    $validated['remarks'],
+                    'staff'
+                );
+                
+                if (!$proofResult['success']) {
+                    Log::warning('Proof upload failed for admin payment update', [
+                        'payment_id' => $payment->id,
+                        'error' => $proofResult['message']
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Proof upload exception for admin payment update', [
+                    'payment_id' => $payment->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
         $payment->refresh();
 
         // Load the booking for status calculations and emails
@@ -326,5 +414,25 @@ class PaymentController extends Controller
             'message' => $result['message'],
             'data' => ['payment' => $result['payment']]
         ]);
+    }
+
+    /**
+     * Get the reason why proof cannot be modified
+     */
+    private function getProofModificationReason(Payment $payment): string
+    {
+        if ($payment->isProofUploadedByGuest()) {
+            return 'This proof was uploaded by the guest and cannot be modified by staff.';
+        }
+        
+        if ($payment->proof_status === 'accepted') {
+            return 'This proof has been approved and cannot be modified.';
+        }
+        
+        if ($payment->booking && $payment->booking->isOnline()) {
+            return 'This is an online booking with existing proof that cannot be modified.';
+        }
+        
+        return 'This proof cannot be modified.';
     }
 }

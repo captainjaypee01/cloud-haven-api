@@ -25,7 +25,7 @@ class PaymentProofService
     /**
      * Upload proof of payment for a specific payment
      */
-    public function uploadProof(Payment $payment, UploadedFile $file, ?string $transactionId = null, ?string $remarks = null): array
+    public function uploadProof(Payment $payment, UploadedFile $file, ?string $transactionId = null, ?string $remarks = null, ?string $uploadedBy = 'guest'): array
     {
         $maxUploads = config('notifications.proof_payment.max_uploads', 3);
         
@@ -38,7 +38,7 @@ class PaymentProofService
             ];
         }
 
-        return DB::transaction(function () use ($payment, $file, $transactionId, $remarks) {
+        return DB::transaction(function () use ($payment, $file, $transactionId, $remarks, $uploadedBy) {
             try {
                 // Delete previous proof file if exists
                 if ($payment->proof_last_file_path) {
@@ -54,12 +54,22 @@ class PaymentProofService
                     throw new \Exception('Failed to store proof file');
                 }
 
+                // Determine proof status based on who uploaded the proof
+                $proofStatus = 'pending'; // Default for guest uploads
+                
+                // For staff uploads, auto-accept the proof since staff has already verified the payment
+                // This applies to both walk-in bookings and balance payments for online bookings
+                if ($uploadedBy === 'staff') {
+                    $proofStatus = 'accepted';
+                }
+                
                 // Update payment with new proof details and optional transaction data
                 $updateData = [
                     'proof_last_file_path' => $filePath,
-                    'proof_status' => 'pending',
+                    'proof_status' => $proofStatus,
                     'proof_upload_count' => $payment->proof_upload_count + 1,
                     'proof_last_uploaded_at' => now(),
+                    'proof_uploaded_by' => $uploadedBy,
                 ];
 
                 // Update transaction_id and remarks if provided
@@ -79,13 +89,15 @@ class PaymentProofService
                 // Generate admin link for reviewing the payment
                 $adminLink = config('app.frontend_url') . '/admin/bookings/' . $booking->id;
 
-                // Fire the event for email notification
-                PaymentProofUploaded::dispatch(
-                    $payment,
-                    $booking,
-                    $payment->proof_upload_count,
-                    $adminLink
-                );
+                // Fire the event for email notification (only for pending proofs)
+                if ($proofStatus === 'pending') {
+                    PaymentProofUploaded::dispatch(
+                        $payment,
+                        $booking,
+                        $payment->proof_upload_count,
+                        $adminLink
+                    );
+                }
 
                 Log::info("Payment proof uploaded successfully", [
                     'payment_id' => $payment->id,
@@ -94,7 +106,10 @@ class PaymentProofService
                     'file_path' => $filePath,
                     'upload_count' => $payment->proof_upload_count,
                     'file_size' => $file->getSize(),
-                    'file_type' => $file->getMimeType()
+                    'file_type' => $file->getMimeType(),
+                    'proof_status' => $proofStatus,
+                    'uploaded_by' => $uploadedBy,
+                    'auto_accepted' => $proofStatus === 'accepted'
                 ]);
 
                 return [

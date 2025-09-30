@@ -537,7 +537,8 @@ class RoomUnitService
             'total_paid' => $totalPaid,
             'remaining_balance' => $remainingBalance,
             'status' => $booking->status,
-            'booking_type' => $booking->booking_type
+            'booking_type' => $booking->booking_type,
+            'booking_source' => $booking->booking_source,
         ];
     }
 
@@ -598,6 +599,7 @@ class RoomUnitService
             'remaining_balance' => $remainingBalance,
             'status' => $booking->status,
             'booking_type' => $booking->booking_type,
+            'booking_source' => $booking->booking_source,
             // Day tour specific fields
             'include_lunch' => $bookingRoom->include_lunch ?? false,
             'include_pm_snack' => $bookingRoom->include_pm_snack ?? false,

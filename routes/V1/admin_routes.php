@@ -7,8 +7,6 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
     ->middleware(['clerk.auth:api'])
     ->group(function () {
         
-        // Test route
-        Route::get('clerk/test', fn() => 'Clerk Middleware Check Admin | ' . auth()->user()->clerk_id);
         
         // Staff, Admin, Superadmin routes
         Route::middleware(['role:staff,admin,superadmin'])->group(function () {
@@ -22,6 +20,20 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             
             // Walk-in booking creation - Available to all admin roles
             Route::post('bookings/walk-in', 'BookingController@storeWalkIn');
+            
+            // Payment management routes - Available to all admin roles for walk-in bookings
+            Route::get('payments', 'PaymentController@index');
+            Route::get('bookings/{booking}/payments', 'PaymentController@getByBooking');
+            Route::post('payments/pay', 'PaymentController@pay');
+            Route::put('payments/{payment}', 'PaymentController@update');
+            
+            // Payment proof management - Available to all admin roles
+            Route::patch('payments/{payment}/proof-upload/reset', 'PaymentController@resetProofUploads');
+            Route::patch('payments/{payment}/proof-status', 'PaymentController@updateProofStatus');
+            
+            // Other charges - Available to all admin roles for walk-in bookings
+            Route::post('bookings/{booking}/other-charges', 'BookingController@storeOtherCharge');
+            Route::delete('bookings/{booking}/other-charges/{charge}', 'OtherChargeController@destroy');
             
             // Room Units Calendar - All roles can view
             Route::get('room-units/calendar', 'RoomUnitController@getCalendarData');
@@ -49,9 +61,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             Route::post('bookings', 'BookingController@store');
             Route::put('bookings/{booking}', 'BookingController@update');
             Route::delete('bookings/{booking}', 'BookingController@destroy');
-            Route::post('bookings/{booking}/other-charges', 'BookingController@storeOtherCharge');
             Route::patch('bookings/{booking}/reschedule', 'BookingController@reschedule');
-            Route::delete('bookings/{booking}/other-charges/{charge}', 'OtherChargeController@destroy');
             
             // Booking cancellation management
             Route::post('bookings/{booking}/cancel', 'BookingCancellationController@cancel');
@@ -60,16 +70,6 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             // Room unit management for bookings
             Route::get('bookings/{booking}/available-room-units', 'BookingController@getAvailableRoomUnits');
             Route::patch('bookings/{booking}/booking-rooms/{bookingRoom}/change-room-unit', 'BookingController@changeRoomUnit');
-            
-            // Payment management routes
-            Route::get('payments', 'PaymentController@index');
-            Route::get('bookings/{booking}/payments', 'PaymentController@getByBooking');
-            Route::post('payments/pay', 'PaymentController@pay');
-            Route::put('payments/{payment}', 'PaymentController@update');
-            
-            // Payment proof management
-            Route::patch('payments/{payment}/proof-upload/reset', 'PaymentController@resetProofUploads');
-            Route::patch('payments/{payment}/proof-status', 'PaymentController@updateProofStatus');
             
             // Promos
             Route::patch('promos/bulk-update-status', 'PromoController@bulkUpdateStatus');
