@@ -38,7 +38,7 @@ class BookingController extends Controller
             'status', 'search', 'sort', 'per_page', 'page', 
             'date', 'date_from', 'date_to',
             'created_date', 'created_from', 'created_to',
-            'booking_type'
+            'booking_type', 'booking_source'
         ]);
         $paginator = $this->bookingService->list($filters);
         return new CollectionResponse(new BookingCollection($paginator), JsonResponse::HTTP_OK);
