@@ -167,7 +167,6 @@ class RoomUnitService
             }
 
             // Don't change unit status - availability is tracked by booking dates
-            Log::info("Assigned unit {$unit->unit_number} to booking for room {$roomId} from {$checkInDate} to {$checkOutDate}");
 
             return $unit;
         });
@@ -179,7 +178,7 @@ class RoomUnitService
      */
     public function releaseUnit(RoomUnit $roomUnit): void
     {
-        Log::info("Released unit {$roomUnit->unit_number} - availability now tracked by booking dates");
+        // Unit released - availability now tracked by booking dates
     }
 
     /**

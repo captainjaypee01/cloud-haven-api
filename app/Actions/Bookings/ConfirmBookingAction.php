@@ -30,7 +30,7 @@ class ConfirmBookingAction
             foreach ($booking->bookingRooms as $bookingRoom) {
                 // Check if unit is already assigned
                 if ($bookingRoom->room_unit_id) {
-                    Log::info("Booking room {$bookingRoom->id} already has unit {$bookingRoom->room_unit_id} assigned for booking {$booking->reference_number}");
+                    // Unit already assigned
                     continue;
                 }
 
@@ -46,7 +46,7 @@ class ConfirmBookingAction
                     $bookingRoom->room_unit_id = $assignedUnit->id;
                     $bookingRoom->save();
                     
-                    Log::info("Assigned unit {$assignedUnit->unit_number} to booking room {$bookingRoom->id} for booking {$booking->reference_number}");
+                    // Unit assigned successfully
                 } else {
                     Log::error("Failed to assign room unit for booking room {$bookingRoom->id} (room type: {$bookingRoom->room->name}) for booking {$booking->reference_number}");
                     $allAssigned = false;
@@ -66,7 +66,7 @@ class ConfirmBookingAction
             foreach ($booking->bookingRooms as $bookingRoom) {
                 if ($bookingRoom->room_unit_id && $bookingRoom->roomUnit) {
                     $this->roomUnitService->releaseUnit($bookingRoom->roomUnit);
-                    Log::info("Released unit {$bookingRoom->roomUnit->unit_number} for cancelled booking {$booking->reference_number}");
+                    // Unit released for cancelled booking
                 }
             }
         });

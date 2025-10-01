@@ -224,7 +224,7 @@ class CreateDayTourBookingAction
                 $bookingRoom = $booking->bookingRooms()->create($roomData);
 
                 if ($assignedUnit) {
-                    Log::info("Assigned unit {$assignedUnit->unit_number} to Day Tour booking room {$bookingRoom->id} for booking {$booking->reference_number}");
+                    // Unit assigned successfully
                 } else {
                     Log::warning("No available units found for Day Tour room ID {$roomData['room_id']} during booking creation for booking {$booking->reference_number}");
                 }

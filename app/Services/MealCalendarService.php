@@ -39,11 +39,6 @@ class MealCalendarService implements MealCalendarServiceInterface
         // 1. Check for calendar overrides first (highest precedence)
         $override = $this->getOverrideForDate($program->id, $date);
         if ($override) {
-            Log::info('Override found, returning override result', [
-                'override_id' => $override->id,
-                'is_active' => $override->is_active,
-                'date' => $date->format('Y-m-d')
-            ]);
             return $override->is_active;
         }
 
@@ -244,7 +239,7 @@ class MealCalendarService implements MealCalendarServiceInterface
                 }
                 $rangeEnd = $current->copy();
             } else {
-                if ($rangeStart !== null) {
+                if ($rangeStart !== null && $rangeEnd !== null) {
                     $ranges[] = [
                         'start' => $rangeStart->format('Y-m-d'),
                         'end' => $rangeEnd->format('Y-m-d')
@@ -356,7 +351,7 @@ class MealCalendarService implements MealCalendarServiceInterface
                 }
                 $rangeEnd = $current->copy();
             } else {
-                if ($rangeStart !== null) {
+                if ($rangeStart !== null && $rangeEnd !== null) {
                     $ranges[] = [
                         'start' => $rangeStart->format('Y-m-d'),
                         'end' => $rangeEnd->format('Y-m-d')
@@ -534,23 +529,10 @@ class MealCalendarService implements MealCalendarServiceInterface
 
     private function getOverrideForDate(int $programId, Carbon $date)
     {
-        // Debug logging
-        Log::info('Checking override for date', [
-            'program_id' => $programId,
-            'date' => $date->format('Y-m-d'),
-            'date_object' => $date->toDateString()
-        ]);
 
         // First check for date-specific override
         $dateOverride = $this->overrideRepository->getByProgramAndDate($programId, $date);
         
-        Log::info('Date override result', [
-            'program_id' => $programId,
-            'date' => $date->format('Y-m-d'),
-            'override_found' => $dateOverride ? 'YES' : 'NO',
-            'override_id' => $dateOverride?->id,
-            'is_active' => $dateOverride?->is_active
-        ]);
         
         if ($dateOverride) {
             return $dateOverride;

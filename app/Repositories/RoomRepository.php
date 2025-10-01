@@ -174,15 +174,6 @@ class RoomRepository implements RoomRepositoryInterface
         $totalUnavailable = $confirmedUnits + $totalPending + $unavailableUnits;
         $available = max(0, $room->quantity - $totalUnavailable);
 
-        Log::info('Availability breakdown for room ' . $roomId . ' (' . $room->name . '):');
-        Log::info('- Total units: ' . $room->quantity);
-        Log::info('- Confirmed: ' . $confirmedUnits);
-        Log::info('- Pending with payment: ' . $pendingWithPayment);
-        Log::info('- Pending without payment: ' . $pendingWithoutPayment);
-        Log::info('- Total pending: ' . $totalPending);
-        Log::info('- Maintenance/blocked: ' . $unavailableUnits);
-        Log::info('- Total unavailable: ' . $totalUnavailable);
-        Log::info('- Available: ' . $available);
 
         return [
             'available' => $available,

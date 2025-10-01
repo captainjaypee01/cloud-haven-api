@@ -96,7 +96,7 @@ class CreateBookingEntitiesAction
             ]);
 
             if ($assignedUnit) {
-                Log::info("Assigned unit {$assignedUnit->unit_number} to booking room {$bookingRoom->id} for booking {$booking->reference_number}");
+                // Unit assigned successfully
             } else {
                 Log::warning("No available units found for room {$room->name} (ID: {$room->id}) during booking creation for booking {$booking->reference_number}");
             }
