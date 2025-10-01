@@ -31,6 +31,7 @@ class Payment extends Model
         'last_proof_notification_at',
         'proof_last_uploaded_at',
         'proof_uploaded_by',
+        'downpayment_status',
     ];
 
     protected $appends = ['local_created_at', 'proof_image_url'];

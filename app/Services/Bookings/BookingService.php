@@ -188,6 +188,12 @@ class BookingService implements BookingServiceInterface
         $dpPercent = config('booking.downpayment_percent', 0.5);
         $dpAmount = $totalPayable * $dpPercent;
 
+        // Check if there are any payments manually marked as downpayment
+        $hasManualDownpayment = $booking->payments()
+            ->where('status', 'paid')
+            ->where('downpayment_status', 'downpayment')
+            ->exists();
+
         $previousStatus = $booking->status;
         $newStatus = null;
         
@@ -197,7 +203,8 @@ class BookingService implements BookingServiceInterface
             'previous_status' => $previousStatus,
             'paid_amount' => $paidAmount,
             'total_payable' => $totalPayable,
-            'downpayment_amount' => $dpAmount
+            'downpayment_amount' => $dpAmount,
+            'has_manual_downpayment' => $hasManualDownpayment
         ]);
         
         if ($paidAmount >= $totalPayable) {
@@ -207,7 +214,7 @@ class BookingService implements BookingServiceInterface
                 'paid_amount' => $paidAmount
             ]);
             $newStatus = 'paid';
-        } elseif ($paidAmount >= $dpAmount) {
+        } elseif ($paidAmount >= $dpAmount || $hasManualDownpayment) {
             $booking->update([
                 'status' => 'downpayment', 
                 'downpayment_at' => now(),

@@ -58,12 +58,16 @@ class PaymentController extends Controller
             
             return response()->json([
                 'success' => true,
-                'data' => $payments->map(function ($payment) {
+                'data' => $payments->map(function ($payment) use ($booking) {
+                    // Calculate downpayment status
+                    $downpaymentStatus = $this->calculateDownpaymentStatus($payment, $booking);
+                    
                     return [
                         'id' => $payment->id,
                         'booking_id' => $payment->booking_id,
                         'amount' => $payment->amount,
                         'status' => $payment->status,
+                        'downpayment_status' => $downpaymentStatus,
                         'provider' => $payment->provider, // AddPaymentDialog expects 'provider'
                         'payment_method' => $payment->payment_method, // Keep for backward compatibility
                         'transaction_id' => $payment->transaction_id, // AddPaymentDialog needs this
@@ -105,6 +109,7 @@ class PaymentController extends Controller
             'transaction_id' => 'nullable|string',
             'remarks' => 'nullable|string',
             'status' => 'required|in:paid,pending,failed',
+            'downpayment_status' => 'nullable|in:none,downpayment',
             'notify_guest' => 'sometimes|in:0,1,true,false',
             'proof_file' => 'nullable|file|mimes:jpeg,png,jpg|max:10240', // 10MB max
         ]);
@@ -144,6 +149,7 @@ class PaymentController extends Controller
             status: $validated['status'],
             isManual: true,
             isNotifyGuest: $validated['notify_guest'] ?? false,
+            downpaymentStatus: $validated['downpayment_status'] ?? null,
         );
 
         $result = $this->paymentService->execute($dto);
@@ -223,6 +229,7 @@ class PaymentController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'provider' => 'required|string',
             'status' => 'required|string|in:paid,pending,failed',
+            'downpayment_status' => 'nullable|in:none,downpayment',
             'transaction_id' => 'nullable|string',
             'remarks' => 'nullable|string',
             'notify_guest' => 'sometimes|in:0,1,true,false',
@@ -434,5 +441,47 @@ class PaymentController extends Controller
         }
         
         return 'This proof cannot be modified.';
+    }
+
+    /**
+     * Calculate downpayment status for a payment
+     * Returns the manual downpayment_status if set, otherwise calculates based on payment sequence
+     */
+    private function calculateDownpaymentStatus(Payment $payment, $booking): ?string
+    {
+        // If payment has a manual downpayment status, use that
+        if ($payment->downpayment_status) {
+            return $payment->downpayment_status === 'downpayment' ? 'downpayment' : null;
+        }
+
+        // For backward compatibility, calculate based on payment sequence for pending payments
+        if ($payment->status !== 'pending') {
+            return null;
+        }
+
+        // Get all payments for this booking ordered by creation date
+        $allPayments = $booking->payments()
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        // Find the first pending payment
+        $firstPendingPayment = $allPayments->firstWhere('status', 'pending');
+
+        // If this payment is not the first pending payment, don't show downpayment status
+        if (!$firstPendingPayment || $firstPendingPayment->id !== $payment->id) {
+            return null;
+        }
+
+        // Check if there are any paid payments before this pending payment
+        $paidPaymentsBeforeThis = $allPayments
+            ->where('created_at', '<', $payment->created_at)
+            ->where('status', 'paid');
+
+        // Only show downpayment status if there are no paid payments before this pending payment
+        if ($paidPaymentsBeforeThis->isEmpty()) {
+            return 'downpayment';
+        }
+
+        return null;
     }
 }

@@ -16,5 +16,6 @@ class PaymentRequestDTO extends Data
         public bool $isManual = false,
         public ?string $status = null,
         public bool $isNotifyGuest = true,
+        public ?string $downpaymentStatus = null,
     ) {}
 }

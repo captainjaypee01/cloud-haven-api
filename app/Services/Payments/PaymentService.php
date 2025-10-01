@@ -66,6 +66,7 @@ class PaymentService implements PaymentServiceInterface
                 'remarks' => $dto->remarks,
                 'error_code' => $errorCode,
                 'error_message' => $errorMessage,
+                'downpayment_status' => $dto->downpaymentStatus,
             ]);
 
             if ($status === 'paid') {

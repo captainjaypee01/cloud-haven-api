@@ -72,7 +72,11 @@ class BookingResource extends JsonResource
                 ]);
             }),
             'payments'                  => $this->payments->map(function ($payment) {
+                // Calculate downpayment status
+                $downpaymentStatus = $this->calculateDownpaymentStatus($payment);
+                
                 return array_merge($payment->toArray(), [
+                    'downpayment_status' => $downpaymentStatus,
                     'booking' => [
                         'reference_number' => $this->reference_number,
                         'id' => $this->id
@@ -91,5 +95,45 @@ class BookingResource extends JsonResource
             ] : null,
         ];
         return $data;
+    }
+
+    /**
+     * Calculate downpayment status for a payment
+     * Returns the manual downpayment_status if set, otherwise calculates based on payment sequence
+     */
+    private function calculateDownpaymentStatus($payment): ?string
+    {
+        // If payment has a manual downpayment status, use that
+        if ($payment->downpayment_status) {
+            return $payment->downpayment_status === 'downpayment' ? 'downpayment' : null;
+        }
+
+        // For backward compatibility, calculate based on payment sequence for pending payments
+        if ($payment->status !== 'pending') {
+            return null;
+        }
+
+        // Get all payments for this booking ordered by creation date
+        $allPayments = $this->payments->sortBy('created_at');
+
+        // Find the first pending payment
+        $firstPendingPayment = $allPayments->firstWhere('status', 'pending');
+
+        // If this payment is not the first pending payment, don't show downpayment status
+        if (!$firstPendingPayment || $firstPendingPayment->id !== $payment->id) {
+            return null;
+        }
+
+        // Check if there are any paid payments before this pending payment
+        $paidPaymentsBeforeThis = $allPayments
+            ->where('created_at', '<', $payment->created_at)
+            ->where('status', 'paid');
+
+        // Only show downpayment status if there are no paid payments before this pending payment
+        if ($paidPaymentsBeforeThis->isEmpty()) {
+            return 'downpayment';
+        }
+
+        return null;
     }
 }
