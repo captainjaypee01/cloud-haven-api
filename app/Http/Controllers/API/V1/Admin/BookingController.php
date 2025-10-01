@@ -437,6 +437,50 @@ class BookingController extends Controller
     }
 
     /**
+     * Update PWD/Senior discount for a booking.
+     */
+    public function updatePwdSeniorDiscount(Request $request, $bookingId)
+    {
+        $validated = $request->validate([
+            'pwd_senior_discount' => 'required|numeric|min:0',
+            'discount_reason' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $booking = $this->bookingService->show($bookingId);
+
+            DB::beginTransaction();
+
+            // Update the PWD/Senior discount
+            $booking->update([
+                'pwd_senior_discount' => $validated['pwd_senior_discount'],
+            ]);
+
+            DB::commit();
+
+            Log::info('PWD/Senior discount updated', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'pwd_senior_discount' => $validated['pwd_senior_discount'],
+                'discount_reason' => $validated['discount_reason'] ?? null
+            ]);
+
+            return new ItemResponse(new BookingResource($booking->refresh()));
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking not found.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to update PWD/Senior discount', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse('Unable to update PWD/Senior discount', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Change room unit assignment for a specific booking room.
      */
     public function changeRoomUnit(Request $request, $bookingId, $bookingRoomId)

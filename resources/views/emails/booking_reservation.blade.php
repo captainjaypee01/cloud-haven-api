@@ -71,7 +71,10 @@
                         @if($booking->discount_amount > 0)
                         <div class="kv"><strong>Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</div>
                         @endif
-                        <div class="kv"><strong>Total Amount to Pay:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0)) }}</div>
+                        @if($booking->pwd_senior_discount > 0)
+                        <div class="kv"><strong>PWD/Senior Discount:</strong> -{{ $fmtMoney($booking->pwd_senior_discount) }}</div>
+                        @endif
+                        <div class="kv"><strong>Total Amount to Pay:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0) - ($booking->pwd_senior_discount ?? 0)) }}</div>
                         @if($booking->downpayment_amount > 0)
                         <div class="kv"><strong>Downpayment Amount:</strong> {{ $fmtMoney($booking->downpayment_amount) }}</div>
                         @endif

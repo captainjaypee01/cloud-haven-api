@@ -16,7 +16,8 @@ class PublicBookingResource extends JsonResource
     {
         $downpaymentPercent = config('booking.downpayment_percent', 0.5);
         $discountAmount = $this->discount_amount ?? 0;
-        $actualFinalPrice = $this->final_price - $discountAmount;
+        $pwdSeniorDiscount = $this->pwd_senior_discount ?? 0;
+        $actualFinalPrice = $this->final_price - $discountAmount - $pwdSeniorDiscount;
         $downpaymentAmount = round($actualFinalPrice * $downpaymentPercent);
         $bookingData = [
             'user'                      => $this->user_id ? true : false,
@@ -40,6 +41,7 @@ class PublicBookingResource extends JsonResource
             'extra_guest_count'    => (int) $this->extra_guest_count,
             'meal_quote_data'      => $this->meal_quote_data,
             'discount_amount'          => $this->discount_amount,
+            'pwd_senior_discount'      => $this->pwd_senior_discount,
             'payment_option'          => $this->payment_option,
             'downpayment_amount'          => $this->downpayment_amount,
             'final_price'          => $this->final_price,
