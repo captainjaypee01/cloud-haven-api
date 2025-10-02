@@ -38,6 +38,10 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             // PWD/Senior discount - Available to all admin roles
             Route::patch('bookings/{booking}/pwd-senior-discount', 'BookingController@updatePwdSeniorDiscount');
             
+            // Room unit management for bookings - Available to all admin roles
+            Route::get('bookings/{booking}/available-room-units', 'BookingController@getAvailableRoomUnits');
+            Route::patch('bookings/{booking}/booking-rooms/{bookingRoom}/change-room-unit', 'BookingController@changeRoomUnit');
+            
             // Room Units Calendar - All roles can view
             Route::get('room-units/calendar', 'RoomUnitController@getCalendarData');
             Route::get('room-units/day-tour-calendar', 'RoomUnitController@getDayTourCalendarData');
@@ -69,10 +73,6 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             // Booking cancellation management
             Route::post('bookings/{booking}/cancel', 'BookingCancellationController@cancel');
             Route::get('bookings/{booking}/can-cancel', 'BookingCancellationController@canCancel');
-            
-            // Room unit management for bookings
-            Route::get('bookings/{booking}/available-room-units', 'BookingController@getAvailableRoomUnits');
-            Route::patch('bookings/{booking}/booking-rooms/{bookingRoom}/change-room-unit', 'BookingController@changeRoomUnit');
             
             // Promos
             Route::patch('promos/bulk-update-status', 'PromoController@bulkUpdateStatus');
