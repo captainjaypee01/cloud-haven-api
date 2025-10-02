@@ -283,7 +283,8 @@ class PromoCalculationService
         // Booking overlaps if: booking starts before promo ends AND booking ends after promo starts
         if ($promoStart && $promoEnd) {
             // Check if booking period overlaps with promo period
-            if ($checkOut->lte($promoStart) || $checkIn->gte($promoEnd)) {
+            // For date-based promos, end date should be inclusive (use gt instead of gte)
+            if ($checkOut->lte($promoStart) || $checkIn->gt($promoEnd)) {
                 $isValid = false;
                 $errors[] = 'Booking period does not overlap with promo period.';
             }
@@ -295,7 +296,8 @@ class PromoCalculationService
             }
         } elseif ($promoEnd) {
             // Only end date is set - check if booking starts before promo ends
-            if ($checkIn->gte($promoEnd)) {
+            // For date-based promos, end date should be inclusive (use gt instead of gte)
+            if ($checkIn->gt($promoEnd)) {
                 $isValid = false;
                 $errors[] = 'Booking period does not overlap with promo period.';
             }

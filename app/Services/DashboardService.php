@@ -108,16 +108,37 @@ class DashboardService implements DashboardServiceInterface
             ->orderBy('check_in_date')
             ->get();
         $bookingsList = $upcomingBookings->map(function ($booking) {
+            // Calculate other charges total
+            $otherChargesTotal = $booking->otherCharges->sum('amount');
+            
+            // Calculate actual final price after discounts
+            $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount;
+            
+            // Calculate total payable amount
+            $totalPayable = $actualFinalPrice + $otherChargesTotal;
+            
+            // Calculate total paid amount
+            $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
+            
+            // Calculate remaining balance
+            $remainingBalance = max(0, $totalPayable - $totalPaid);
+            
             return [
                 'id'                    => $booking->id,
                 'guest_name'            => $booking->guest_name,
-                'rooms'                 => $booking->bookingRooms->map(fn($br)          => $br->room->name)->all(),
+                'rooms'                 => $booking->bookingRooms->map(fn($br) => $br->room->name)->all(),
                 'final_price'           => $booking->final_price,
+                'discount_amount'       => $booking->discount_amount,
+                'pwd_senior_discount'   => $booking->pwd_senior_discount,
+                'other_charges'         => $booking->otherCharges,
+                'other_charges_total'   => $otherChargesTotal,
+                'total_payable'         => $totalPayable,
+                'total_paid'            => $totalPaid,
+                'remaining_balance'     => $remainingBalance,
                 'status'                => $booking->status,
                 'check_in_date'         => $booking->check_in_date,
                 'check_out_date'        => $booking->check_out_date,
                 'payments'              => $booking->payments,
-                'other_charges'         => $booking->otherCharges,
             ];
         })->toArray();
 
