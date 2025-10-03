@@ -361,4 +361,82 @@ class RoomUnitServiceTest extends TestCase
         $this->assertEquals('available', $unit2Day17['status']);
         $this->assertNull($unit2Day17['booking_source']);
     }
+
+    public function test_shows_bookings_that_span_month_boundaries_in_the_correct_month()
+    {
+        // Create room units first
+        $unit = RoomUnit::create([
+            'room_id' => $this->room->id,
+            'unit_number' => '101',
+            'status' => RoomUnitStatusEnum::AVAILABLE
+        ]);
+
+        // Create a booking from Oct 31 to Nov 1 (spanning month boundary)
+        $booking = Booking::create([
+            'reference_number' => 'CH-2024-001',
+            'guest_name' => 'Month Boundary Test',
+            'guest_email' => 'test@example.com',
+            'guest_phone' => '1234567890',
+            'check_in_date' => '2024-10-31',
+            'check_in_time' => '15:00:00',
+            'check_out_date' => '2024-11-01',
+            'check_out_time' => '11:00:00',
+            'adults' => 2,
+            'children' => 0,
+            'total_guests' => 2,
+            'status' => 'downpayment',
+            'booking_type' => 'overnight',
+            'booking_source' => 'online',
+            'total_price' => 1000,
+            'meal_price' => 0,
+            'final_price' => 1000,
+            'downpayment_amount' => 500,
+        ]);
+
+        // Assign to a room unit
+        BookingRoom::create([
+            'booking_id' => $booking->id,
+            'room_id' => $this->room->id,
+            'room_unit_id' => $unit->id,
+            'price_per_night' => 500,
+            'adults' => 2,
+            'children' => 0,
+            'total_guests' => 2,
+            'total_price' => 1000,
+        ]);
+
+        // Get October calendar data
+        $octoberData = $this->roomUnitService->getRoomUnitCalendarData(2024, 10);
+        
+        $this->assertArrayHasKey('rooms', $octoberData);
+        $this->assertCount(1, $octoberData['rooms']);
+
+        $room = $octoberData['rooms'][0];
+        $unitData = collect($room['units'])->firstWhere('id', $unit->id);
+        
+        $this->assertNotNull($unitData);
+
+        // Check October 31st - should be booked
+        $oct31Status = collect($unitData['day_statuses'])->firstWhere('day', 31);
+        $this->assertNotNull($oct31Status);
+        $this->assertEquals('booked', $oct31Status['status']);
+        $this->assertEquals('online', $oct31Status['booking_source']);
+
+        // Get November calendar data
+        $novemberData = $this->roomUnitService->getRoomUnitCalendarData(2024, 11);
+        
+        $this->assertArrayHasKey('rooms', $novemberData);
+        $this->assertCount(1, $novemberData['rooms']);
+
+        $room = $novemberData['rooms'][0];
+        $unitData = collect($room['units'])->firstWhere('id', $unit->id);
+        
+        $this->assertNotNull($unitData);
+
+        // Check November 1st - should be available (check-out day)
+        $nov1Status = collect($unitData['day_statuses'])->firstWhere('day', 1);
+        $this->assertNotNull($nov1Status);
+        $this->assertEquals('available', $nov1Status['status']);
+        $this->assertNull($nov1Status['booking_source']);
+    }
 }

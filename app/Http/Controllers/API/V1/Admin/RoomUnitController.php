@@ -299,6 +299,56 @@ class RoomUnitController extends Controller
     }
 
     /**
+     * Clear calendar cache for a specific month and year.
+     */
+    public function clearCalendarCache(Request $request): JsonResponse
+    {
+        $request->validate([
+            'year' => ['required', 'integer', 'min:2020', 'max:2030'],
+            'month' => ['required', 'integer', 'min:1', 'max:12'],
+        ]);
+
+        try {
+            $this->roomUnitService->clearCalendarCache(
+                $request->integer('year'),
+                $request->integer('month')
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Calendar cache cleared successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to clear calendar cache: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Clear all calendar cache for current and next year.
+     */
+    public function clearAllCalendarCache(): JsonResponse
+    {
+        try {
+            $this->roomUnitService->clearAllCalendarCache();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All calendar cache cleared successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to clear calendar cache: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Remove the specified room unit.
      */
     public function destroy(RoomUnit $roomUnit): JsonResponse

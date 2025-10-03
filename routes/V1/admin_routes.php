@@ -47,6 +47,8 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             Route::get('room-units/day-tour-calendar', 'RoomUnitController@getDayTourCalendarData');
             Route::get('room-units/{roomUnit}/booking-details', 'RoomUnitController@getBookingDetails');
             Route::get('room-units/{roomUnit}/day-tour-booking-details', 'RoomUnitController@getDayTourBookingDetails');
+            Route::post('room-units/clear-calendar-cache', 'RoomUnitController@clearCalendarCache');
+            Route::post('room-units/clear-all-calendar-cache', 'RoomUnitController@clearAllCalendarCache');
         });
         
         // Admin, Superadmin routes

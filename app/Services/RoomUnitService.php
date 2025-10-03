@@ -321,7 +321,7 @@ class RoomUnitService
                 // Overnight bookings that overlap with the month
                 $q->where(function ($overnight) use ($startOfMonth, $endOfMonth) {
                     $overnight->where('bookings.booking_type', '<>', 'day_tour')
-                              ->where('bookings.check_in_date', '<', $endOfMonth->toDateString())
+                              ->where('bookings.check_in_date', '<=', $endOfMonth->toDateString())
                               ->where('bookings.check_out_date', '>', $startOfMonth->toDateString());
                 })
                 // Day tour bookings within the month
