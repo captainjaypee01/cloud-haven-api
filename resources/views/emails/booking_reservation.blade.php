@@ -74,10 +74,16 @@
                         @if($booking->pwd_senior_discount > 0)
                         <div class="kv"><strong>PWD/Senior Discount:</strong> -{{ $fmtMoney($booking->pwd_senior_discount) }}</div>
                         @endif
-                        <div class="kv"><strong>Total Amount to Pay:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0) - ($booking->pwd_senior_discount ?? 0)) }}</div>
-                        @if($booking->downpayment_amount > 0)
-                        <div class="kv"><strong>Downpayment Amount:</strong> {{ $fmtMoney($booking->downpayment_amount) }}</div>
-                        @endif
+                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0) - ($booking->pwd_senior_discount ?? 0)) }}</div>
+                        @php
+                            $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
+                            $otherCharges = $booking->otherCharges->sum('amount');
+                            $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount;
+                            $totalPayable = $actualFinalPrice + $otherCharges;
+                            $remainingBalance = max(0, $totalPayable - $totalPaid);
+                        @endphp
+                        <div class="kv"><strong>Total Paid:</strong> {{ $fmtMoney($totalPaid) }}</div>
+                        <div class="kv"><strong>Remaining Balance:</strong> {{ $fmtMoney($remainingBalance) }}</div>
                     </div>
 
                     @if(!empty($booking->bookingRooms) && $booking->bookingRooms->count())

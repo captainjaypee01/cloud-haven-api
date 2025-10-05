@@ -218,10 +218,19 @@
                 @if($booking->discount_amount > 0)
                 <p><strong>Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</p>
                 @endif
-                <p><strong>Total Amount to Pay:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0)) }}</p>
-                @if($booking->downpayment_amount > 0)
-                <p><strong>Downpayment Amount:</strong> {{ $fmtMoney($booking->downpayment_amount) }}</p>
+                @if($booking->pwd_senior_discount > 0)
+                <p><strong>PWD/Senior Discount:</strong> -{{ $fmtMoney($booking->pwd_senior_discount) }}</p>
                 @endif
+                <p><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0) - ($booking->pwd_senior_discount ?? 0)) }}</p>
+                @php
+                    $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
+                    $otherCharges = $booking->otherCharges->sum('amount');
+                    $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount;
+                    $totalPayable = $actualFinalPrice + $otherCharges;
+                    $remainingBalance = max(0, $totalPayable - $totalPaid);
+                @endphp
+                <p><strong>Total Paid:</strong> {{ $fmtMoney($totalPaid) }}</p>
+                <p><strong>Remaining Balance:</strong> {{ $fmtMoney($remainingBalance) }}</p>
             </div>
         </div>
 
