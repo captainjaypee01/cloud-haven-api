@@ -322,7 +322,7 @@ class BookingService implements BookingServiceInterface
         // Events: one per booking_room (prefer assigned unit data)
         $eventRows = BookingRoom::query()
             ->with([
-                'booking:id,check_in_date,check_out_date,status,guest_name,total_price,final_price,adults,children,total_guests,reference_number,booking_type,deleted_at,meal_quote_data',
+                'booking:id,check_in_date,check_out_date,status,guest_name,total_price,final_price,discount_amount,pwd_senior_discount,special_discount,adults,children,total_guests,reference_number,booking_type,deleted_at,meal_quote_data',
                 'room:id,name,max_guests',
                 'roomUnit:id,unit_number',
             ])
@@ -377,7 +377,10 @@ class BookingService implements BookingServiceInterface
             
             // Calculate remaining balance
             $paidAmount = $booking->payments()->where('status', 'paid')->sum('amount');
-            $remainingBalance = max(0, $booking->final_price - $paidAmount);
+            $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount - $booking->special_discount;
+            $otherCharges = $booking->otherCharges()->sum('amount');
+            $totalPayable = $actualFinalPrice + $otherCharges;
+            $remainingBalance = max(0, $totalPayable - $paidAmount);
             
             // Determine meal program type based on meal_quote_data
             $mealProgramType = $this->determineMealProgramType($booking);
@@ -404,6 +407,11 @@ class BookingService implements BookingServiceInterface
                 'nights' => $nights,
                 'total_price' => $booking->total_price,
                 'final_price' => $booking->final_price,
+                'discount_amount' => $booking->discount_amount,
+                'pwd_senior_discount' => $booking->pwd_senior_discount,
+                'special_discount' => $booking->special_discount,
+                'other_charges' => $otherCharges,
+                'total_payable' => $totalPayable,
                 'remaining_balance' => $remainingBalance,
                 'adults' => $br->adults,
                 'children' => $br->children,

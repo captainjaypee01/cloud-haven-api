@@ -24,6 +24,7 @@ return [
         // Manual admin cancellation reasons
         'guest_request' => 'Cancelled at guest request',
         'invalid_booking' => 'Invalid or duplicate booking',
+        'failed_booking_attempt' => 'Failed booking attempt',
         'system_error' => 'System error or technical issue',
         'operational_issue' => 'Operational or facility issue',
         'other' => 'Other reason'

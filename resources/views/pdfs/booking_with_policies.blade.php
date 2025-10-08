@@ -216,16 +216,13 @@
                 @endif
                 <p><strong>Total Price:</strong> {{ $fmtMoney($booking->final_price) }}</p>
                 @if($booking->discount_amount > 0)
-                <p><strong>Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</p>
+                <p><strong>Promo Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</p>
                 @endif
                 @if($booking->pwd_senior_discount > 0)
                 <p><strong>PWD/Senior Discount:</strong> -{{ $fmtMoney($booking->pwd_senior_discount) }}</p>
                 @endif
                 @if($booking->special_discount > 0)
                 <p><strong>Special Discount:</strong> -{{ $fmtMoney($booking->special_discount) }}</p>
-                @if($booking->special_discount_reason)
-                <p><strong>Special Discount Reason:</strong> {{ $booking->special_discount_reason }}</p>
-                @endif
                 @endif
                 <p><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0) - ($booking->pwd_senior_discount ?? 0) - ($booking->special_discount ?? 0)) }}</p>
                 @php

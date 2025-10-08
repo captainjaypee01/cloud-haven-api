@@ -75,16 +75,13 @@
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
                         <div class="kv"><strong>Total Price:</strong> {{ $fmtMoney($booking->final_price) }}</div>
                         @if($booking->discount_amount > 0)
-                        <div class="kv"><strong>Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</div>
+                        <div class="kv"><strong>Promo Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</div>
                         @endif
                         @if($booking->pwd_senior_discount > 0)
                         <div class="kv"><strong>PWD/Senior Discount:</strong> -{{ $fmtMoney($booking->pwd_senior_discount) }}</div>
                         @endif
                         @if($booking->special_discount > 0)
                         <div class="kv"><strong>Special Discount:</strong> -{{ $fmtMoney($booking->special_discount) }}</div>
-                        @if($booking->special_discount_reason)
-                        <div class="kv"><strong>Special Discount Reason:</strong> {{ $booking->special_discount_reason }}</div>
-                        @endif
                         @endif
                         <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0) - ($booking->pwd_senior_discount ?? 0) - ($booking->special_discount ?? 0)) }}</div>
                         @php

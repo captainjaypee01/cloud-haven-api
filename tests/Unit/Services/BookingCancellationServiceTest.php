@@ -74,6 +74,7 @@ describe('BookingCancellationService', function () {
         expect($reasons)->toHaveKeys([
             'guest_request',
             'invalid_booking',
+            'failed_booking_attempt',
             'system_error',
             'operational_issue',
             'other'
