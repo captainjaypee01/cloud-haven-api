@@ -617,7 +617,7 @@ class RoomUnitService
         $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
         $otherCharges = $booking->otherCharges->sum('amount');
         // Calculate actual final price after discount and PWD/Senior discount, then add other charges
-        $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount;
+        $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount - $booking->special_discount;
         $totalPayable = $actualFinalPrice + $otherCharges;
         $remainingBalance = max(0, $totalPayable - $totalPaid);
         
@@ -646,6 +646,7 @@ class RoomUnitService
             'extra_guest_count' => $booking->extra_guest_count,
             'discount_amount' => $booking->discount_amount,
             'pwd_senior_discount' => $booking->pwd_senior_discount,
+            'special_discount' => $booking->special_discount,
             'downpayment_amount' => $booking->downpayment_amount,
             'other_charges' => $otherCharges,
             'total_payable' => $totalPayable,
@@ -681,7 +682,7 @@ class RoomUnitService
         $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
         $otherCharges = $booking->otherCharges->sum('amount');
         // Calculate actual final price after discount and PWD/Senior discount, then add other charges
-        $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount;
+        $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount - $booking->special_discount;
         $totalPayable = $actualFinalPrice + $otherCharges;
         $remainingBalance = max(0, $totalPayable - $totalPaid);
         

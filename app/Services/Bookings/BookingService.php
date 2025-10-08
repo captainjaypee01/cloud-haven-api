@@ -180,7 +180,7 @@ class BookingService implements BookingServiceInterface
         $paidAmount = $booking->payments()->where('status', 'paid')->sum('amount');
         
         // Calculate the actual final price after discount and including other charges
-        $actualFinalPrice = $booking->final_price - $booking->discount_amount;
+        $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount - $booking->special_discount;
         $otherCharges = $booking->otherCharges()->sum('amount');
         $totalPayable = $actualFinalPrice + $otherCharges;
         

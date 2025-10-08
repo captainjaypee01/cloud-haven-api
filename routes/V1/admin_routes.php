@@ -38,6 +38,9 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             // PWD/Senior discount - Available to all admin roles
             Route::patch('bookings/{booking}/pwd-senior-discount', 'BookingController@updatePwdSeniorDiscount');
             
+            // Special discount - Available to all admin roles
+            Route::patch('bookings/{booking}/special-discount', 'BookingController@updateSpecialDiscount');
+            
             // Room unit management for bookings - Available to all admin roles
             Route::get('bookings/{booking}/available-room-units', 'BookingController@getAvailableRoomUnits');
             Route::patch('bookings/{booking}/booking-rooms/{bookingRoom}/change-room-unit', 'BookingController@changeRoomUnit');

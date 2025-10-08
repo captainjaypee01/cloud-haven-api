@@ -18,7 +18,7 @@ class BookingResource extends JsonResource
         
         // Calculate remaining balance
         $totalPaid = $this->payments()->where('status', 'paid')->sum('amount');
-        $actualFinalPrice = $this->final_price - $this->discount_amount - $this->pwd_senior_discount;
+        $actualFinalPrice = $this->final_price - $this->discount_amount - $this->pwd_senior_discount - $this->special_discount;
         $totalPayable = $actualFinalPrice + $other_charges;
         $remaining_balance = max(0, $totalPayable - $totalPaid);
         
@@ -44,6 +44,9 @@ class BookingResource extends JsonResource
             'meal_quote_data'           => $this->meal_quote_data,
             'discount_amount'           => $this->discount_amount,
             'pwd_senior_discount'       => $this->pwd_senior_discount,
+            'pwd_senior_discount_reason' => $this->pwd_senior_discount_reason,
+            'special_discount'          => $this->special_discount,
+            'special_discount_reason'   => $this->special_discount_reason,
             'downpayment_amount'        => $this->downpayment_amount,
             'final_price'               => $this->final_price,
             'total_paid'                => $totalPaid,

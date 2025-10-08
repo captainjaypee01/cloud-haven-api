@@ -443,7 +443,7 @@ class BookingController extends Controller
     {
         $validated = $request->validate([
             'pwd_senior_discount' => 'required|numeric|min:0',
-            'discount_reason' => 'nullable|string|max:500',
+            'discount_reason' => 'required|string|max:500',
         ]);
 
         try {
@@ -454,6 +454,7 @@ class BookingController extends Controller
             // Update the PWD/Senior discount
             $booking->update([
                 'pwd_senior_discount' => $validated['pwd_senior_discount'],
+                'pwd_senior_discount_reason' => $validated['discount_reason'],
             ]);
 
             DB::commit();
@@ -477,6 +478,51 @@ class BookingController extends Controller
                 'error' => $e->getMessage()
             ]);
             return new ErrorResponse('Unable to update PWD/Senior discount', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Update special discount for a booking.
+     */
+    public function updateSpecialDiscount(Request $request, $bookingId)
+    {
+        $validated = $request->validate([
+            'special_discount' => 'required|numeric|min:0',
+            'discount_reason' => 'required|string|max:500',
+        ]);
+
+        try {
+            $booking = $this->bookingService->show($bookingId);
+
+            DB::beginTransaction();
+
+            // Update the special discount
+            $booking->update([
+                'special_discount' => $validated['special_discount'],
+                'special_discount_reason' => $validated['discount_reason'],
+            ]);
+
+            DB::commit();
+
+            Log::info('Special discount updated', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'special_discount' => $validated['special_discount'],
+                'discount_reason' => $validated['discount_reason'] ?? null
+            ]);
+
+            return new ItemResponse(new BookingResource($booking->refresh()));
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking not found.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to update special discount', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse('Unable to update special discount', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 

@@ -112,7 +112,7 @@ class DashboardService implements DashboardServiceInterface
             $otherChargesTotal = $booking->otherCharges->sum('amount');
             
             // Calculate actual final price after discounts
-            $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount;
+            $actualFinalPrice = $booking->final_price - $booking->discount_amount - $booking->pwd_senior_discount - $booking->special_discount;
             
             // Calculate total payable amount
             $totalPayable = $actualFinalPrice + $otherChargesTotal;
@@ -130,6 +130,7 @@ class DashboardService implements DashboardServiceInterface
                 'final_price'           => $booking->final_price,
                 'discount_amount'       => $booking->discount_amount,
                 'pwd_senior_discount'   => $booking->pwd_senior_discount,
+                'special_discount'      => $booking->special_discount,
                 'other_charges'         => $booking->otherCharges,
                 'other_charges_total'   => $otherChargesTotal,
                 'total_payable'         => $totalPayable,
