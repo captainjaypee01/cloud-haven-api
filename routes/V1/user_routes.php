@@ -14,7 +14,6 @@ Route::prefix('user')->namespace('App\Http\Controllers\API\V1\User')
         // User routes...
         Route::get('clerk/test', fn() => 'Clerk Middleware Check Guest | ' . auth()->user()->clerk_id);
 
-        Route::post('/reviews', 'ReviewController@store');
         Route::get('/bookings/user', 'BookingController@listByUser');
         Route::patch('/bookings/ref/{referenceNumber}/claim', 'BookingController@claim');
         

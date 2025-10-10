@@ -46,6 +46,10 @@ class Booking extends Model
         'paid_amount',
         'status',
         'is_reviewed',
+        'review_token',
+        'review_token_expires_at',
+        'review_email_sent_at',
+        'review_token_used_at',
         'failed_payment_attempts',
         'last_payment_failed_at',
         'reserved_until',
@@ -72,6 +76,9 @@ class Booking extends Model
         return [
             'created_at' => 'datetime:Y-m-d H:i:s',
             'cancelled_at' => 'datetime',
+            'review_token_expires_at' => 'datetime',
+            'review_email_sent_at' => 'datetime',
+            'review_token_used_at' => 'datetime',
             'discount_amount' => 'decimal:2',
             'pwd_senior_discount' => 'decimal:2',
             'special_discount' => 'decimal:2',
@@ -135,6 +142,68 @@ class Booking extends Model
     public function promo()
     {
         return $this->belongsTo(Promo::class);
+    }
+
+    /**
+     * Generate a secure review token for this booking
+     */
+    public function generateReviewToken(): string
+    {
+        $token = hash('sha256', $this->reference_number . now()->timestamp . random_bytes(32));
+        $expiresAt = now()->addDays(30); // Token expires in 30 days
+        
+        $this->update([
+            'review_token' => $token,
+            'review_token_expires_at' => $expiresAt,
+        ]);
+        
+        return $token;
+    }
+
+    /**
+     * Check if the review token is valid and not expired
+     */
+    public function isReviewTokenValid(string $token): bool
+    {
+        return $this->review_token === $token 
+            && $this->review_token_expires_at 
+            && $this->review_token_expires_at->isFuture()
+            && !$this->review_token_used_at;
+    }
+
+    /**
+     * Mark the review token as used
+     */
+    public function markReviewTokenAsUsed(): void
+    {
+        $this->update(['review_token_used_at' => now()]);
+    }
+
+    /**
+     * Check if review email has been sent
+     */
+    public function hasReviewEmailBeenSent(): bool
+    {
+        return !is_null($this->review_email_sent_at);
+    }
+
+    /**
+     * Mark review email as sent
+     */
+    public function markReviewEmailAsSent(): void
+    {
+        $this->update(['review_email_sent_at' => now()]);
+    }
+
+    /**
+     * Check if booking is eligible for review (completed stay, not already reviewed)
+     */
+    public function isEligibleForReview(): bool
+    {
+        $today = now()->toDateString();
+        return $this->check_out_date <= $today 
+            && in_array($this->status, ['paid', 'downpayment'])
+            && !$this->is_reviewed;
     }
 
     protected static function booted()

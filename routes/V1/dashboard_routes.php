@@ -42,6 +42,12 @@ Route::prefix('/')->namespace('App\Http\Controllers\API\V1\Dashboard')
 
         Route::get('/reviews/testimonials', 'ReviewController@testimonials');
 
+        // Public review routes (no authentication required)
+        Route::prefix('reviews')->group(function () {
+            Route::get('/booking', 'ReviewController@getBookingForReview');
+            Route::post('/submit', 'ReviewController@submitReview');
+        });
+
         // Contact form route with rate limiting
         Route::post('/contact', 'ContactMessageController@store')
             ->middleware('throttle:contact-form');
