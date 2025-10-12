@@ -16,6 +16,8 @@ use App\Http\Requests\Booking\WalkInBookingRequest;
 use App\Http\Requests\Booking\BookingModificationRequest;
 use App\Services\Bookings\WalkInBookingService;
 use App\Actions\Bookings\ModifyBookingAction;
+use App\Actions\DayTour\ModifyDayTourBookingAction;
+use App\Http\Requests\DayTour\DayTourBookingModificationRequest;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -30,7 +32,8 @@ class BookingController extends Controller
         private readonly BookingServiceInterface $bookingService,
         private readonly RoomUnitService $roomUnitService,
         private readonly WalkInBookingService $walkInBookingService,
-        private readonly ModifyBookingAction $modifyBookingAction
+        private readonly ModifyBookingAction $modifyBookingAction,
+        private readonly ModifyDayTourBookingAction $modifyDayTourBookingAction
     ) {}
     /**
      * Display a listing of the resource.
@@ -626,6 +629,67 @@ class BookingController extends Controller
                 'error' => $e->getMessage()
             ]);
             return new ErrorResponse('Unable to modify booking. Please try again.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Modify Day Tour booking (separate from overnight bookings)
+     */
+    public function modifyDayTourBooking(DayTourBookingModificationRequest $request, $bookingId)
+    {
+        try {
+            $booking = $this->bookingService->show($bookingId);
+            
+            // Validate this is a Day Tour booking
+            if ($booking->booking_type !== 'day_tour') {
+                return new ErrorResponse('This endpoint is only for Day Tour bookings.', 422);
+            }
+            
+            // Check if booking can be modified (only pending and downpayment bookings)
+            if (!in_array($booking->status, ['pending', 'downpayment'])) {
+                return new ErrorResponse('Only pending and downpayment bookings can be modified.', 422);
+            }
+
+            $modificationData = $request->toDTO();
+
+            Log::info('Admin modifying Day Tour booking', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'current_rooms_count' => $booking->bookingRooms()->count(),
+                'new_rooms_count' => count($modificationData->rooms),
+                'modification_reason' => $modificationData->modification_reason,
+            ]);
+
+            $updatedBooking = $this->modifyDayTourBookingAction->execute($booking, $modificationData);
+
+            Log::info('Day Tour booking modification completed successfully', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $updatedBooking->id,
+                'booking_reference' => $updatedBooking->reference_number,
+                'new_total_price' => $updatedBooking->total_price,
+                'new_final_price' => $updatedBooking->final_price,
+            ]);
+
+            return new ItemResponse(
+                new \App\Http\Resources\Booking\BookingResource($updatedBooking),
+                JsonResponse::HTTP_OK
+            );
+            
+        } catch (\InvalidArgumentException $e) {
+            Log::warning('Day Tour booking modification validation failed', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            Log::error('Day Tour booking modification failed', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse('Unable to modify Day Tour booking. Please try again.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

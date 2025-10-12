@@ -28,7 +28,7 @@ class BookingModificationRequest extends FormRequest
             'rooms.*.children' => ['required', 'integer', 'min:0', 'max:10'],
             'rooms.*.total_guests' => ['required', 'integer', 'min:1', 'max:12'],
             'rooms.*.room_unit_id' => ['nullable', 'integer', 'exists:room_units,id'],
-            'modification_reason' => ['nullable', 'string', 'max:500'],
+            'modification_reason' => ['required', 'string', 'max:1000'],
             'send_email' => ['nullable', 'boolean'],
         ];
     }
@@ -80,7 +80,8 @@ class BookingModificationRequest extends FormRequest
             'rooms.*.total_guests.min' => 'At least 1 guest is required.',
             'rooms.*.total_guests.max' => 'Maximum 12 guests allowed per room.',
             'rooms.*.room_unit_id.exists' => 'Selected room unit is not valid.',
-            'modification_reason.max' => 'Modification reason cannot exceed 500 characters.',
+            'modification_reason.required' => 'Modification reason is required.',
+            'modification_reason.max' => 'Modification reason cannot exceed 1000 characters.',
         ];
     }
 }
