@@ -389,7 +389,6 @@ class MealPricingService implements MealPricingServiceInterface
     {
         $activePrograms = $this->programRepository->getActive();
         foreach ($activePrograms as $program) {
-            // \Log::info('program', ['program' => $program->id, 'date' => $date->format('Y-m-d')]);
             if ($this->isProgramActiveForDate($program, $date)) {
                 return $program;
             }
