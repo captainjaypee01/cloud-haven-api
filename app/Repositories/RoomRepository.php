@@ -73,18 +73,18 @@ class RoomRepository implements RoomRepositoryInterface
         return Room::with('amenities')->where('slug', $slug)->firstOrFail();
     }
 
-    public function getAvailableUnits(int $roomId, string $startDate, string $endDate): int
+    public function getAvailableUnits(int $roomId, string $startDate, string $endDate, ?int $excludeBookingId = null): int
     {
-        $availability = $this->getDetailedAvailability($roomId, $startDate, $endDate);
+        $availability = $this->getDetailedAvailability($roomId, $startDate, $endDate, $excludeBookingId);
         return $availability['available'];
     }
 
-    public function getDetailedAvailability(int $roomId, string $startDate, string $endDate): array
+    public function getDetailedAvailability(int $roomId, string $startDate, string $endDate, ?int $excludeBookingId = null): array
     {
         $room = Room::findOrFail($roomId);
 
         // 1. Count confirmed units - bookings with paid/downpayment status
-        $confirmedUnits = DB::table('booking_rooms')
+        $confirmedUnitsQuery = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
             ->where('booking_rooms.room_id', $roomId)
             ->whereIn('bookings.status', ['paid', 'downpayment'])
@@ -99,12 +99,18 @@ class RoomRepository implements RoomRepositoryInterface
                     $subQ->where('bookings.booking_type', 'day_tour')
                         ->where('bookings.check_in_date', $startDate);
                 });
-            })
-            ->count();
+            });
+        
+        // Exclude specific booking if provided
+        if ($excludeBookingId) {
+            $confirmedUnitsQuery->where('bookings.id', '!=', $excludeBookingId);
+        }
+        
+        $confirmedUnits = $confirmedUnitsQuery->count();
 
         // 2. Count pending units Part 1 - bookings with payment records (proof uploaded)
         // Status doesn't matter as long as there's a payment record
-        $pendingWithPayment = DB::table('booking_rooms')
+        $pendingWithPaymentQuery = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
             ->join('payments', 'bookings.id', '=', 'payments.booking_id')
             ->where('booking_rooms.room_id', $roomId)
@@ -120,11 +126,17 @@ class RoomRepository implements RoomRepositoryInterface
                     $subQ->where('bookings.booking_type', 'day_tour')
                         ->where('bookings.check_in_date', $startDate);
                 });
-            })
-            ->count();
+            });
+        
+        // Exclude specific booking if provided
+        if ($excludeBookingId) {
+            $pendingWithPaymentQuery->where('bookings.id', '!=', $excludeBookingId);
+        }
+        
+        $pendingWithPayment = $pendingWithPaymentQuery->count();
 
         // 3. Count pending units Part 2 - bookings without payment records (within reserved_until period)
-        $pendingWithoutPayment = DB::table('booking_rooms')
+        $pendingWithoutPaymentQuery = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
             ->leftJoin('payments', 'bookings.id', '=', 'payments.booking_id')
             ->where('booking_rooms.room_id', $roomId)
@@ -142,8 +154,14 @@ class RoomRepository implements RoomRepositoryInterface
                     $subQ->where('bookings.booking_type', 'day_tour')
                         ->where('bookings.check_in_date', $startDate);
                 });
-            })
-            ->count();
+            });
+        
+        // Exclude specific booking if provided
+        if ($excludeBookingId) {
+            $pendingWithoutPaymentQuery->where('bookings.id', '!=', $excludeBookingId);
+        }
+        
+        $pendingWithoutPayment = $pendingWithoutPaymentQuery->count();
 
         // 4. Count unavailable units from room_units table (maintenance/blocked)
         // Check units that are in maintenance or blocked status AND their date ranges overlap with our search dates

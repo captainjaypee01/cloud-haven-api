@@ -45,6 +45,9 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             Route::get('bookings/{booking}/available-room-units', 'BookingController@getAvailableRoomUnits');
             Route::patch('bookings/{booking}/booking-rooms/{bookingRoom}/change-room-unit', 'BookingController@changeRoomUnit');
             
+            // Booking modification - Available to all admin roles
+            Route::patch('bookings/{booking}/modify', 'BookingController@modifyBooking');
+            
             // Room Units Calendar - All roles can view
             Route::get('room-units/calendar', 'RoomUnitController@getCalendarData');
             Route::get('room-units/day-tour-calendar', 'RoomUnitController@getDayTourCalendarData');

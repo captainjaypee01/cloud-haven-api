@@ -13,7 +13,9 @@ use App\Services\RoomUnitService;
 use App\Services\EmailTrackingService;
 use App\DTO\Bookings\BookingData;
 use App\Http\Requests\Booking\WalkInBookingRequest;
+use App\Http\Requests\Booking\BookingModificationRequest;
 use App\Services\Bookings\WalkInBookingService;
+use App\Actions\Bookings\ModifyBookingAction;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -27,7 +29,8 @@ class BookingController extends Controller
     public function __construct(
         private readonly BookingServiceInterface $bookingService,
         private readonly RoomUnitService $roomUnitService,
-        private readonly WalkInBookingService $walkInBookingService
+        private readonly WalkInBookingService $walkInBookingService,
+        private readonly ModifyBookingAction $modifyBookingAction
     ) {}
     /**
      * Display a listing of the resource.
@@ -568,6 +571,60 @@ class BookingController extends Controller
                 'error' => $e->getMessage()
             ]);
             return new ErrorResponse('Unable to change room unit assignment', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Modify booking rooms and guest counts.
+     */
+    public function modifyBooking(BookingModificationRequest $request, $bookingId)
+    {
+        try {
+            $booking = $this->bookingService->show($bookingId);
+            
+            // Check if booking can be modified (only pending and downpayment bookings)
+            if (!in_array($booking->status, ['pending', 'downpayment'])) {
+                return new ErrorResponse('Only pending and downpayment bookings can be modified.', 422);
+            }
+
+            $modificationData = \App\DTO\Bookings\BookingModificationData::from($request->validated());
+
+            Log::info('Admin modifying booking', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'current_rooms_count' => $booking->bookingRooms()->count(),
+                'new_rooms_count' => count($modificationData->rooms),
+                'modification_reason' => $modificationData->modification_reason,
+            ]);
+
+            $updatedBooking = $this->modifyBookingAction->execute($booking, $modificationData);
+
+            Log::info('Booking modification completed successfully', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $updatedBooking->id,
+                'booking_reference' => $updatedBooking->reference_number,
+                'new_total_price' => $updatedBooking->total_price,
+                'new_final_price' => $updatedBooking->final_price,
+            ]);
+
+            return new ItemResponse(new BookingResource($updatedBooking));
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking not found.');
+        } catch (\App\Exceptions\RoomNotAvailableException $e) {
+            Log::warning('Booking modification failed - room not available', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            Log::error('Booking modification failed', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse('Unable to modify booking. Please try again.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }
