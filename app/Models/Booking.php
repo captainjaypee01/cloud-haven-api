@@ -40,6 +40,7 @@ class Booking extends Model
         'pwd_senior_discount_reason',
         'special_discount',
         'special_discount_reason',
+        'modification_reason',
         'payment_option',
         'downpayment_amount',
         'final_price',

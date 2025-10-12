@@ -19,6 +19,7 @@ class PublicRoomResource extends JsonResource
         // $viewList = ['Pool', 'Garden'];
         // $floorList = ['Ground', 'Second'];
         return [
+            'id'                    => $this->id,                       // numeric ID for API calls
             'slug'                  => $this->slug,                     // identifier for detail route
             'name'                  => $this->name,
             'available'             => $this->quantity,

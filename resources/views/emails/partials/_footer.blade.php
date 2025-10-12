@@ -32,4 +32,10 @@
     </div>
   </div>
 </div>
+
+<!-- Email Reply Notice -->
+<div style="background:#fff3cd; border:1px solid #ffeaa7; border-radius:4px; padding:12px; margin:16px 32px; font-size:13px; color:#856404;">
+  <strong>📧 Email Notice:</strong> Please do not reply to this automated email. For any questions or concerns, please contact us directly using the contact information provided above.
+</div>
+
 <div class="small">*** This email notification was sent because of your booking at {{ $name }}. ***</div>

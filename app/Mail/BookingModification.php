@@ -2,29 +2,48 @@
 
 namespace App\Mail;
 
-use App\Models\Booking;
+use App\Services\ResortPoliciesPdfService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
-class BookingModification extends Mailable
+class BookingModification extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(
-        public Booking $booking,
-        public ?string $modificationReason = null
-    ) {}
+    public $booking;
+    public $modificationReason;
 
-    public function envelope(): Envelope
+    /**
+     * Create a new message instance.
+     */
+    public function __construct($booking, ?string $modificationReason = null)
     {
-        return new Envelope(
-            subject: "Booking Modification - {$this->booking->reference_number}",
-        );
+        $this->booking = $booking;
+        $this->modificationReason = $modificationReason;
     }
 
+    /**
+     * Get the message envelope.
+     */
+    public function envelope(): Envelope
+    {
+        $resortName = config('resort.name', config('app.name', 'Your Resort'));
+        $bookingCode = $this->booking->reference_number ?? 'N/A';
+
+        $subject = sprintf('[Booking Modified] — %s (%s)', $resortName, $bookingCode);
+
+        return new Envelope(subject: $subject);
+    }
+
+    /**
+     * Get the message content definition.
+     */
     public function content(): Content
     {
         return new Content(
@@ -36,8 +55,27 @@ class BookingModification extends Mailable
         );
     }
 
+    /**
+     * Get the attachments for the message.
+     *
+     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     */
     public function attachments(): array
     {
-        return [];
+        try {
+            $pdfService = app(ResortPoliciesPdfService::class);
+            $pdfPath = $pdfService->generatePdf($this->booking);
+            $filename = $pdfService->getFilename($this->booking);
+            
+            return [
+                Attachment::fromPath($pdfPath)
+                    ->as($filename)
+                    ->withMime('application/pdf'),
+            ];
+        } catch (\Exception $e) {
+            // Log the error but don't fail the email
+            Log::error('Failed to generate policies PDF for modification email: ' . $e->getMessage());
+            return [];
+        }
     }
 }

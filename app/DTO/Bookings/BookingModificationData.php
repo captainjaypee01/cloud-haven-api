@@ -11,6 +11,7 @@ class BookingModificationData extends Data
     public function __construct(
         public array $rooms,
         public ?string $modification_reason = null,
+        public bool $send_email = false,
     ) {}
 
     public static function rules(): array
@@ -23,6 +24,7 @@ class BookingModificationData extends Data
             'rooms.*.total_guests' => ['required', 'integer', 'min:1', 'max:12'],
             'rooms.*.room_unit_id' => ['nullable', 'integer', 'exists:room_units,id'],
             'modification_reason' => ['nullable', 'string', 'max:500'],
+            'send_email' => ['nullable', 'boolean'],
         ];
     }
 }

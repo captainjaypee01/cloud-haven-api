@@ -252,10 +252,23 @@
                                         @php
                                             $breakfastDate = \Carbon\Carbon::parse($night['date'])->addDay();
                                         @endphp
-                                        <div style="margin-bottom: 4px; padding-left: 12px; border-left: 3px solid #d1fae5;">
-                                            <div style="font-size: 13px; color: #6b7280;">
-                                                {{ $breakfastDate->format('M j') }} - Plated
+                                        <div style="margin-bottom: 8px; padding-left: 12px; border-left: 3px solid #d1fae5;">
+                                            <div style="font-size: 14px; color: #374151; margin-bottom: 4px;">
+                                                <strong>{{ $breakfastDate->format('M j') }} - Plated</strong>
                                             </div>
+                                            @if(isset($night['extra_guest_fee']) && $night['extra_guest_fee'] > 0)
+                                            <div style="font-size: 13px; color: #6b7280;">
+                                                Extra Guest Fee: ₱{{ number_format($night['extra_guest_fee'], 2) }} per extra guest
+                                                <div style="font-size: 12px; color: #9ca3af; margin-top: 2px;">
+                                                    (includes breakfast, entrance fee, and amenities)
+                                                </div>
+                                            </div>
+                                            @endif
+                                            @if(isset($night['night_total']) && $night['night_total'] > 0)
+                                            <div style="font-size: 13px; color: #111827; font-weight: bold; margin-top: 2px;">
+                                                Total: ₱{{ number_format($night['night_total'], 2) }}
+                                            </div>
+                                            @endif
                                         </div>
                                     @endforeach
                                 </div>
@@ -279,7 +292,7 @@
                                         <span>{{ $fmtMoney($booking->extra_guest_fee) }}</span>
                                     </div>
                                     <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">
-                                        Additional fees for extra guests beyond room capacity on buffet days (entrance fees, extra mattresses, etc.)
+                                        Entrance fee, amenities, and additional services for extra guests on buffet days
                                     </div>
                                 </div>
                                 @endif

@@ -406,11 +406,12 @@ class BookingController extends Controller
         try {
             $booking = $this->bookingService->show($bookingId);
             
-            // Get available units for the room and date range using the proper availability logic
+            // Get available units for the room and date range, excluding the current booking
             $availableUnits = $this->roomUnitService->getAvailableUnitsForReassignment(
                 $validated['room_id'],
                 $validated['check_in_date'],
-                $validated['check_out_date']
+                $validated['check_out_date'],
+                (int) $bookingId // Exclude current booking from availability check
             )
             ->map(function ($unit) {
                 return [

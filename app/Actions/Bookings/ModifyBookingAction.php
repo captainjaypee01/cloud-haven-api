@@ -61,8 +61,10 @@ class ModifyBookingAction
             // 7. Update booking totals (adults, children, total_guests)
             $this->updateBookingGuestCounts($booking, $modificationData);
 
-            // 8. Send modification notification email
-            $this->sendModificationEmail($booking, $modificationData);
+            // 8. Send modification notification email (if requested)
+            if ($modificationData->send_email) {
+                $this->sendModificationEmail($booking, $modificationData);
+            }
 
             Log::info('Booking modification completed successfully', [
                 'booking_id' => $booking->id,
@@ -287,6 +289,7 @@ class ModifyBookingAction
             'adults' => $totalAdults,
             'children' => $totalChildren,
             'total_guests' => $totalGuests,
+            'modification_reason' => $modificationData->modification_reason,
         ]);
     }
 

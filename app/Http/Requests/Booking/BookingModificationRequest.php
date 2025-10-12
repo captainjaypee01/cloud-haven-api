@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Booking;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
+use App\Models\Room;
 
 class BookingModificationRequest extends FormRequest
 {
@@ -27,7 +29,36 @@ class BookingModificationRequest extends FormRequest
             'rooms.*.total_guests' => ['required', 'integer', 'min:1', 'max:12'],
             'rooms.*.room_unit_id' => ['nullable', 'integer', 'exists:room_units,id'],
             'modification_reason' => ['nullable', 'string', 'max:500'],
+            'send_email' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function ($validator) {
+            $data = $validator->getData();
+            $rooms = $data['rooms'] ?? [];
+            
+            foreach ($rooms as $index => $roomData) {
+                if (isset($roomData['room_id']) && isset($roomData['total_guests'])) {
+                    $room = Room::where('slug', $roomData['room_id'])->first();
+                    
+                    if ($room) {
+                        $maxCapacity = $room->max_guests + ($room->extra_guests ?? 0);
+                        
+                        if ($roomData['total_guests'] > $maxCapacity) {
+                            $validator->errors()->add(
+                                "rooms.{$index}.total_guests",
+                                "Room '{$room->name}' can accommodate maximum {$maxCapacity} guests (Max: {$room->max_guests}, Extra: {$room->extra_guests}). You have {$roomData['total_guests']} guests."
+                            );
+                        }
+                    }
+                }
+            }
+        });
     }
 
     /**

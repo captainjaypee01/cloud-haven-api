@@ -520,12 +520,12 @@ class RoomUnitService
      * This method is used by the admin interface to show available units for reassignment.
      * Uses efficient database-level filtering instead of PHP filtering.
      */
-    public function getAvailableUnitsForReassignment(int $roomId, string $checkInDate, string $checkOutDate): Collection
+    public function getAvailableUnitsForReassignment(int $roomId, string $checkInDate, string $checkOutDate, ?int $excludeBookingId = null): Collection
     {
         return RoomUnit::query()
             ->where('room_id', $roomId)
             ->whereNotIn('status', ['maintenance', 'blocked'])
-            ->whereDoesntHave('bookingRooms.booking', function ($q) use ($checkInDate, $checkOutDate) {
+            ->whereDoesntHave('bookingRooms.booking', function ($q) use ($checkInDate, $checkOutDate, $excludeBookingId) {
                 // Include only bookings that can block a unit
                 $q->where(function ($statusQ) {
                     $statusQ->whereIn('status', ['paid', 'downpayment'])
@@ -533,6 +533,10 @@ class RoomUnitService
                                 $p->where('status', 'pending')
                                   ->whereNotNull('booking_rooms.room_unit_id'); // already assigned
                             });
+                })
+                // Exclude the specified booking if provided
+                ->when($excludeBookingId, function ($query, $excludeId) {
+                    $query->where('id', '!=', $excludeId);
                 })
                 // Date overlap: overnight OR day-tour same day
                 ->where(function ($dateQ) use ($checkInDate, $checkOutDate) {
