@@ -24,9 +24,9 @@ class BookingModificationRequest extends FormRequest
         return [
             'rooms' => ['required', 'array', 'min:1'],
             'rooms.*.room_id' => ['required', 'string', 'exists:rooms,slug'],
-            'rooms.*.adults' => ['required', 'integer', 'min:1', 'max:10'],
-            'rooms.*.children' => ['required', 'integer', 'min:0', 'max:10'],
-            'rooms.*.total_guests' => ['required', 'integer', 'min:1', 'max:12'],
+            'rooms.*.adults' => ['required', 'integer', 'min:1'],
+            'rooms.*.children' => ['required', 'integer', 'min:0'],
+            'rooms.*.total_guests' => ['required', 'integer', 'min:1'],
             'rooms.*.room_unit_id' => ['nullable', 'integer', 'exists:room_units,id'],
             'modification_reason' => ['required', 'string', 'max:1000'],
             'send_email' => ['nullable', 'boolean'],
