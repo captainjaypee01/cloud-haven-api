@@ -5,6 +5,7 @@ namespace App\Services\Bookings;
 use App\Models\Booking;
 use App\Contracts\Services\BookingLockServiceInterface;
 use App\Mail\BookingCancelled;
+use App\Services\CacheInvalidationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -12,7 +13,8 @@ use Illuminate\Support\Facades\Mail;
 class BookingCancellationService
 {
     public function __construct(
-        private BookingLockServiceInterface $lockService
+        private BookingLockServiceInterface $lockService,
+        private CacheInvalidationService $cacheInvalidation
     ) {}
 
     /**
@@ -44,6 +46,12 @@ class BookingCancellationService
 
                 // Send cancellation email
                 Mail::to($booking->guest_email)->queue(new BookingCancelled($booking, $reason, true));
+
+                // Clear cache for the booking date range to ensure fresh availability data
+                $this->cacheInvalidation->clearCacheForDateRange(
+                    $booking->check_in_date,
+                    $booking->check_out_date
+                );
 
                 // Log the action
                 Log::info("Booking manually cancelled by admin", [
@@ -103,6 +111,12 @@ class BookingCancellationService
 
                 // Send deletion email (similar to cancellation but for deletion)
                 Mail::to($booking->guest_email)->queue(new BookingCancelled($booking, $reason, true));
+
+                // Clear cache for the booking date range to ensure fresh availability data
+                $this->cacheInvalidation->clearCacheForDateRange(
+                    $booking->check_in_date,
+                    $booking->check_out_date
+                );
 
                 // Log the action
                 Log::info("Booking deleted by admin", [

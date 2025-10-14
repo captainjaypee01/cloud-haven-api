@@ -355,6 +355,11 @@ class BookingController extends Controller
                 'new_check_out' => $validated['check_out_date'],
                 'nights' => $newNights
             ]);
+
+            // Clear cache for both old and new date ranges to ensure fresh availability data
+            $cacheInvalidation = app(\App\Services\CacheInvalidationService::class);
+            $cacheInvalidation->clearCacheForDateRange($oldCheckIn, $oldCheckOut);
+            $cacheInvalidation->clearCacheForDateRange($validated['check_in_date'], $validated['check_out_date']);
             
             return new ItemResponse(new BookingResource($bookingModel));
         } catch (\Throwable $e) {

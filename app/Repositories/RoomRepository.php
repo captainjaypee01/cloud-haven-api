@@ -106,7 +106,8 @@ class RoomRepository implements RoomRepositoryInterface
             $confirmedUnitsQuery->where('bookings.id', '!=', $excludeBookingId);
         }
         
-        $confirmedUnits = $confirmedUnitsQuery->count();
+        // Count distinct room units (not booking_rooms records) to avoid counting the same unit twice
+        $confirmedUnits = $confirmedUnitsQuery->distinct()->count('booking_rooms.room_unit_id');
 
         // 2. Count pending units Part 1 - bookings with payment records (proof uploaded)
         // Status doesn't matter as long as there's a payment record
@@ -133,7 +134,8 @@ class RoomRepository implements RoomRepositoryInterface
             $pendingWithPaymentQuery->where('bookings.id', '!=', $excludeBookingId);
         }
         
-        $pendingWithPayment = $pendingWithPaymentQuery->count();
+        // Count distinct room units (not booking_rooms records) to avoid counting the same unit twice
+        $pendingWithPayment = $pendingWithPaymentQuery->distinct()->count('booking_rooms.room_unit_id');
 
         // 3. Count pending units Part 2 - bookings without payment records (within reserved_until period)
         $pendingWithoutPaymentQuery = DB::table('booking_rooms')
@@ -161,7 +163,8 @@ class RoomRepository implements RoomRepositoryInterface
             $pendingWithoutPaymentQuery->where('bookings.id', '!=', $excludeBookingId);
         }
         
-        $pendingWithoutPayment = $pendingWithoutPaymentQuery->count();
+        // Count distinct room units (not booking_rooms records) to avoid counting the same unit twice
+        $pendingWithoutPayment = $pendingWithoutPaymentQuery->distinct()->count('booking_rooms.room_unit_id');
 
         // 4. Count unavailable units from room_units table (maintenance/blocked)
         // Check units that are in maintenance or blocked status AND their date ranges overlap with our search dates

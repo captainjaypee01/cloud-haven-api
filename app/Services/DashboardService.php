@@ -13,8 +13,8 @@ class DashboardService implements DashboardServiceInterface
 {
     public function getDashboardData(): array
     {
-        // Cache dashboard data for 5 minutes to improve performance
-        return Cache::remember('dashboard_data', 300, function () {
+        // Cache dashboard data for 1 minute to improve performance
+        return Cache::remember('dashboard_data', 60, function () {
             return $this->calculateDashboardData();
         });
     }

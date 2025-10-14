@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Services\EmailTrackingService;
 use App\Services\PromoCalculationService;
+use App\Services\CacheInvalidationService;
 
 class BookingService implements BookingServiceInterface
 {
@@ -32,6 +33,7 @@ class BookingService implements BookingServiceInterface
         private SetBookingLockAction $setLock,
         private BookingRepositoryInterface $bookingRepo,
         private PromoCalculationService $promoCalculationService,
+        private CacheInvalidationService $cacheInvalidation,
     ) {}
 
     /**
@@ -164,6 +166,12 @@ class BookingService implements BookingServiceInterface
                 'check_in_date' => $bookingData->check_in_date,
                 'check_out_date' => $bookingData->check_out_date
             ]
+        );
+
+        // Clear cache for the booking date range to ensure fresh availability data
+        $this->cacheInvalidation->clearCacheForDateRange(
+            $bookingData->check_in_date,
+            $bookingData->check_out_date
         );
 
         return $booking;

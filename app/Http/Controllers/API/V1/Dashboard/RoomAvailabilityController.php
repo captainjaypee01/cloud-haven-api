@@ -14,7 +14,7 @@ class RoomAvailabilityController extends Controller
 {
     public function __construct(private RoomServiceInterface $roomService) {}
 
-    public function batchCheck(Request $request)
+    public function batchCheck(Request $request): CollectionResponse|\Symfony\Component\HttpFoundation\JsonResponse
     {
         $request->validate([
             'check_in'  => 'required|date',
@@ -54,6 +54,13 @@ class RoomAvailabilityController extends Controller
             ];
         }
 
-        return new CollectionResponse(BatchAvailabilityResource::collection($response));
+        $response = new CollectionResponse(BatchAvailabilityResource::collection($response));
+        
+        // Add no-cache headers to prevent stale availability data
+        $httpResponse = $response->toResponse($request);
+        $httpResponse->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $httpResponse->headers->set('Pragma', 'no-cache');
+        $httpResponse->headers->set('Expires', '0');
+        return $httpResponse;
     }
 }

@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\BookingRoom;
 use App\Models\Room;
 use App\Services\EmailTrackingService;
+use App\Services\CacheInvalidationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,7 @@ class ModifyBookingAction
     public function __construct(
         private CheckRoomAvailabilityAction $checkAvailability,
         private CalculateBookingTotalAction $calcTotal,
+        private CacheInvalidationService $cacheInvalidation,
     ) {}
 
     public function execute(Booking $booking, BookingModificationData $modificationData): Booking
@@ -75,6 +77,12 @@ class ModifyBookingAction
                 'new_final_price' => $totals['final_price'],
                 'new_discount_amount' => $totals['promo_discount']['discount_amount'] ?? 0,
             ]);
+
+            // Clear cache for the booking date range to ensure fresh availability data
+            $this->cacheInvalidation->clearCacheForDateRange(
+                $booking->check_in_date,
+                $booking->check_out_date
+            );
 
             return $booking->refresh();
         });

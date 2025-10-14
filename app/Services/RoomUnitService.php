@@ -306,7 +306,7 @@ class RoomUnitService
                 'days' => $days,
                 'rooms' => []
             ];
-            cache()->put($cacheKey, $result, 300); // Cache for 5 minutes
+            cache()->put($cacheKey, $result, 60); // Cache for 1 minute
             return $result;
         }
 
@@ -386,8 +386,8 @@ class RoomUnitService
             'rooms' => array_values($roomsData)
         ];
 
-        // Cache the result for 5 minutes
-        cache()->put($cacheKey, $result, 300);
+        // Cache the result for 1 minute
+        cache()->put($cacheKey, $result, 60);
         
         return $result;
     }
@@ -440,7 +440,7 @@ class RoomUnitService
                 'days' => $days,
                 'rooms' => []
             ];
-            cache()->put($cacheKey, $result, 300); // Cache for 5 minutes
+            cache()->put($cacheKey, $result, 60); // Cache for 1 minute
             return $result;
         }
 
@@ -509,8 +509,8 @@ class RoomUnitService
             'rooms' => array_values($roomsData)
         ];
 
-        // Cache the result for 5 minutes
-        cache()->put($cacheKey, $result, 300);
+        // Cache the result for 1 minute
+        cache()->put($cacheKey, $result, 60);
         
         return $result;
     }

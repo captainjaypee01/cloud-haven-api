@@ -24,13 +24,20 @@ class RoomController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): CollectionResponse
+    public function index(Request $request): CollectionResponse|\Symfony\Component\HttpFoundation\JsonResponse
     {
         $checkIn = $request->query('check_in');
         $checkOut = $request->query('check_out');
         if ($checkIn && $checkOut) {
             $rooms = $this->roomService->listRoomsWithAvailability($checkIn, $checkOut);
-            return new CollectionResponse(new PublicRoomCollection($rooms), JsonResponse::HTTP_OK);
+            $response = new CollectionResponse(new PublicRoomCollection($rooms), JsonResponse::HTTP_OK);
+            
+            // Add no-cache headers when availability data is included
+            $httpResponse = $response->toResponse($request);
+            $httpResponse->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $httpResponse->headers->set('Pragma', 'no-cache');
+            $httpResponse->headers->set('Expires', '0');
+            return $httpResponse;
         }
         $filters = $request->only(['status', 'search', 'sort', 'per_page', 'page', 'room_type']);
         $paginator = $this->roomService->listPublicRooms($filters);
@@ -62,7 +69,7 @@ class RoomController extends Controller
     /**
      * Check availability for a specific room.
      */
-    public function checkAvailability(Request $request, $roomSlug): ItemResponse|ErrorResponse
+    public function checkAvailability(Request $request, $roomSlug): ItemResponse|ErrorResponse|\Symfony\Component\HttpFoundation\JsonResponse
     {
         $request->validate([
             'check_in' => 'required|date',
@@ -86,7 +93,7 @@ class RoomController extends Controller
                 $request->input('check_out')
             );
 
-            return new ItemResponse(new RoomAvailabilityResource([
+            $response = new ItemResponse(new RoomAvailabilityResource([
                 'room_type_id' => $room->slug,
                 'room_name' => $room->name,
                 'available_units' => $availability['available'],
@@ -97,6 +104,13 @@ class RoomController extends Controller
                 'check_in' => $request->input('check_in'),
                 'check_out' => $request->input('check_out'),
             ]));
+
+            // Add no-cache headers to prevent stale availability data
+            $httpResponse = $response->toResponse($request);
+            $httpResponse->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $httpResponse->headers->set('Pragma', 'no-cache');
+            $httpResponse->headers->set('Expires', '0');
+            return $httpResponse;
         } catch (ModelNotFoundException $e) {
             return new ErrorResponse('Room not found.');
         }
