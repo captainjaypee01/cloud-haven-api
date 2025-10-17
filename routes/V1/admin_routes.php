@@ -26,6 +26,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             Route::get('bookings/{booking}/payments', 'PaymentController@getByBooking');
             Route::post('payments/pay', 'PaymentController@pay');
             Route::put('payments/{payment}', 'PaymentController@update');
+            Route::post('payments/{payment}', 'PaymentController@update'); // For FormData with method spoofing
             
             // Payment proof management - Available to all admin roles
             Route::patch('payments/{payment}/proof-upload/reset', 'PaymentController@resetProofUploads');
