@@ -76,6 +76,8 @@ class Booking extends Model
     {
         return [
             'created_at' => 'datetime:Y-m-d H:i:s',
+            'check_in_date' => 'date',
+            'check_out_date' => 'date',
             'cancelled_at' => 'datetime',
             'review_token_expires_at' => 'datetime',
             'review_email_sent_at' => 'datetime',
