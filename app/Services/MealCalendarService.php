@@ -80,9 +80,13 @@ class MealCalendarService implements MealCalendarServiceInterface
         $current = $startDate->copy();
         
         while ($current->lte($endDate)) { // Include the end date for calendar preview
-            $availability[$current->format('Y-m-d')] = $this->isProgramActiveOnDate($program, $current) 
-                ? 'buffet' 
-                : 'free_breakfast';
+            $isProgramActive = $this->isProgramActiveOnDate($program, $current);
+            if($isProgramActive && $program->scope_type === "composite") {
+                $availability[$current->format('Y-m-d')] = $this->isInWeeklyPattern($program, $current) ? 'buffet' : 'free_breakfast';
+            }
+            else{
+                $availability[$current->format('Y-m-d')] = 'free_breakfast';
+            }
             $current->addDay();
         }
         
