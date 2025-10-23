@@ -16,6 +16,7 @@ use App\Http\Requests\Booking\WalkInBookingRequest;
 use App\Http\Requests\Booking\BookingModificationRequest;
 use App\Services\Bookings\WalkInBookingService;
 use App\Actions\Bookings\ModifyBookingAction;
+use App\Actions\Bookings\RescheduleBookingAction;
 use App\Actions\DayTour\ModifyDayTourBookingAction;
 use App\Http\Requests\DayTour\DayTourBookingModificationRequest;
 use Carbon\Carbon;
@@ -33,7 +34,8 @@ class BookingController extends Controller
         private readonly RoomUnitService $roomUnitService,
         private readonly WalkInBookingService $walkInBookingService,
         private readonly ModifyBookingAction $modifyBookingAction,
-        private readonly ModifyDayTourBookingAction $modifyDayTourBookingAction
+        private readonly ModifyDayTourBookingAction $modifyDayTourBookingAction,
+        private readonly RescheduleBookingAction $rescheduleBookingAction
     ) {}
     /**
      * Display a listing of the resource.
@@ -293,7 +295,8 @@ class BookingController extends Controller
             $checkAvailabilityAction->execute(
                 $bookingRoomArr,
                 $validated['check_in_date'],
-                $validated['check_out_date']
+                $validated['check_out_date'],
+                $bookingModel->id // Exclude current booking from availability check
             );
         } catch (\App\Exceptions\RoomNotAvailableException $e) {
             Log::warning('Reschedule rejected - room not available', [
@@ -307,27 +310,27 @@ class BookingController extends Controller
             return new ErrorResponse("One or more rooms are not available for the selected dates. Please choose different dates.", 422);
         }
 
-        // Proceed to update booking dates in a transaction
-        DB::beginTransaction();
+        // Use the new RescheduleBookingAction to handle room unit reassignment
         try {
             $oldCheckIn = $bookingModel->check_in_date;
             $oldCheckOut = $bookingModel->check_out_date;
             
-            $bookingModel->update([
-                'check_in_date' => $validated['check_in_date'],
-                'check_out_date' => $validated['check_out_date'],
-            ]);
+            $updatedBooking = $this->rescheduleBookingAction->execute(
+                $bookingModel,
+                $validated['check_in_date'],
+                $validated['check_out_date']
+            );
             
             // Send reschedule email notification
             try {
                 EmailTrackingService::sendWithTracking(
-                    $bookingModel->guest_email,
-                    new \App\Mail\BookingReschedule($bookingModel, $oldCheckIn, $oldCheckOut),
+                    $updatedBooking->guest_email,
+                    new \App\Mail\BookingReschedule($updatedBooking, $oldCheckIn, $oldCheckOut),
                     'booking_reschedule',
                     [
-                        'booking_id' => $bookingModel->id,
-                        'reference_number' => $bookingModel->reference_number,
-                        'guest_name' => $bookingModel->guest_name,
+                        'booking_id' => $updatedBooking->id,
+                        'reference_number' => $updatedBooking->reference_number,
+                        'guest_name' => $updatedBooking->guest_name,
                         'old_check_in' => $oldCheckIn,
                         'old_check_out' => $oldCheckOut,
                         'new_check_in' => $validated['check_in_date'],
@@ -336,19 +339,17 @@ class BookingController extends Controller
                 );
             } catch (\Exception $emailError) {
                 Log::warning('Failed to send reschedule email', [
-                    'booking_id' => $bookingModel->id,
-                    'reference_number' => $bookingModel->reference_number,
+                    'booking_id' => $updatedBooking->id,
+                    'reference_number' => $updatedBooking->reference_number,
                     'error' => $emailError->getMessage()
                 ]);
                 // Don't fail the reschedule if email fails
             }
             
-            DB::commit();
-            
-            Log::info('Booking rescheduled successfully', [
+            Log::info('Booking rescheduled successfully with room unit reassignment', [
                 'admin_user_id' => Auth::user()->id,
-                'booking_id' => $bookingModel->id,
-                'booking_reference' => $bookingModel->reference_number,
+                'booking_id' => $updatedBooking->id,
+                'booking_reference' => $updatedBooking->reference_number,
                 'old_check_in' => $oldCheckIn,
                 'old_check_out' => $oldCheckOut,
                 'new_check_in' => $validated['check_in_date'],
@@ -361,9 +362,19 @@ class BookingController extends Controller
             $cacheInvalidation->clearCacheForDateRange($oldCheckIn, $oldCheckOut);
             $cacheInvalidation->clearCacheForDateRange($validated['check_in_date'], $validated['check_out_date']);
             
-            return new ItemResponse(new BookingResource($bookingModel));
+            return new ItemResponse(new BookingResource($updatedBooking));
+            
+        } catch (\App\Exceptions\RoomNotAvailableException $e) {
+            Log::warning('Reschedule failed - no alternative room units available', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingModel->id,
+                'booking_reference' => $bookingModel->reference_number,
+                'new_check_in' => $validated['check_in_date'],
+                'new_check_out' => $validated['check_out_date'],
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse($e->getMessage(), 422);
         } catch (\Throwable $e) {
-            DB::rollBack();
             Log::error('Failed to reschedule booking', [
                 'admin_user_id' => Auth::user()->id,
                 'booking_id' => $bookingModel->id,
