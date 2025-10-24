@@ -524,7 +524,34 @@ class RoomUnitService
     {
         return RoomUnit::query()
             ->where('room_id', $roomId)
-            ->whereNotIn('status', ['maintenance', 'blocked'])
+            // Check if unit is NOT in maintenance during the requested date range
+            ->where(function ($maintenanceQuery) use ($checkInDate, $checkOutDate) {
+                $maintenanceQuery->where('status', '!=', 'maintenance')
+                    ->orWhere(function ($maintenanceDateQuery) use ($checkInDate, $checkOutDate) {
+                        $maintenanceDateQuery->where('status', 'maintenance')
+                            ->where(function ($dateRangeQuery) use ($checkInDate, $checkOutDate) {
+                                // Unit is in maintenance but not during the requested dates
+                                $dateRangeQuery->whereNull('maintenance_start_at')
+                                    ->orWhereNull('maintenance_end_at')
+                                    ->orWhere('maintenance_start_at', '>', $checkOutDate)
+                                    ->orWhere('maintenance_end_at', '<', $checkInDate);
+                            });
+                    });
+            })
+            // Check if unit is NOT blocked during the requested date range
+            ->where(function ($blockedQuery) use ($checkInDate, $checkOutDate) {
+                $blockedQuery->where('status', '!=', 'blocked')
+                    ->orWhere(function ($blockedDateQuery) use ($checkInDate, $checkOutDate) {
+                        $blockedDateQuery->where('status', 'blocked')
+                            ->where(function ($dateRangeQuery) use ($checkInDate, $checkOutDate) {
+                                // Unit is blocked but not during the requested dates
+                                $dateRangeQuery->whereNull('blocked_start_at')
+                                    ->orWhereNull('blocked_end_at')
+                                    ->orWhere('blocked_start_at', '>', $checkOutDate)
+                                    ->orWhere('blocked_end_at', '<', $checkInDate);
+                            });
+                    });
+            })
             ->whereDoesntHave('bookingRooms.booking', function ($q) use ($checkInDate, $checkOutDate, $excludeBookingId) {
                 // Include only bookings that can block a unit
                 $q->where(function ($statusQ) {
