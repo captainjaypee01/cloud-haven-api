@@ -259,7 +259,7 @@ class RoomUnitBlockedDateService
     public function deactivateExpiredBlockedDates(): int
     {
         $expiredDates = RoomUnitBlockedDate::active()
-            ->where('expiry_date', '<', now()->toDateString())
+            ->where('expiry_date', '<=', now()->toDateString())
             ->get();
 
         $deactivatedCount = 0;

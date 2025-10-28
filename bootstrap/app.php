@@ -69,5 +69,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('bookings:release-expired')->everyTenMinutes();
         $schedule->command('reviews:send-request-emails')->dailyAt('04:00');
+        $schedule->command('blocked-dates:deactivate-expired')->daily();
     })
     ->create();
