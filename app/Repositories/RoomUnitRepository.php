@@ -117,21 +117,14 @@ class RoomUnitRepository implements RoomUnitRepositoryInterface
                                       });
                               });
                           })
-                          // Exclude units that are blocked during the booking period
-                          ->where(function ($query) use ($checkInDate, $checkOutDate) {
-                              $query->where(function ($subQuery) use ($checkInDate, $checkOutDate) {
-                                  // Allow units that are NOT in blocked status
-                                  $subQuery->where('status', '!=', RoomUnitStatusEnum::BLOCKED);
-                              })->orWhere(function ($subQuery) use ($checkInDate, $checkOutDate) {
-                                  // OR allow blocked units where dates don't overlap
-                                  $subQuery->where('status', RoomUnitStatusEnum::BLOCKED)
-                                      ->where(function ($dateQuery) use ($checkInDate, $checkOutDate) {
-                                          $dateQuery->whereNull('blocked_start_at')
-                                              ->orWhereNull('blocked_end_at')
-                                              ->orWhere('blocked_end_at', '<', $checkInDate)
-                                              ->orWhere('blocked_start_at', '>', $checkOutDate);
-                                      });
-                              });
+                          // Exclude units that have active blocked dates during the booking period
+                          ->whereNotExists(function ($query) use ($checkInDate, $checkOutDate) {
+                              $query->select(DB::raw(1))
+                                   ->from('room_unit_blocked_dates')
+                                   ->whereColumn('room_unit_blocked_dates.room_unit_id', 'room_units.id')
+                                   ->where('room_unit_blocked_dates.active', true)
+                                   ->where('room_unit_blocked_dates.start_date', '<=', $checkOutDate)
+                                   ->where('room_unit_blocked_dates.end_date', '>=', $checkInDate);
                           })
                           ->orderByRaw('CAST(unit_number AS UNSIGNED)')
                           ->lockForUpdate()

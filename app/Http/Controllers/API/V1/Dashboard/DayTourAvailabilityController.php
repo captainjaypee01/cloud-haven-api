@@ -79,6 +79,7 @@ class DayTourAvailabilityController extends Controller
                         'pending' => $availability['pending'],
                         'confirmed' => $availability['confirmed'],
                         'maintenance' => $availability['maintenance'],
+                        'blocked' => $availability['blocked'],
                         'total_units' => $availability['total_units'],
                         'date' => $date,
                     ];
@@ -93,6 +94,7 @@ class DayTourAvailabilityController extends Controller
                         'pending' => 0,
                         'confirmed' => 0,
                         'maintenance' => 0,
+                        'blocked' => 0,
                         'total_units' => 0,
                         'date' => $date,
                     ];

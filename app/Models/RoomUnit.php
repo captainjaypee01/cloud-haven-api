@@ -65,6 +65,14 @@ class RoomUnit extends Model
     }
 
     /**
+     * Get all blocked dates for this unit.
+     */
+    public function blockedDates(): HasMany
+    {
+        return $this->hasMany(RoomUnitBlockedDate::class);
+    }
+
+    /**
      * Check if this unit is available for booking on specific dates.
      */
     public function isAvailableForDates(string $checkInDate, string $checkOutDate): bool
@@ -82,7 +90,20 @@ class RoomUnit extends Model
             }
         }
 
-        // Check if unit is blocked during the booking period
+        // Check if unit has any active blocked dates during the booking period
+        $hasActiveBlockedDates = $this->blockedDates()
+            ->currentlyActive()
+            ->where(function ($query) use ($checkInDate, $checkOutDate) {
+                $query->where('start_date', '<=', $checkOutDate)
+                      ->where('end_date', '>=', $checkInDate);
+            })
+            ->exists();
+
+        if ($hasActiveBlockedDates) {
+            return false;
+        }
+
+        // Legacy: Check if unit is blocked during the booking period (for backward compatibility)
         if ($this->status === RoomUnitStatusEnum::BLOCKED) {
             if ($this->blocked_start_at && $this->blocked_end_at) {
                 // Check if blocked dates overlap with booking dates
@@ -170,7 +191,18 @@ class RoomUnit extends Model
      */
     public function isBlockedOnDate(string $date): bool
     {
-        // Unit must have blocked status AND be within the blocked date range
+        // Check new blocked dates first
+        $hasActiveBlockedDate = $this->blockedDates()
+            ->currentlyActive()
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->exists();
+
+        if ($hasActiveBlockedDate) {
+            return true;
+        }
+
+        // Legacy: Check if unit has blocked status AND be within the blocked date range
         if ($this->status !== RoomUnitStatusEnum::BLOCKED) {
             return false;
         }
@@ -194,7 +226,7 @@ class RoomUnit extends Model
             return 'maintenance';
         }
         
-        // Check blocked second
+        // Check blocked second (new blocked dates take priority)
         if ($this->isBlockedOnDate($date)) {
             return 'blocked';
         }
@@ -261,7 +293,7 @@ class RoomUnit extends Model
             return ['status' => 'maintenance', 'booking_source' => null];
         }
         
-        // Check blocked second
+        // Check blocked second (new blocked dates take priority)
         if ($this->isBlockedOnDate($date)) {
             return ['status' => 'blocked', 'booking_source' => null];
         }

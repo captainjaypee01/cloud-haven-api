@@ -68,8 +68,20 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             Route::get('room-types/{room}/units', 'RoomUnitController@getRoomUnits');
             Route::get('room-types/{room}/stats', 'RoomUnitController@getRoomStats');
             Route::post('room-types/{room}/units/generate', 'RoomUnitController@generateUnits');
-            Route::apiResource('room-units', 'RoomUnitController');
             
+            // Room Unit Blocked Dates
+            Route::get('room-units/{roomUnit}/blocked-dates', 'RoomUnitBlockedDateController@index');
+            Route::get('room-units/blocked-dates/all', 'RoomUnitBlockedDateController@indexAll');
+            Route::post('room-units/blocked-dates', 'RoomUnitBlockedDateController@store');
+            Route::post('room-units/blocked-dates/bulk', 'RoomUnitBlockedDateController@storeBulk');
+            Route::get('room-units/blocked-dates/stats', 'RoomUnitBlockedDateController@stats');
+            Route::post('room-units/blocked-dates/deactivate-expired', 'RoomUnitBlockedDateController@deactivateExpired');
+            Route::get('room-units/blocked-dates/{blockedDate}', 'RoomUnitBlockedDateController@show');
+            Route::put('room-units/blocked-dates/{blockedDate}', 'RoomUnitBlockedDateController@update');
+            Route::patch('room-units/blocked-dates/{blockedDate}/toggle-active', 'RoomUnitBlockedDateController@toggleActive');
+            Route::delete('room-units/blocked-dates/{blockedDate}', 'RoomUnitBlockedDateController@destroy');
+            
+            Route::apiResource('room-units', 'RoomUnitController');
             // Amenities
             Route::apiResource('amenities', 'AmenityController');
             Route::patch('amenities/{id}/update-status', 'AmenityController@updateStatus');

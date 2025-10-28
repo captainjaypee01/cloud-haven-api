@@ -166,33 +166,30 @@ class RoomRepository implements RoomRepositoryInterface
         // Count distinct room units (not booking_rooms records) to avoid counting the same unit twice
         $pendingWithoutPayment = $pendingWithoutPaymentQuery->distinct()->count('booking_rooms.room_unit_id');
 
-        // 4. Count unavailable units from room_units table (maintenance/blocked)
-        // Check units that are in maintenance or blocked status AND their date ranges overlap with our search dates
-        $unavailableUnits = DB::table('room_units')
+        // 4. Count unavailable units from room_units table (maintenance only)
+        // Check units that are in maintenance status AND their date ranges overlap with our search dates
+        $maintenanceUnits = DB::table('room_units')
             ->where('room_id', $roomId)
-            ->where(function ($query) use ($startDate, $endDate) {
-                // Units in maintenance status with date range overlap
-                $query->where(function ($subQuery) use ($startDate, $endDate) {
-                    $subQuery->where('status', 'maintenance')
-                        ->whereNotNull('maintenance_start_at')
-                        ->whereNotNull('maintenance_end_at')
-                        ->where('maintenance_start_at', '<=', $endDate)
-                        ->where('maintenance_end_at', '>=', $startDate);
-                })
-                // OR units in blocked status with date range overlap  
-                ->orWhere(function ($subQuery) use ($startDate, $endDate) {
-                    $subQuery->where('status', 'blocked')
-                        ->whereNotNull('blocked_start_at')
-                        ->whereNotNull('blocked_end_at')
-                        ->where('blocked_start_at', '<=', $endDate)
-                        ->where('blocked_end_at', '>=', $startDate);
-                });
-            })
+            ->where('status', 'maintenance')
+            ->whereNotNull('maintenance_start_at')
+            ->whereNotNull('maintenance_end_at')
+            ->where('maintenance_start_at', '<=', $endDate)
+            ->where('maintenance_end_at', '>=', $startDate)
             ->count();
+
+        // 5. Count units with active blocked dates that overlap with our search dates
+        $blockedUnits = DB::table('room_units')
+            ->join('room_unit_blocked_dates', 'room_units.id', '=', 'room_unit_blocked_dates.room_unit_id')
+            ->where('room_units.room_id', $roomId)
+            ->where('room_unit_blocked_dates.active', 1)
+            ->where('room_unit_blocked_dates.start_date', '<=', $endDate)
+            ->where('room_unit_blocked_dates.end_date', '>=', $startDate)
+            ->distinct()
+            ->count('room_units.id');
 
         // Calculate totals
         $totalPending = $pendingWithPayment + $pendingWithoutPayment;
-        $totalUnavailable = $confirmedUnits + $totalPending + $unavailableUnits;
+        $totalUnavailable = $confirmedUnits + $totalPending + $maintenanceUnits + $blockedUnits;
         $available = max(0, $room->quantity - $totalUnavailable);
 
 
@@ -200,7 +197,8 @@ class RoomRepository implements RoomRepositoryInterface
             'available' => $available,
             'pending' => $totalPending,
             'confirmed' => $confirmedUnits,
-            'maintenance' => $unavailableUnits,
+            'maintenance' => $maintenanceUnits,
+            'blocked' => $blockedUnits,
             'total_units' => $room->quantity,
             'room_id' => $roomId,
             'room_name' => $room->name
@@ -242,6 +240,7 @@ class RoomRepository implements RoomRepositoryInterface
                 $room->pending_count = $availability['pending'];
                 $room->confirmed_count = $availability['confirmed'];
                 $room->maintenance_count = $availability['maintenance'];
+                $room->blocked_count = $availability['blocked'];
                 $room->total_units = $availability['total_units'];
                 
                 return $room;

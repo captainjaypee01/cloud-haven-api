@@ -50,6 +50,7 @@ class RoomAvailabilityController extends Controller
                 'pending'           => $availability['pending'],
                 'confirmed'         => $availability['confirmed'],
                 'maintenance'       => $availability['maintenance'],
+                'blocked'           => $availability['blocked'],
                 'total_units'       => $availability['total_units'],
             ];
         }

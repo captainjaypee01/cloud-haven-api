@@ -37,6 +37,7 @@ class PublicRoomResource extends JsonResource
             'pending_count'         => $this->pending_count ?? null,
             'confirmed_count'       => $this->confirmed_count ?? null,
             'maintenance_count'     => $this->maintenance_count ?? null,
+            'blocked_count'         => $this->blocked_count ?? null,
             'total_units'           => $this->total_units ?? $this->quantity,
             'images'                => ImageResource::collection($this->images),
             // 'weekdayRate'           => $this->base_weekday_rate,

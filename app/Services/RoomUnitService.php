@@ -346,6 +346,24 @@ class RoomUnitService
             ->get()
             ->groupBy('room_unit_id');
 
+        // Step 2.5: Batch load ALL blocked dates for ALL units for the entire month
+        $blockedDates = DB::table('room_unit_blocked_dates')
+            ->whereIn('room_unit_id', $unitIds)
+            ->where('active', true)
+            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->where('start_date', '<=', $endOfMonth->toDateString())
+                  ->where('end_date', '>=', $startOfMonth->toDateString());
+            })
+            ->select([
+                'room_unit_id',
+                'start_date',
+                'end_date',
+                'expiry_date',
+                'notes'
+            ])
+            ->get()
+            ->groupBy('room_unit_id');
+
         // Step 3: Process data in memory (no more database queries)
         $roomsData = [];
         foreach ($roomUnits as $unit) {
@@ -363,8 +381,11 @@ class RoomUnitService
             // Get bookings for this unit
             $unitBookings = $bookings->get($unit->id, collect());
             
+            // Get blocked dates for this unit
+            $unitBlockedDates = $blockedDates->get($unit->id, collect());
+            
             // Calculate day statuses using optimized in-memory processing
-            $dayStatuses = $this->calculateDayStatusesOptimized($unit, $unitBookings, $year, $month, $days);
+            $dayStatuses = $this->calculateDayStatusesOptimized($unit, $unitBookings, $unitBlockedDates, $year, $month, $days);
 
             $roomsData[$roomId]['units'][] = [
                 'id' => $unit->id,
@@ -469,6 +490,24 @@ class RoomUnitService
             ->get()
             ->groupBy('room_unit_id');
 
+        // Step 2.5: Batch load ALL blocked dates for ALL units for the entire month
+        $blockedDates = DB::table('room_unit_blocked_dates')
+            ->whereIn('room_unit_id', $unitIds)
+            ->where('active', true)
+            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->where('start_date', '<=', $endOfMonth->toDateString())
+                  ->where('end_date', '>=', $startOfMonth->toDateString());
+            })
+            ->select([
+                'room_unit_id',
+                'start_date',
+                'end_date',
+                'expiry_date',
+                'notes'
+            ])
+            ->get()
+            ->groupBy('room_unit_id');
+
         // Step 3: Process data in memory (no more database queries)
         $roomsData = [];
         foreach ($roomUnits as $unit) {
@@ -486,8 +525,11 @@ class RoomUnitService
             // Get bookings for this unit
             $unitBookings = $bookings->get($unit->id, collect());
             
+            // Get blocked dates for this unit
+            $unitBlockedDates = $blockedDates->get($unit->id, collect());
+            
             // Calculate day statuses using optimized in-memory processing
-            $dayStatuses = $this->calculateDayStatusesOptimized($unit, $unitBookings, $year, $month, $days);
+            $dayStatuses = $this->calculateDayStatusesOptimized($unit, $unitBookings, $unitBlockedDates, $year, $month, $days);
 
             $roomsData[$roomId]['units'][] = [
                 'id' => $unit->id,
@@ -538,19 +580,11 @@ class RoomUnitService
                             });
                     });
             })
-            // Check if unit is NOT blocked during the requested date range
-            ->where(function ($blockedQuery) use ($checkInDate, $checkOutDate) {
-                $blockedQuery->where('status', '!=', 'blocked')
-                    ->orWhere(function ($blockedDateQuery) use ($checkInDate, $checkOutDate) {
-                        $blockedDateQuery->where('status', 'blocked')
-                            ->where(function ($dateRangeQuery) use ($checkInDate, $checkOutDate) {
-                                // Unit is blocked but not during the requested dates
-                                $dateRangeQuery->whereNull('blocked_start_at')
-                                    ->orWhereNull('blocked_end_at')
-                                    ->orWhere('blocked_start_at', '>', $checkOutDate)
-                                    ->orWhere('blocked_end_at', '<', $checkInDate);
-                            });
-                    });
+            // Check if unit is NOT blocked during the requested date range (new blocked dates take priority)
+            ->whereDoesntHave('blockedDates', function ($q) use ($checkInDate, $checkOutDate) {
+                $q->where('active', true)
+                  ->where('start_date', '<=', $checkOutDate)
+                  ->where('end_date', '>=', $checkInDate);
             })
             ->whereDoesntHave('bookingRooms.booking', function ($q) use ($checkInDate, $checkOutDate, $excludeBookingId) {
                 // Include only bookings that can block a unit
@@ -764,7 +798,7 @@ class RoomUnitService
      * Calculate day statuses using optimized in-memory processing.
      * This method processes all days for a unit without additional database queries.
      */
-    private function calculateDayStatusesOptimized($unit, $unitBookings, int $year, int $month, array $days): array
+    private function calculateDayStatusesOptimized($unit, $unitBookings, $unitBlockedDates, int $year, int $month, array $days): array
     {
         $dayStatuses = [];
         $isInMaintenance = $unit->maintenance_start_at && $unit->maintenance_end_at;
@@ -796,6 +830,22 @@ class RoomUnitService
             }
         }
         
+        // Create a lookup map for blocked dates by date for O(1) access
+        $blockedDateMap = [];
+        foreach ($unitBlockedDates as $blockedDate) {
+            $startDate = Carbon::parse($blockedDate->start_date);
+            $endDate = Carbon::parse($blockedDate->end_date);
+            $current = $startDate->copy();
+            
+            while ($current->lte($endDate)) {
+                $dateStr = $current->format('Y-m-d');
+                if (!isset($blockedDateMap[$dateStr])) {
+                    $blockedDateMap[$dateStr] = $blockedDate;
+                }
+                $current->addDay();
+            }
+        }
+        
         // Process each day
         foreach ($days as $day) {
             $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
@@ -815,7 +865,18 @@ class RoomUnitService
                 }
             }
             
-            // Check blocked second
+            // Check blocked second (new blocked dates take priority)
+            if (isset($blockedDateMap[$date])) {
+                $dayStatuses[] = [
+                    'day' => $day,
+                    'date' => $date,
+                    'status' => 'blocked',
+                    'booking_source' => null
+                ];
+                continue;
+            }
+            
+            // Legacy: Check blocked second
             if ($isBlocked) {
                 $blockedStart = Carbon::parse($unit->blocked_start_at);
                 $blockedEnd = Carbon::parse($unit->blocked_end_at);
