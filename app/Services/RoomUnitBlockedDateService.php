@@ -161,6 +161,33 @@ class RoomUnitBlockedDateService
                     throw new \InvalidArgumentException("Room unit {$roomUnit->room->name} - Unit {$roomUnit->unit_number} already has an active blocked date that overlaps with the specified date range");
                 }
 
+                // Check for existing bookings that would conflict with the blocked dates
+                $startDate = Carbon::parse($data['start_date']);
+                $endDate = Carbon::parse($data['end_date']);
+                
+                $hasConflictingBookings = $roomUnit->bookingRooms()
+                    ->whereHas('booking', function ($query) use ($startDate, $endDate) {
+                        $query->whereIn('status', ['paid', 'downpayment'])
+                              ->where(function ($q) use ($startDate, $endDate) {
+                                  // Overnight bookings: check_in < endDate AND check_out > startDate
+                                  $q->where(function ($overnight) use ($startDate, $endDate) {
+                                      $overnight->where('booking_type', '<>', 'day_tour')
+                                                ->where('check_in_date', '<=', $endDate->toDateString())
+                                                ->where('check_out_date', '>', $startDate->toDateString());
+                                  })
+                                  // Day tour bookings: check_in_date = startDate (same day booking)
+                                  ->orWhere(function ($dayTour) use ($startDate) {
+                                      $dayTour->where('booking_type', 'day_tour')
+                                              ->where('check_in_date', $startDate->toDateString());
+                                  });
+                              });
+                    })
+                    ->exists();
+
+                if ($hasConflictingBookings) {
+                    throw new \InvalidArgumentException("Room unit {$roomUnit->room->name} - Unit {$roomUnit->unit_number} has existing bookings that conflict with the specified blocked date range. Please check existing bookings for this room unit.");
+                }
+
                 $blockedDate = RoomUnitBlockedDate::create([
                     'room_unit_id' => $roomUnitId,
                     'start_date' => $data['start_date'],
@@ -338,6 +365,33 @@ class RoomUnitBlockedDateService
 
             if ($query->exists()) {
                 throw new \InvalidArgumentException('There is already an active blocked date that overlaps with the specified date range');
+            }
+
+            // Check for existing bookings that would conflict with the blocked dates
+            $roomUnit = RoomUnit::find($data['room_unit_id']);
+            if ($roomUnit) {
+                $hasConflictingBookings = $roomUnit->bookingRooms()
+                    ->whereHas('booking', function ($query) use ($startDate, $endDate) {
+                        $query->whereIn('status', ['paid', 'downpayment'])
+                              ->where(function ($q) use ($startDate, $endDate) {
+                                  // Overnight bookings: check_in < endDate AND check_out > startDate
+                                  $q->where(function ($overnight) use ($startDate, $endDate) {
+                                      $overnight->where('booking_type', '<>', 'day_tour')
+                                                ->where('check_in_date', '<=', $endDate->toDateString())
+                                                ->where('check_out_date', '>', $startDate->toDateString());
+                                  })
+                                  // Day tour bookings: check_in_date = startDate (same day booking)
+                                  ->orWhere(function ($dayTour) use ($startDate) {
+                                      $dayTour->where('booking_type', 'day_tour')
+                                              ->where('check_in_date', $startDate->toDateString());
+                                  });
+                              });
+                    })
+                    ->exists();
+
+                if ($hasConflictingBookings) {
+                    throw new \InvalidArgumentException('Cannot create blocked dates for dates that are already booked. Please check existing bookings for this room unit.');
+                }
             }
         }
     }
