@@ -19,6 +19,7 @@ class ReviewController extends Controller
         // Example: fetch recent resort reviews for homepage
         $reviews = Review::with('user')
             ->where('type', 'resort')
+            ->where('is_testimonial', true)
             ->orderBy('created_at', 'desc')
             ->take(3)
             ->get();
