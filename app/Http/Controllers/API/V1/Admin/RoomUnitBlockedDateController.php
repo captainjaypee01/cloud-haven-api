@@ -85,7 +85,7 @@ class RoomUnitBlockedDateController extends Controller
             'room_unit_id' => ['required', 'exists:room_units,id'],
             'start_date' => ['required', 'date', 'date_format:Y-m-d'],
             'end_date' => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:start_date'],
-            'expiry_date' => ['required', 'date', 'date_format:Y-m-d', 'before:start_date'],
+            'expiry_date' => ['required', 'date', 'date_format:Y-m-d', 'before_or_equal:start_date'],
             'active' => ['sometimes', 'boolean'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -122,7 +122,7 @@ class RoomUnitBlockedDateController extends Controller
             'room_unit_ids.*' => ['exists:room_units,id'],
             'start_date' => ['required', 'date', 'date_format:Y-m-d'],
             'end_date' => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:start_date'],
-            'expiry_date' => ['required', 'date', 'date_format:Y-m-d', 'before:start_date'],
+            'expiry_date' => ['required', 'date', 'date_format:Y-m-d', 'before_or_equal:start_date'],
             'active' => ['sometimes', 'boolean'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
