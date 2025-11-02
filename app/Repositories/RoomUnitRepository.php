@@ -120,6 +120,8 @@ class RoomUnitRepository implements RoomUnitRepositoryInterface
                           // Exclude units that have active blocked dates during the booking period
                           // Only exclude blocked dates that are active AND not expired (expiry_date >= today)
                           // Also handle NULL expiry_date (treat as expired)
+                          // Overlap logic: blocked_start < check_out AND blocked_end > check_in
+                          // (check-out date is NOT occupied, so we use strict < comparison)
                           ->whereNotExists(function ($query) use ($checkInDate, $checkOutDate) {
                               $query->select(DB::raw(1))
                                    ->from('room_unit_blocked_dates')
@@ -127,8 +129,8 @@ class RoomUnitRepository implements RoomUnitRepositoryInterface
                                    ->where('room_unit_blocked_dates.active', true)
                                    ->whereNotNull('room_unit_blocked_dates.expiry_date') // Exclude NULL expiry dates
                                    ->where('room_unit_blocked_dates.expiry_date', '>=', now()->toDateString())
-                                   ->where('room_unit_blocked_dates.start_date', '<=', $checkOutDate)
-                                   ->where('room_unit_blocked_dates.end_date', '>=', $checkInDate);
+                                   ->where('room_unit_blocked_dates.start_date', '<', $checkOutDate) // blocked_start < check_out
+                                   ->where('room_unit_blocked_dates.end_date', '>', $checkInDate);   // blocked_end > check_in
                           })
                           ->orderByRaw('CAST(unit_number AS UNSIGNED)')
                           ->lockForUpdate()

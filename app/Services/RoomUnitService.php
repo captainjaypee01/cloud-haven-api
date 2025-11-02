@@ -587,12 +587,14 @@ class RoomUnitService
             // Check if unit is NOT blocked during the requested date range
             // Only exclude blocked dates that are active AND not expired (expiry_date >= today)
             // Also handle NULL expiry_date (treat as expired)
+            // Overlap logic: blocked_start < check_out AND blocked_end > check_in
+            // (check-out date is NOT occupied, so we use strict < comparison)
             ->whereDoesntHave('blockedDates', function ($q) use ($checkInDate, $checkOutDate) {
                 $q->where('active', true)
                   ->whereNotNull('expiry_date') // Exclude NULL expiry dates
                   ->where('expiry_date', '>=', now()->toDateString())
-                  ->where('start_date', '<=', $checkOutDate)
-                  ->where('end_date', '>=', $checkInDate);
+                  ->where('start_date', '<', $checkOutDate) // blocked_start < check_out
+                  ->where('end_date', '>', $checkInDate);    // blocked_end > check_in
             })
             ->whereDoesntHave('bookingRooms.booking', function ($q) use ($checkInDate, $checkOutDate, $excludeBookingId) {
                 // Include only bookings that can block a unit
