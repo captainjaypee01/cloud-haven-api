@@ -178,10 +178,14 @@ class RoomRepository implements RoomRepositoryInterface
             ->count();
 
         // 5. Count units with active blocked dates that overlap with our search dates
+        // Only count blocked dates that are active AND not expired (expiry_date >= today)
+        // Also handle NULL expiry_date (treat as expired)
         $blockedUnits = DB::table('room_units')
             ->join('room_unit_blocked_dates', 'room_units.id', '=', 'room_unit_blocked_dates.room_unit_id')
             ->where('room_units.room_id', $roomId)
             ->where('room_unit_blocked_dates.active', 1)
+            ->whereNotNull('room_unit_blocked_dates.expiry_date') // Exclude NULL expiry dates
+            ->where('room_unit_blocked_dates.expiry_date', '>=', now()->toDateString())
             ->where('room_unit_blocked_dates.start_date', '<=', $endDate)
             ->where('room_unit_blocked_dates.end_date', '>=', $startDate)
             ->distinct()

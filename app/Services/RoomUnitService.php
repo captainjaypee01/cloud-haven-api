@@ -347,9 +347,11 @@ class RoomUnitService
             ->groupBy('room_unit_id');
 
         // Step 2.5: Batch load ALL blocked dates for ALL units for the entire month
+        // Only load blocked dates that are active AND not expired (expiry_date >= today)
         $blockedDates = DB::table('room_unit_blocked_dates')
             ->whereIn('room_unit_id', $unitIds)
             ->where('active', true)
+            ->where('expiry_date', '>=', now()->toDateString())
             ->where(function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->where('start_date', '<=', $endOfMonth->toDateString())
                   ->where('end_date', '>=', $startOfMonth->toDateString());
@@ -491,9 +493,11 @@ class RoomUnitService
             ->groupBy('room_unit_id');
 
         // Step 2.5: Batch load ALL blocked dates for ALL units for the entire month
+        // Only load blocked dates that are active AND not expired (expiry_date >= today)
         $blockedDates = DB::table('room_unit_blocked_dates')
             ->whereIn('room_unit_id', $unitIds)
             ->where('active', true)
+            ->where('expiry_date', '>=', now()->toDateString())
             ->where(function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->where('start_date', '<=', $endOfMonth->toDateString())
                   ->where('end_date', '>=', $startOfMonth->toDateString());
@@ -580,9 +584,13 @@ class RoomUnitService
                             });
                     });
             })
-            // Check if unit is NOT blocked during the requested date range (new blocked dates take priority)
+            // Check if unit is NOT blocked during the requested date range
+            // Only exclude blocked dates that are active AND not expired (expiry_date >= today)
+            // Also handle NULL expiry_date (treat as expired)
             ->whereDoesntHave('blockedDates', function ($q) use ($checkInDate, $checkOutDate) {
                 $q->where('active', true)
+                  ->whereNotNull('expiry_date') // Exclude NULL expiry dates
+                  ->where('expiry_date', '>=', now()->toDateString())
                   ->where('start_date', '<=', $checkOutDate)
                   ->where('end_date', '>=', $checkInDate);
             })
