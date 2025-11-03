@@ -120,17 +120,28 @@ class RoomUnitRepository implements RoomUnitRepositoryInterface
                           // Exclude units that have active blocked dates during the booking period
                           // Only exclude blocked dates that are active AND not expired (expiry_date >= today)
                           // Also handle NULL expiry_date (treat as expired)
-                          // Overlap logic: blocked_start < check_out AND blocked_end > check_in
-                          // (check-out date is NOT occupied, so we use strict < comparison)
+                          // Overlap logic: If day tour (check_in = check_out), check if blocked includes that date
+                          // Otherwise, use overnight logic: check_in <= blocked_end AND check_out > blocked_start
                           ->whereNotExists(function ($query) use ($checkInDate, $checkOutDate) {
+                              $isDayTour = $checkInDate === $checkOutDate;
                               $query->select(DB::raw(1))
                                    ->from('room_unit_blocked_dates')
                                    ->whereColumn('room_unit_blocked_dates.room_unit_id', 'room_units.id')
                                    ->where('room_unit_blocked_dates.active', true)
                                    ->whereNotNull('room_unit_blocked_dates.expiry_date') // Exclude NULL expiry dates
                                    ->where('room_unit_blocked_dates.expiry_date', '>=', now()->toDateString())
-                                   ->where('room_unit_blocked_dates.start_date', '<', $checkOutDate) // blocked_start < check_out
-                                   ->where('room_unit_blocked_dates.end_date', '>', $checkInDate);   // blocked_end > check_in
+                                   ->where(function ($q) use ($checkInDate, $checkOutDate, $isDayTour) {
+                                       if ($isDayTour) {
+                                           // Day tour: blocked date includes tour date if blocked_start <= tour_date <= blocked_end
+                                           $q->whereRaw('room_unit_blocked_dates.start_date <= ?', [$checkInDate])
+                                             ->whereRaw('room_unit_blocked_dates.end_date >= ?', [$checkInDate]);
+                                       } else {
+                                           // Overnight: check_in <= blocked_end AND check_out > blocked_start
+                                           // (check-in IS occupied, check-out is NOT occupied)
+                                           $q->whereRaw('? <= room_unit_blocked_dates.end_date', [$checkInDate])
+                                             ->whereRaw('? > room_unit_blocked_dates.start_date', [$checkOutDate]);
+                                       }
+                                   });
                           })
                           ->orderByRaw('CAST(unit_number AS UNSIGNED)')
                           ->lockForUpdate()

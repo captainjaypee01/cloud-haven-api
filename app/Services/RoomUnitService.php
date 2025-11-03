@@ -587,14 +587,25 @@ class RoomUnitService
             // Check if unit is NOT blocked during the requested date range
             // Only exclude blocked dates that are active AND not expired (expiry_date >= today)
             // Also handle NULL expiry_date (treat as expired)
-            // Overlap logic: blocked_start < check_out AND blocked_end > check_in
-            // (check-out date is NOT occupied, so we use strict < comparison)
+            // Overlap logic: If day tour (check_in = check_out), check if blocked includes that date
+            // Otherwise, use overnight logic: check_in <= blocked_end AND check_out > blocked_start
             ->whereDoesntHave('blockedDates', function ($q) use ($checkInDate, $checkOutDate) {
+                $isDayTour = $checkInDate === $checkOutDate;
                 $q->where('active', true)
                   ->whereNotNull('expiry_date') // Exclude NULL expiry dates
                   ->where('expiry_date', '>=', now()->toDateString())
-                  ->where('start_date', '<', $checkOutDate) // blocked_start < check_out
-                  ->where('end_date', '>', $checkInDate);    // blocked_end > check_in
+                  ->where(function ($subQ) use ($checkInDate, $checkOutDate, $isDayTour) {
+                      if ($isDayTour) {
+                          // Day tour: blocked date includes tour date if blocked_start <= tour_date <= blocked_end
+                          $subQ->whereRaw('start_date <= ?', [$checkInDate])
+                               ->whereRaw('end_date >= ?', [$checkInDate]);
+                      } else {
+                          // Overnight: check_in <= blocked_end AND check_out > blocked_start
+                          // (check-in IS occupied, check-out is NOT occupied)
+                          $subQ->whereRaw('? <= end_date', [$checkInDate])
+                               ->whereRaw('? > start_date', [$checkOutDate]);
+                      }
+                  });
             })
             ->whereDoesntHave('bookingRooms.booking', function ($q) use ($checkInDate, $checkOutDate, $excludeBookingId) {
                 // Include only bookings that can block a unit

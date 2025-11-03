@@ -180,16 +180,31 @@ class RoomRepository implements RoomRepositoryInterface
         // 5. Count units with active blocked dates that overlap with our search dates
         // Only count blocked dates that are active AND not expired (expiry_date >= today)
         // Also handle NULL expiry_date (treat as expired)
-        // Overlap logic: blocked_start < check_out AND blocked_end > check_in
-        // (check-out date is NOT occupied, so we use strict < comparison)
+        // Overlap logic depends on room type:
+        // - Overnight: check_in <= blocked_end AND check_out > blocked_start
+        //   (check-in IS occupied, check-out is NOT occupied)
+        // - Day Tour: blocked date includes the tour date (startDate)
+        //   (day tours occupy only startDate since check_in = check_out = same day)
+        $isDayTourRoom = $room->room_type === 'day_tour';
         $blockedUnits = DB::table('room_units')
             ->join('room_unit_blocked_dates', 'room_units.id', '=', 'room_unit_blocked_dates.room_unit_id')
             ->where('room_units.room_id', $roomId)
             ->where('room_unit_blocked_dates.active', 1)
             ->whereNotNull('room_unit_blocked_dates.expiry_date') // Exclude NULL expiry dates
             ->where('room_unit_blocked_dates.expiry_date', '>=', now()->toDateString())
-            ->where('room_unit_blocked_dates.start_date', '<', $endDate) // blocked_start < check_out
-            ->where('room_unit_blocked_dates.end_date', '>', $startDate)  // blocked_end > check_in
+            ->where(function ($query) use ($startDate, $endDate, $isDayTourRoom) {
+                if ($isDayTourRoom) {
+                    // Day tour: blocked date overlaps with tour date (startDate)
+                    // Blocked date includes startDate if: blocked_start <= startDate <= blocked_end
+                    $query->whereRaw('room_unit_blocked_dates.start_date <= ?', [$startDate])
+                          ->whereRaw('room_unit_blocked_dates.end_date >= ?', [$startDate]);
+                } else {
+                    // Overnight: check_in <= blocked_end AND check_out > blocked_start
+                    // (check-in IS occupied, check-out is NOT occupied)
+                    $query->whereRaw('? <= room_unit_blocked_dates.end_date', [$startDate])
+                          ->whereRaw('? > room_unit_blocked_dates.start_date', [$endDate]);
+                }
+            })
             ->distinct()
             ->count('room_units.id');
 
