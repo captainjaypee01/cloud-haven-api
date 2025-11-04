@@ -9,8 +9,10 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class BookingReservation extends Mailable implements ShouldQueue
 {
@@ -35,9 +37,30 @@ class BookingReservation extends Mailable implements ShouldQueue
         $resortName = config('resort.name', config('app.name', 'Your Resort'));
         $bookingCode = $this->booking->reference_number ?? 'N/A';
 
-        $subject = sprintf('[Booking Reservation] — %s (%s)', $resortName, $bookingCode);
+        // Make subject more distinct to prevent threading
+        $subject = sprintf('Your Reservation Request — %s (%s)', $resortName, $bookingCode);
 
         return new Envelope(subject: $subject);
+    }
+
+    /**
+     * Get the message headers.
+     */
+    public function headers(): Headers
+    {
+        $appUrl = config('app.url', 'https://netaniadelaiya.com');
+        $domain = parse_url($appUrl, PHP_URL_HOST) ?: 'netaniadelaiya.com';
+        $uniqueId = Str::uuid()->toString();
+        
+        return new Headers(
+            messageId: sprintf('reservation-%s@%s', $uniqueId, $domain),
+            text: [
+                'X-Mailer' => 'Netania De Laiya Reservation System',
+                'Precedence' => 'bulk',
+                'List-Unsubscribe' => config('app.url', 'https://netaniadelaiya.com') . '/unsubscribe',
+                'X-Auto-Response-Suppress' => 'All',
+            ],
+        );
     }
 
     /**

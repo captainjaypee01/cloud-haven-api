@@ -7,6 +7,8 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
+use Illuminate\Support\Str;
 
 class SendGeneratedPassword extends Mailable
 {
@@ -27,6 +29,26 @@ class SendGeneratedPassword extends Mailable
     {
         return new Envelope(
             subject: 'Your Netania Account Access',
+        );
+    }
+
+    /**
+     * Get the message headers.
+     */
+    public function headers(): Headers
+    {
+        $appUrl = config('app.url', 'https://netaniadelaiya.com');
+        $domain = parse_url($appUrl, PHP_URL_HOST) ?: 'netaniadelaiya.com';
+        $uniqueId = Str::uuid()->toString();
+        
+        return new Headers(
+            messageId: sprintf('password-generated-%s@%s', $uniqueId, $domain),
+            text: [
+                'X-Mailer' => 'Netania De Laiya Reservation System',
+                'Precedence' => 'bulk',
+                'List-Unsubscribe' => config('app.url', 'https://netaniadelaiya.com') . '/unsubscribe',
+                'X-Auto-Response-Suppress' => 'All',
+            ],
         );
     }
 

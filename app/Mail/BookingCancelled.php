@@ -7,7 +7,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Str;
 
 class BookingCancelled extends Mailable implements ShouldQueue
 {
@@ -36,10 +38,30 @@ class BookingCancelled extends Mailable implements ShouldQueue
         $bookingCode = $this->booking->reference_number ?? 'N/A';
 
         $subject = $this->isManualCancellation 
-            ? sprintf('❌ Booking Cancelled by Admin - %s (%s)', $resortName, $bookingCode)
-            : sprintf('❌ Booking Cancelled - No Proof of Payment - %s (%s)', $resortName, $bookingCode);
+            ? sprintf('Booking Cancelled by Admin — %s (%s)', $resortName, $bookingCode)
+            : sprintf('Booking Cancelled — %s (%s)', $resortName, $bookingCode);
 
         return new Envelope(subject: $subject);
+    }
+
+    /**
+     * Get the message headers.
+     */
+    public function headers(): Headers
+    {
+        $appUrl = config('app.url', 'https://netaniadelaiya.com');
+        $domain = parse_url($appUrl, PHP_URL_HOST) ?: 'netaniadelaiya.com';
+        $uniqueId = Str::uuid()->toString();
+        
+        return new Headers(
+            messageId: sprintf('cancellation-%s@%s', $uniqueId, $domain),
+            text: [
+                'X-Mailer' => 'Netania De Laiya Reservation System',
+                'Precedence' => 'bulk',
+                'List-Unsubscribe' => config('app.url', 'https://netaniadelaiya.com') . '/unsubscribe',
+                'X-Auto-Response-Suppress' => 'All',
+            ],
+        );
     }
 
     /**
