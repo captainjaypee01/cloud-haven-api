@@ -256,9 +256,9 @@
                                             <div style="font-size: 14px; color: #374151; margin-bottom: 4px;">
                                                 <strong>{{ $breakfastDate->format('M j') }} - Plated</strong>
                                             </div>
-                                            @if(isset($night['extra_guest_fee']) && $night['extra_guest_fee'] > 0)
+                                            @if(isset($night['adult_breakfast_price']) && $night['adult_breakfast_price'] > 0)
                                             <div style="font-size: 13px; color: #6b7280;">
-                                                Extra Guest Fee: ₱{{ number_format($night['extra_guest_fee'], 2) }} per extra guest
+                                                Extra Guest Fee: ₱{{ number_format($night['adult_breakfast_price'], 2) }} per extra guest
                                                 <div style="font-size: 12px; color: #9ca3af; margin-top: 2px;">
                                                     (includes breakfast, entrance fee, and amenities)
                                                 </div>
