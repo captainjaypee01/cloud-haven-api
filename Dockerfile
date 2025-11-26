@@ -1,6 +1,14 @@
 # ---- Composer deps baked in (no dev deps, no scripts) ----
-  FROM composer:2 AS vendor
+  FROM php:8.4-cli AS vendor
   WORKDIR /app
+  
+  # Install system dependencies and composer
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+      unzip \
+      git \
+      && rm -rf /var/lib/apt/lists/*
+  COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+  
   COPY composer.json composer.lock ./
   # pass a build arg to decide dev vs no-dev
   ARG COMPOSER_DEV=false
