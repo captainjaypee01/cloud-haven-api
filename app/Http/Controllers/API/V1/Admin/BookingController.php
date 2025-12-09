@@ -14,6 +14,7 @@ use App\Services\EmailTrackingService;
 use App\DTO\Bookings\BookingData;
 use App\Http\Requests\Booking\WalkInBookingRequest;
 use App\Http\Requests\Booking\BookingModificationRequest;
+use App\Http\Requests\Booking\UpdateGuestDetailsRequest;
 use App\Services\Bookings\WalkInBookingService;
 use App\Actions\Bookings\ModifyBookingAction;
 use App\Actions\Bookings\RescheduleBookingAction;
@@ -460,6 +461,43 @@ class BookingController extends Controller
     }
 
     /**
+     * Update guest contact details and special requests.
+     */
+    public function updateGuestDetails(UpdateGuestDetailsRequest $request, $bookingId)
+    {
+        try {
+            $booking = $this->bookingService->show($bookingId);
+
+            DB::beginTransaction();
+
+            $booking->update($request->validated());
+
+            DB::commit();
+
+            Log::info('Guest details updated', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'guest_name' => $booking->guest_name,
+                'guest_email' => $booking->guest_email,
+                'guest_phone' => $booking->guest_phone,
+            ]);
+
+            return new ItemResponse(new BookingResource($booking->refresh()));
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking not found.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to update guest details', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage()
+            ]);
+            return new ErrorResponse('Unable to update guest details', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Update PWD/Senior discount for a booking.
      */
     public function updatePwdSeniorDiscount(Request $request, $bookingId)
@@ -603,8 +641,8 @@ class BookingController extends Controller
             $booking = $this->bookingService->show($bookingId);
             
             // Check if booking can be modified (only pending and downpayment bookings)
-            if (!in_array($booking->status, ['pending', 'downpayment'])) {
-                return new ErrorResponse('Only pending and downpayment bookings can be modified.', 422);
+            if (!in_array($booking->status, ['pending', 'downpayment', 'paid'])) {
+                return new ErrorResponse('Only pending, downpayment, and paid bookings can be modified.', 422);
             }
 
             $modificationData = \App\DTO\Bookings\BookingModificationData::from($request->validated());

@@ -36,11 +36,11 @@ class BookingSeeder extends Seeder
 
         $this->command->info('Starting BookingSeeder for DEV/UAT environment...');
 
-        // Initialize data
-        $this->initializeData();
-
         // Create users if needed
         $this->createUsers();
+
+        // Initialize data
+        $this->initializeData();
 
         // Generate bookings
         $this->generateBookings();
@@ -114,8 +114,8 @@ class BookingSeeder extends Seeder
 
     private function generateBookings(): void
     {
-        $startDate = Carbon::parse('2025-01-01');
-        $endDate = Carbon::parse('2025-10-31');
+        $startDate = Carbon::parse('2025-08-01');
+        $endDate = Carbon::parse('2026-01-31');
         $bookingsCreated = 0;
         $bookingsSkipped = 0;
 
@@ -124,9 +124,9 @@ class BookingSeeder extends Seeder
             $checkInDate = $startDate->copy()->addDays(\fake()->numberBetween(0, $startDate->diffInDays($endDate)));
             
             // Don't create bookings in Nov/Dec
-            if ($checkInDate->month >= 11) {
-                continue;
-            }
+            // if ($checkInDate->month >= 11) {
+            //     continue;
+            // }
 
             $stayDuration = \fake()->numberBetween(1, 7); // 1-7 nights
             $checkOutDate = $checkInDate->copy()->addDays($stayDuration);

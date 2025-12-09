@@ -36,6 +36,9 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             Route::post('bookings/{booking}/other-charges', 'BookingController@storeOtherCharge');
             Route::delete('bookings/{booking}/other-charges/{charge}', 'OtherChargeController@destroy');
             
+            // Guest details - Available to all admin roles
+            Route::patch('bookings/{booking}/guest-details', 'BookingController@updateGuestDetails');
+            
             // PWD/Senior discount - Available to all admin roles
             Route::patch('bookings/{booking}/pwd-senior-discount', 'BookingController@updatePwdSeniorDiscount');
             
