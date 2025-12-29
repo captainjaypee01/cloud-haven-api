@@ -122,7 +122,7 @@ class ReviewController extends Controller
             'reviews.*.type' => 'required|string|in:room,resort',
             'reviews.*.room_slug' => 'nullable|string',
             'reviews.*.rating' => 'required|integer|min:1|max:5',
-            'reviews.*.comment' => 'nullable|string|max:1000',
+            'reviews.*.comment' => 'nullable|string|max:1500',
         ]);
 
         if ($validator->fails()) {
