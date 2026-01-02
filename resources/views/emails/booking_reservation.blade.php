@@ -414,6 +414,22 @@
                     <a href="{{ $frontendBase . '/booking/' . $booking->reference_number }}" style="display:inline-block;padding:10px 18px;border:1px solid #bbb;border-radius:6px;color:#000;">View / Manage Reservation</a>
                     </div>
 
+                    <!-- Important Reminders -->
+                    <div class="section">
+                        <div class="section-title">IMPORTANT REMINDERS</div>
+                            <div class="box">
+                                <div class="box-inner" style="font-size:13px; line-height:19px;">
+                                <ul style="margin:8px 0 0 18px; padding:0;">
+                                <li>Your reservation is not exclusive; the resort may also accommodate company team-building activities, family/group day tours, and other overnight guests during your stay.</li>
+                                <li>There is ongoing construction within the resort premises.</li>
+                                <li>Mini portable speakers are allowed; however, please expect possible noise from other guests.</li>
+                                <li>The buffet area is shared and not exclusive.</li>
+                                <li>Taking out buffet food is strictly not allowed.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Payment Policies -->
                     <div class="section">
                     <div class="section-title">MODES and DETAILS of PAYMENT</div>

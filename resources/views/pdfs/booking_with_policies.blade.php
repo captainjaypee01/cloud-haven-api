@@ -400,6 +400,18 @@
     </div>
 
     <div class="section">
+        <div class="section-title">IMPORTANT REMINDERS</div>
+        
+        <ul>
+            <li>Your reservation is not exclusive; the resort may also accommodate company team-building activities, family/group day tours, and other overnight guests during your stay.</li>
+            <li>There is ongoing construction within the resort premises.</li>
+            <li>Mini portable speakers are allowed; however, please expect possible noise from other guests.</li>
+            <li>The buffet area is shared and not exclusive.</li>
+            <li>Taking out buffet food is strictly not allowed.</li>
+        </ul>
+    </div>
+
+    <div class="section">
         <div class="section-title">NETANIA DE LAIYA HOUSE RULES & POLICIES</div>
         
         <div class="subsection-title">1. CHECK-IN/OUT, BOOKING, RESCHEDULING</div>
