@@ -456,8 +456,7 @@
                         <li><strong>1.3</strong> Rescheduling Policy: For rescheduling of reservation, kindly inform the resort 1 week before the booking schedule. Deposit made for bookings is strictly non-refundable but we allow re-scheduling of reservation (valid for 30 days).</li>
                         <li><strong>1.4</strong> Final Number of Rooms and Headcount: The confirmation of the final rooms and head count is one week before the booking schedule. If the resort is not informed and you are reducing your room or head count, you will not be able to refund. Drivers are included in the final head count. 3 years old and below are free of charge.</li>
                         <li><strong>1.5</strong> Forfeited Reservation: If the client fails to arrive on the date of their reservation.</li>
-                        <li><strong>1.6</strong> Pets are allowed with the following conditions: A maximum of two (2) pets per cabana or table for day tours, regardless of the number of rooms for overnight. Only pets weighing a maximum of eighteen (18) kilograms will be allowed. Pets must be kept on a leash or in a kennel/carrier at all times, especially in public areas to maintain cleanliness in the area, pet owners are encouraged to have their pets wear diapers.</li>
-                        <li><strong>1.7</strong> Ecological Fee: Present your Booking Confirmation to the Municipal Tourism Reception Area. Pay for the Ecological fee of P50 per person and claim your Ecological Fee tickets together with your Referral Slip. You will only need to present your Referral Slip upon arrival at the resort.</li>
+                        <li><strong>1.6</strong> Ecological Fee: Present your Booking Confirmation to the Municipal Tourism Reception Area. Pay for the Ecological fee of P50 per person and claim your Ecological Fee tickets together with your Referral Slip. You will only need to present your Referral Slip upon arrival at the resort.</li>
                         </ul>
 
                         <p class="m-0" style="margin-top:16px;"><strong>2. OCCUPANCY & ROOM SERVICES</strong></p>
@@ -489,6 +488,32 @@
                         <li><strong>6.1</strong> Please observe silence between 10:00 PM to 6:30 AM - Guests are advised to respect the privacy and comfort of other guests. Hence, kindly refrain from loud music or any noise during these hours. Karaokes or sound systems are allowed only for exclusive and pre-arranged functions.</li>
                         </ul>
                     </div></div>
+                    </div>
+
+                    <!-- Pet Policy -->
+                    <div class="section">
+                        <div class="section-title">PET POLICY</div>
+                        <div class="box">
+                            <div class="box-inner" style="font-size:13px; line-height:19px;">
+                                <p class="m-0" style="margin-bottom:8px;">To ensure a comfortable and pleasant stay for all guests, please observe the following pet policy guidelines:</p>
+                                    <ul style="margin:8px 0 0 18px; padding:0;">
+                                    <li>All pets are free of charge and must be strictly registered upon check-in. Guests are required to present a complete and up-to-date vaccination card at the time of registration.</li>
+                                    <li>Pets are allowed only in designated pet-friendly rooms—Sea View and Garden View—located in the old hotel building.</li>
+                                    <li>Pets are strictly not allowed in the Pool view room located at new hotel building.</li>
+                                    <li>Pets are not permitted in the restaurant, pool areas, or other restricted facilities.</li>
+                                    <li>Only domesticated pets, specifically dogs and cats, are allowed.</li>
+                                    <li>A maximum of two (2) pets is allowed per room, with each pet not exceeding 18 kg.</li>
+                                    <li>Pets must be kept on a leash or placed in a carrier at all times while in public areas.</li>
+                                    <li>Pets should not be left unattended in the room at any time.</li>
+                                    <li>Guests are responsible for ensuring that their pets do not disturb other guests. Excessive noise or aggressive behavior may result in the removal of the pet from the premises.</li>
+                                    <li>For hygiene purposes, towels, linens, and other hotel amenities are strictly for guest use only and must not be used for pets.</li>
+                                    <li>As a courtesy to other guests, pet owners are responsible for cleaning up after their pets at all times and in all areas of the property. Housekeeping must be notified should assistance be required.</li>
+                                    <li>Management reserves the right to refuse or discontinue pet accommodation should any of the above policies not be followed.</li>
+                                    <li>Pet owners are fully responsible for their pets at all times and shall be liable for any injury or damage caused by their pets to other guests, staff, or property. This includes medical expenses, property and equipment repairs, and personal damages.</li>
+                                </ul>
+                                <p class="m-0" style="margin-top:12px;">Above all, we aim to ensure that all guests—both with and without pets—enjoy a safe, pleasant, and memorable stay at Netania de Laiya.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <p class="note" style="padding-left:16px;">Your booking is now <strong>confirmed</strong>. We look forward to welcoming you!</p>
