@@ -464,6 +464,26 @@
         </ul>
     </div>
 
+    <div class="section">
+        <div class="section-title">PET POLICY GUIDELINES</div>
+        
+        <ul>
+          <li>All pets are free of charge and must be strictly registered upon check-in. Guests are required to present a complete and up-to-date vaccination card at the time of registration.</li>,
+          <li>Pets are allowed only in designated pet-friendly rooms—Sea View and Garden View—located in the old hotel building.</li>
+          <li><strong>Pets are strictly not allowed in the new hotel building Pool view & Deluxe room.</strong></li>
+          <li>Pets are not permitted in the restaurant, pool areas, or other restricted facilities.</li>
+          <li>Only domesticated pets, specifically dogs and cats, are allowed.</li>
+          <li>A maximum of two (2) pets is allowed per room, with each pet not exceeding 18 kg.</li>
+          <li>Pets must be kept on a leash or placed in a carrier at all times while in public areas.</li>
+          <li>Pets should not be left unattended in the room at any time.</li>
+          <li>Guests are responsible for ensuring that their pets do not disturb other guests. Excessive noise or aggressive behavior may result in the removal of the pet from the premises.</li>
+          <li>For hygiene purposes, towels, linens, and other hotel amenities are strictly for guest use only and must not be used for pets.</li>
+          <li>As a courtesy to other guests, pet owners are responsible for cleaning up after their pets at all times and in all areas of the property. Housekeeping must be notified should assistance be required.</li>
+          <li>Management reserves the right to refuse or discontinue pet accommodation should any of the above policies not be followed.</li>
+          <li>Pet owners are fully responsible for their pets at all times and shall be liable for any injury or damage caused by their pets to other guests, staff, or property. This includes medical expenses, property and equipment repairs, and personal damages.</li>
+        </ul>
+    </div>
+
     <div class="highlight">
         <strong>Important:</strong> Please read and understand all policies before your stay. For any questions or clarifications, please contact the resort directly.
     </div>

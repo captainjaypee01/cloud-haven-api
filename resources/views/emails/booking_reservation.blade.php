@@ -169,7 +169,7 @@
                                                     </div>
                                                 @else
                                                     <div style="margin-bottom: 4px; color: #9ca3af;">
-                                                        <span style="color: #ef4444;">✗</span> Buffet Lunch: Not included
+                                                        Plated Lunch
                                                     </div>
                                                 @endif
                                             </div>
