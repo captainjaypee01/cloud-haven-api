@@ -400,6 +400,18 @@
     </div>
 
     <div class="section">
+        <div class="section-title">IMPORTANT REMINDERS</div>
+        
+        <ul>
+            <li>Your reservation is not exclusive; the resort may also accommodate company team-building activities, family/group day tours, and other overnight guests during your stay.</li>
+            <!-- <li>There is ongoing construction within the resort premises.</li> -->
+            <li>Mini portable speakers are allowed; however, please expect possible noise from other guests.</li>
+            <li>The buffet area is shared and not exclusive.</li>
+            <li>Taking out buffet food is strictly not allowed.</li>
+        </ul>
+    </div>
+
+    <div class="section">
         <div class="section-title">NETANIA DE LAIYA HOUSE RULES & POLICIES</div>
         
         <div class="subsection-title">1. CHECK-IN/OUT, BOOKING, RESCHEDULING</div>
@@ -409,8 +421,7 @@
             <li><strong>1.3</strong> Rescheduling Policy: For rescheduling of reservation, kindly inform the resort 1 week before the booking schedule. Deposit made for bookings is strictly non-refundable but we allow re-scheduling of reservation (valid for 30 days).</li>
             <li><strong>1.4</strong> Final Number of Rooms and Headcount: The confirmation of the final rooms and head count is one week before the booking schedule. If the resort is not informed and you are reducing your room or head count, you will not be able to refund. Drivers are included in the final head count. 3 years old and below are free of charge.</li>
             <li><strong>1.5</strong> Forfeited Reservation: If the client fails to arrive on the date of their reservation.</li>
-            <li><strong>1.6</strong> Pets are allowed with the following conditions: A maximum of two (2) pets per cabana or table for day tours, regardless of the number of rooms for overnight. Only pets weighing a maximum of eighteen (18) kilograms will be allowed. Pets must be kept on a leash or in a kennel/carrier at all times, especially in public areas to maintain cleanliness in the area, pet owners are encouraged to have their pets wear diapers.</li>
-            <li><strong>1.7</strong> Ecological Fee: Present your Booking Confirmation to the Municipal Tourism Reception Area. Pay for the Ecological fee of P50 per person and claim your Ecological Fee tickets together with your Referral Slip. You will only need to present your Referral Slip upon arrival at the resort.</li>
+            <li><strong>1.6</strong> Ecological Fee: Present your Booking Confirmation to the Municipal Tourism Reception Area. Pay for the Ecological fee of P50 per person and claim your Ecological Fee tickets together with your Referral Slip. You will only need to present your Referral Slip upon arrival at the resort.</li>
         </ul>
 
         <div class="subsection-title">2. OCCUPANCY & ROOM SERVICES</div>
@@ -466,6 +477,8 @@
 
     <div class="section">
         <div class="section-title">PET POLICY GUIDELINES</div>
+
+        <p style="margin-bottom: 8px;">To ensure a comfortable and pleasant stay for all guests, please observe the following pet policy guidelines:</p>
         
         <ul>
           <li>All pets are free of charge and must be strictly registered upon check-in. Guests are required to present a complete and up-to-date vaccination card at the time of registration.</li>,

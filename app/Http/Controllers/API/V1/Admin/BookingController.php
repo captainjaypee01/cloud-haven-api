@@ -700,8 +700,8 @@ class BookingController extends Controller
             }
             
             // Check if booking can be modified (only pending and downpayment bookings)
-            if (!in_array($booking->status, ['pending', 'downpayment'])) {
-                return new ErrorResponse('Only pending and downpayment bookings can be modified.', 422);
+            if (!in_array($booking->status, ['pending', 'downpayment', 'paid'])) {
+                return new ErrorResponse('Only paid, pending and downpayment bookings can be modified.', 422);
             }
 
             $modificationData = $request->toDTO();
