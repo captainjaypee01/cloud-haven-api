@@ -499,7 +499,7 @@
                                     <ul style="margin:8px 0 0 18px; padding:0;">
                                     <li>All pets are free of charge and must be strictly registered upon check-in. Guests are required to present a complete and up-to-date vaccination card at the time of registration.</li>
                                     <li>Pets are allowed only in designated pet-friendly rooms—Sea View and Garden View—located in the old hotel building.</li>
-                                    <li>Pets are strictly not allowed in the Pool view room located at new hotel building.</li>
+                                    <li><strong>Pets are strictly not allowed in the new hotel building - Pool view & Loft room.</strong></li>
                                     <li>Pets are not permitted in the restaurant, pool areas, or other restricted facilities.</li>
                                     <li>Only domesticated pets, specifically dogs and cats, are allowed.</li>
                                     <li>A maximum of two (2) pets is allowed per room, with each pet not exceeding 18 kg.</li>

@@ -915,7 +915,7 @@ class RoomUnitService
             // Check for bookings
             if (isset($bookingMap[$date])) {
                 $booking = $bookingMap[$date];
-                $status = in_array($booking->status, ['paid', 'downpayment']) ? 'booked' : 'pending';
+                $status = $booking->status === "paid" ? "paid" : ($booking->status === "downpayment" ? "booked" : "pending");
                 $dayStatuses[] = [
                     'day' => $day,
                     'date' => $date,
