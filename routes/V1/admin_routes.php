@@ -34,6 +34,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             
             // Other charges - Available to all admin roles for walk-in bookings
             Route::post('bookings/{booking}/other-charges', 'BookingController@storeOtherCharge');
+            Route::patch('bookings/{booking}/other-charges/{charge}', 'OtherChargeController@update');
             Route::delete('bookings/{booking}/other-charges/{charge}', 'OtherChargeController@destroy');
             
             // Guest details - Available to all admin roles
