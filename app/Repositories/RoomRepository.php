@@ -83,7 +83,7 @@ class RoomRepository implements RoomRepositoryInterface
     {
         $room = Room::findOrFail($roomId);
 
-        // 1. Count confirmed units - bookings with paid/downpayment status
+        // 1. Collect confirmed unit IDs - bookings with paid/downpayment status
         $confirmedUnitsQuery = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
             ->where('booking_rooms.room_id', $roomId)
@@ -105,11 +105,11 @@ class RoomRepository implements RoomRepositoryInterface
         if ($excludeBookingId) {
             $confirmedUnitsQuery->where('bookings.id', '!=', $excludeBookingId);
         }
-        
-        // Count distinct room units (not booking_rooms records) to avoid counting the same unit twice
-        $confirmedUnits = $confirmedUnitsQuery->distinct()->count('booking_rooms.room_unit_id');
 
-        // 2. Count pending units Part 1 - bookings with payment records (proof uploaded)
+        // Collect distinct room unit IDs (not booking_rooms records)
+        $confirmedUnitIds = $confirmedUnitsQuery->distinct()->pluck('booking_rooms.room_unit_id');
+
+        // 2. Collect pending unit IDs Part 1 - bookings with payment records (proof uploaded)
         // Status doesn't matter as long as there's a payment record
         $pendingWithPaymentQuery = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
@@ -133,11 +133,11 @@ class RoomRepository implements RoomRepositoryInterface
         if ($excludeBookingId) {
             $pendingWithPaymentQuery->where('bookings.id', '!=', $excludeBookingId);
         }
-        
-        // Count distinct room units (not booking_rooms records) to avoid counting the same unit twice
-        $pendingWithPayment = $pendingWithPaymentQuery->distinct()->count('booking_rooms.room_unit_id');
 
-        // 3. Count pending units Part 2 - bookings without payment records (within reserved_until period)
+        // Collect distinct room unit IDs
+        $pendingWithPaymentIds = $pendingWithPaymentQuery->distinct()->pluck('booking_rooms.room_unit_id');
+
+        // 3. Collect pending unit IDs Part 2 - bookings without payment records (within reserved_until period)
         $pendingWithoutPaymentQuery = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_id', '=', 'bookings.id')
             ->leftJoin('payments', 'bookings.id', '=', 'payments.booking_id')
@@ -162,20 +162,20 @@ class RoomRepository implements RoomRepositoryInterface
         if ($excludeBookingId) {
             $pendingWithoutPaymentQuery->where('bookings.id', '!=', $excludeBookingId);
         }
-        
-        // Count distinct room units (not booking_rooms records) to avoid counting the same unit twice
-        $pendingWithoutPayment = $pendingWithoutPaymentQuery->distinct()->count('booking_rooms.room_unit_id');
 
-        // 4. Count unavailable units from room_units table (maintenance only)
+        // Collect distinct room unit IDs
+        $pendingWithoutPaymentIds = $pendingWithoutPaymentQuery->distinct()->pluck('booking_rooms.room_unit_id');
+
+        // 4. Collect unit IDs from room_units table that are in maintenance status
         // Check units that are in maintenance status AND their date ranges overlap with our search dates
-        $maintenanceUnits = DB::table('room_units')
+        $maintenanceUnitIds = DB::table('room_units')
             ->where('room_id', $roomId)
             ->where('status', 'maintenance')
             ->whereNotNull('maintenance_start_at')
             ->whereNotNull('maintenance_end_at')
             ->where('maintenance_start_at', '<=', $endDate)
             ->where('maintenance_end_at', '>=', $startDate)
-            ->count();
+            ->pluck('id');
 
         // 5. Count units with active blocked dates that overlap with our search dates
         // Only count blocked dates that are active AND not expired (expiry_date >= today)
@@ -186,7 +186,7 @@ class RoomRepository implements RoomRepositoryInterface
         // - Day Tour: blocked date includes the tour date (startDate)
         //   (day tours occupy only startDate since check_in = check_out = same day)
         $isDayTourRoom = $room->room_type === 'day_tour';
-        $blockedUnits = DB::table('room_units')
+        $blockedUnitIds = DB::table('room_units')
             ->join('room_unit_blocked_dates', 'room_units.id', '=', 'room_unit_blocked_dates.room_unit_id')
             ->where('room_units.room_id', $roomId)
             ->where('room_unit_blocked_dates.active', 1)
@@ -206,20 +206,30 @@ class RoomRepository implements RoomRepositoryInterface
                 }
             })
             ->distinct()
-            ->count('room_units.id');
+            ->pluck('room_units.id');
 
-        // Calculate totals
-        $totalPending = $pendingWithPayment + $pendingWithoutPayment;
-        $totalUnavailable = $confirmedUnits + $totalPending + $maintenanceUnits + $blockedUnits;
+        // Calculate totals using distinct unit IDs across all categories
+        $pendingUnitIds = $pendingWithPaymentIds
+            ->merge($pendingWithoutPaymentIds)
+            ->unique()
+            ->values();
+
+        $allUnavailableUnitIds = $confirmedUnitIds
+            ->merge($pendingUnitIds)
+            ->merge($maintenanceUnitIds)
+            ->merge($blockedUnitIds)
+            ->unique()
+            ->values();
+
+        $totalUnavailable = $allUnavailableUnitIds->count();
         $available = max(0, $room->quantity - $totalUnavailable);
-
 
         return [
             'available' => $available,
-            'pending' => $totalPending,
-            'confirmed' => $confirmedUnits,
-            'maintenance' => $maintenanceUnits,
-            'blocked' => $blockedUnits,
+            'pending' => $pendingUnitIds->count(),
+            'confirmed' => $confirmedUnitIds->count(),
+            'maintenance' => $maintenanceUnitIds->count(),
+            'blocked' => $blockedUnitIds->count(),
             'total_units' => $room->quantity,
             'room_id' => $roomId,
             'room_name' => $room->name
