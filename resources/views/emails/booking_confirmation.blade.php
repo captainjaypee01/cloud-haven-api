@@ -157,11 +157,11 @@
                                                     <div style="margin-bottom: 4px;">
                                                         <span style="color: #059669;">✓</span> Buffet Lunch: 
                                                         @if($selection['adults'] > 0 && $selection['children'] > 0)
-                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['lunch_adult_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['lunch_child_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pricing_details']['adult_lunch_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['pricing_details']['child_lunch_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
                                                         @elseif($selection['adults'] > 0)
-                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['lunch_adult_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pricing_details']['adult_lunch_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
                                                         @else
-                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['lunch_child_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
+                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['pricing_details']['child_lunch_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
                                                         @endif
                                                     </div>
                                                 @else
@@ -177,11 +177,11 @@
                                                     <div style="margin-bottom: 4px;">
                                                         <span style="color: #059669;">✓</span> PM Snack: 
                                                         @if($selection['adults'] > 0 && $selection['children'] > 0)
-                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pm_snack_adult_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['pm_snack_child_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pricing_details']['adult_pm_snack_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['pricing_details']['child_pm_snack_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
                                                         @elseif($selection['adults'] > 0)
-                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pm_snack_adult_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pricing_details']['adult_pm_snack_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
                                                         @else
-                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['pm_snack_child_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
+                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['pricing_details']['child_pm_snack_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
                                                         @endif
                                                     </div>
                                                 @else
