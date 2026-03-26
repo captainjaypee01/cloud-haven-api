@@ -13,11 +13,14 @@ use App\Services\RoomUnitService;
 use App\Services\EmailTrackingService;
 use App\DTO\Bookings\BookingData;
 use App\Http\Requests\Booking\WalkInBookingRequest;
+use App\Http\Requests\Booking\AdjustBookingNightsRequest;
 use App\Http\Requests\Booking\BookingModificationRequest;
 use App\Http\Requests\Booking\UpdateGuestDetailsRequest;
 use App\Services\Bookings\WalkInBookingService;
+use App\Actions\Bookings\AdjustBookingNightsAction;
 use App\Actions\Bookings\ModifyBookingAction;
 use App\Actions\Bookings\RescheduleBookingAction;
+use App\Exceptions\RoomNotAvailableException;
 use App\Actions\DayTour\ModifyDayTourBookingAction;
 use App\Http\Requests\DayTour\DayTourBookingModificationRequest;
 use Carbon\Carbon;
@@ -36,7 +39,8 @@ class BookingController extends Controller
         private readonly WalkInBookingService $walkInBookingService,
         private readonly ModifyBookingAction $modifyBookingAction,
         private readonly ModifyDayTourBookingAction $modifyDayTourBookingAction,
-        private readonly RescheduleBookingAction $rescheduleBookingAction
+        private readonly RescheduleBookingAction $rescheduleBookingAction,
+        private readonly AdjustBookingNightsAction $adjustBookingNightsAction
     ) {}
     /**
      * Display a listing of the resource.
@@ -683,6 +687,66 @@ class BookingController extends Controller
                 'error' => $e->getMessage()
             ]);
             return new ErrorResponse('Unable to modify booking. Please try again.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Adjust overnight stay length by changing check-out (check-in unchanged).
+     */
+    public function adjustNights(AdjustBookingNightsRequest $request, $bookingId)
+    {
+        try {
+            $booking = $this->bookingService->show($bookingId);
+
+            if ($booking->booking_type === 'day_tour') {
+                return new ErrorResponse('Adjust nights is only for overnight bookings.', 422);
+            }
+
+            if (! in_array($booking->status, ['pending', 'downpayment', 'paid'], true)) {
+                return new ErrorResponse('Only pending, downpayment, and paid bookings can be modified.', 422);
+            }
+
+            $validated = $request->validated();
+            $newCheckOut = Carbon::parse($validated['new_check_out_date'])->format('Y-m-d');
+
+            if (Carbon::parse($newCheckOut)->lte(Carbon::parse($booking->check_in_date))) {
+                return new ErrorResponse('New check-out date must be after check-in date.', 422);
+            }
+
+            Log::info('Admin adjusting booking nights', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'new_check_out_date' => $newCheckOut,
+            ]);
+
+            $updatedBooking = $this->adjustBookingNightsAction->execute(
+                $booking,
+                $newCheckOut,
+                $validated['modification_reason'] ?? null
+            );
+
+            return new ItemResponse(new BookingResource($updatedBooking));
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking not found.');
+        } catch (RoomNotAvailableException $e) {
+            Log::warning('Adjust nights failed - room not available', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return new ErrorResponse($e->getMessage(), 422);
+        } catch (\InvalidArgumentException $e) {
+            return new ErrorResponse($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            Log::error('Adjust nights failed', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return new ErrorResponse('Unable to adjust nights. Please try again.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 

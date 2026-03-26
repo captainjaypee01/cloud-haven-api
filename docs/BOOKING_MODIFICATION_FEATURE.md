@@ -26,6 +26,31 @@ The booking modification feature allows admin users to modify existing bookings 
 
 ## API Endpoints
 
+### Adjust overnight stay length (check-out only)
+
+Changes the number of nights by setting a new **check-out date** while keeping **check-in** unchanged. The API recomputes pricing using the same pipeline as new bookings (`CalculateBookingTotalAction`, including a fresh meal program quote for buffet vs complimentary breakfast nights), checks room-type availability, then reassigns room units if needed (shared logic with reschedule).
+
+```
+PATCH /api/v1/admin/bookings/{bookingId}/adjust-nights
+```
+
+**Request Body:**
+```json
+{
+    "new_check_out_date": "2025-08-15",
+    "modification_reason": "Guest extending stay"
+}
+```
+
+- `new_check_out_date` (required): must be **after** the booking’s `check_in_date` (minimum one night).
+- `modification_reason` (optional): stored on the booking when provided.
+
+**Rules:** Overnight bookings only; status must be `pending`, `downpayment`, or `paid`. **Downpayment amount** is not recalculated (same as room modify) so staff may need to reconcile balances manually if totals change.
+
+**Response:** `ItemResponse` with `BookingResource` (same shape as other admin booking updates).
+
+**Permissions:** Staff, admin, superadmin (same middleware group as `modify`).
+
 ### Modify Booking
 ```
 PATCH /api/v1/admin/bookings/{bookingId}/modify
@@ -76,6 +101,10 @@ A comprehensive dialog component that allows admin users to:
 - Only visible for pending and downpayment bookings
 - Available to staff, admin, and superadmin roles
 
+### AdjustBookingNightsDialog
+- **Adjust nights** button (overnight only) next to other header actions; visible for pending, downpayment, and paid bookings
+- Sets a new check-out date; optional reason; staff, admin, and superadmin
+
 ## Business Logic
 
 ### Pricing Calculation
@@ -118,6 +147,7 @@ A comprehensive dialog component that allows admin users to:
 - **Action**: `ModifyBookingAction` for business logic
 - **Controller**: `BookingController@modifyBooking`
 - **Email**: `BookingModification` mailable
+- **Adjust nights**: `AdjustBookingNightsRequest`, `AdjustBookingNightsAction`, `BookingController@adjustNights`, `BookingRoomUnitReassignmentService` (shared with reschedule)
 
 ### Frontend
 - **Hook**: `useBookingModification` for API calls

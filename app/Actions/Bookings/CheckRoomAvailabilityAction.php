@@ -3,7 +3,6 @@
 namespace App\Actions\Bookings;
 
 use App\Contracts\Repositories\RoomRepositoryInterface;
-use App\Data\BookingRoomData;
 use App\Exceptions\RoomNotAvailableException;
 
 class CheckRoomAvailabilityAction
@@ -11,7 +10,7 @@ class CheckRoomAvailabilityAction
     public function __construct(private RoomRepositoryInterface $roomRepo) {}
 
     /**
-     * @param BookingRoomData[] $bookingRoomArr
+     * @param array<int, object> $bookingRoomArr objects with room_id (slug), adults, children
      * @param string $check_in_date
      * @param string $check_out_date
      * @param int|null $excludeBookingId Optional booking ID to exclude from availability check

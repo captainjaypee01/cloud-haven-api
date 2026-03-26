@@ -52,6 +52,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             
             // Booking modification - Available to all admin roles
             Route::patch('bookings/{booking}/modify', 'BookingController@modifyBooking');
+            Route::patch('bookings/{booking}/adjust-nights', 'BookingController@adjustNights');
             Route::patch('bookings/{booking}/modify-day-tour', 'BookingController@modifyDayTourBooking');
             
             // Room Units Calendar - All roles can view

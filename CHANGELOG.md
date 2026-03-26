@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `PATCH /api/v1/admin/bookings/{booking}/adjust-nights` — change overnight check-out (fixed check-in); recalculates room, meal quote, extra guest fees, promo discount; room unit reassignment via `BookingRoomUnitReassignmentService` (shared with reschedule). Staff, admin, superadmin.
 - Versioning system implementation
 - Comprehensive README documentation
 
