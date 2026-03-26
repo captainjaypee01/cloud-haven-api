@@ -369,6 +369,15 @@ class BookingController extends Controller
             
             return new ItemResponse(new BookingResource($updatedBooking));
             
+        } catch (\InvalidArgumentException $e) {
+            Log::warning('Reschedule failed - invalid configuration or pricing for new dates', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $bookingModel->id,
+                'booking_reference' => $bookingModel->reference_number,
+                'error' => $e->getMessage(),
+            ]);
+
+            return new ErrorResponse($e->getMessage(), 422);
         } catch (\App\Exceptions\RoomNotAvailableException $e) {
             Log::warning('Reschedule failed - no alternative room units available', [
                 'admin_user_id' => Auth::user()->id,
