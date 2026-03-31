@@ -82,16 +82,10 @@
                             $actualFinalPrice = (float) $booking->final_price - (float) ($booking->discount_amount ?? 0) - (float) ($booking->pwd_senior_discount ?? 0) - (float) ($booking->special_discount ?? 0);
                             $totalPayable = $actualFinalPrice + $otherCharges;
                             $remainingBalance = max(0, $totalPayable - $totalPaid);
-                            $roomLineLabel = $isDayTour ? 'Day tour (base rate)' : 'Rooms (accommodation)';
+                            $hasDiscounts = ($booking->discount_amount ?? 0) > 0 || ($booking->pwd_senior_discount ?? 0) > 0 || ($booking->special_discount ?? 0) > 0;
                         @endphp
-                        <div class="kv" style="margin-top:8px;"><strong>Price breakdown</strong></div>
-                        <div class="kv"><strong>{{ $roomLineLabel }}:</strong> {{ $fmtMoney($booking->total_price ?? 0) }}</div>
-                        <div class="kv"><strong>Meals &amp; meal program:</strong> {{ $fmtMoney($booking->meal_price ?? 0) }}</div>
-                        @if(($booking->extra_guest_fee ?? 0) > 0)
-                        <div class="kv"><strong>Extra guest fees:</strong> {{ $fmtMoney($booking->extra_guest_fee) }}</div>
-                        @endif
-                        <div class="kv"><strong>Booking subtotal (before discounts):</strong> {{ $fmtMoney($booking->final_price) }}</div>
-                        <div class="kv" style="font-size:12px;color:#666;margin-top:4px;">This subtotal is accommodation plus meals@if(($booking->extra_guest_fee ?? 0) > 0) and extra guest fees@endif, before discounts. Other charges and payments are shown separately below.</div>
+                        @if($hasDiscounts)
+                        <div class="kv"><strong>Total Price:</strong> {{ $fmtMoney($booking->final_price) }}</div>
                         @if($booking->discount_amount > 0)
                         <div class="kv"><strong>Promo Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</div>
                         @endif
@@ -101,15 +95,14 @@
                         @if($booking->special_discount > 0)
                         <div class="kv"><strong>Special Discount:</strong> -{{ $fmtMoney($booking->special_discount) }}</div>
                         @endif
-                        <div class="kv"><strong>Total after discounts:</strong> {{ $fmtMoney($actualFinalPrice) }}</div>
-                        @if($otherCharges > 0)
-                        <div class="kv" style="margin-top:8px;"><strong>Other charges</strong></div>
-                        @foreach($booking->otherCharges as $charge)
-                        <div class="kv"><strong>{{ $charge->remarks ?: 'Additional charge' }}:</strong> {{ $fmtMoney($charge->amount) }}</div>
-                        @endforeach
-                        <div class="kv"><strong>Other charges (total):</strong> {{ $fmtMoney($otherCharges) }}</div>
                         @endif
-                        <div class="kv"><strong>Total amount due:</strong> {{ $fmtMoney($totalPayable) }}</div>
+                        @if($otherCharges > 0)
+                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($actualFinalPrice) }}</div>
+                        <div class="kv"><strong>Other charges:</strong> {{ $fmtMoney($otherCharges) }}</div>
+                        <div class="kv"><strong>Total Amount Due:</strong> {{ $fmtMoney($totalPayable) }}</div>
+                        @else
+                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($actualFinalPrice) }}</div>
+                        @endif
                         <div class="kv"><strong>Total Paid:</strong> {{ $fmtMoney($totalPaid) }}</div>
                         <div class="kv"><strong>Remaining Balance:</strong> {{ $fmtMoney($remainingBalance) }}</div>
                     </div>
