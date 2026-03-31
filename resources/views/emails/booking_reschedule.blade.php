@@ -77,7 +77,35 @@
                             <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
                         @endif
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
-                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price - ($booking->discount_amount ?? 0)) }}</div>
+                        @php
+                            $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
+                            $otherCharges = $booking->otherCharges->sum('amount');
+                            $actualFinalPrice = (float) $booking->final_price - (float) ($booking->discount_amount ?? 0) - (float) ($booking->pwd_senior_discount ?? 0) - (float) ($booking->special_discount ?? 0);
+                            $totalPayable = $actualFinalPrice + $otherCharges;
+                            $remainingBalance = max(0, $totalPayable - $totalPaid);
+                            $hasDiscounts = ($booking->discount_amount ?? 0) > 0 || ($booking->pwd_senior_discount ?? 0) > 0 || ($booking->special_discount ?? 0) > 0;
+                        @endphp
+                        @if($hasDiscounts)
+                        <div class="kv"><strong>Total Price:</strong> {{ $fmtMoney($booking->final_price) }}</div>
+                        @if($booking->discount_amount > 0)
+                        <div class="kv"><strong>Promo Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</div>
+                        @endif
+                        @if($booking->pwd_senior_discount > 0)
+                        <div class="kv"><strong>PWD/Senior Discount:</strong> -{{ $fmtMoney($booking->pwd_senior_discount) }}</div>
+                        @endif
+                        @if($booking->special_discount > 0)
+                        <div class="kv"><strong>Special Discount:</strong> -{{ $fmtMoney($booking->special_discount) }}</div>
+                        @endif
+                        @endif
+                        @if($otherCharges > 0)
+                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($actualFinalPrice) }}</div>
+                        <div class="kv"><strong>Other charges:</strong> {{ $fmtMoney($otherCharges) }}</div>
+                        <div class="kv"><strong>Total Amount Due:</strong> {{ $fmtMoney($totalPayable) }}</div>
+                        @else
+                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($actualFinalPrice) }}</div>
+                        @endif
+                        <div class="kv"><strong>Total Paid:</strong> {{ $fmtMoney($totalPaid) }}</div>
+                        <div class="kv"><strong>Remaining Balance:</strong> {{ $fmtMoney($remainingBalance) }}</div>
                     </div>
 
                     @if(!empty($booking->bookingRooms) && $booking->bookingRooms->count())
@@ -142,16 +170,16 @@
                                                     <div style="margin-bottom: 4px;">
                                                         <span style="color: #059669;">✓</span> Buffet Lunch: 
                                                         @if($selection['adults'] > 0 && $selection['children'] > 0)
-                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['lunch_adult_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['lunch_child_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pricing_details']['adult_lunch_price'] ?? $selection['lunch_adult_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['pricing_details']['child_lunch_price'] ?? $selection['lunch_child_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
                                                         @elseif($selection['adults'] > 0)
-                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['lunch_adult_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pricing_details']['adult_lunch_price'] ?? $selection['lunch_adult_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
                                                         @else
-                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['lunch_child_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
+                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['pricing_details']['child_lunch_price'] ?? $selection['lunch_child_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
                                                         @endif
                                                     </div>
                                                 @else
                                                     <div style="margin-bottom: 4px; color: #9ca3af;">
-                                                        <span style="color: #ef4444;">✗</span> Buffet Lunch: Not included
+                                                        Plated Lunch
                                                     </div>
                                                 @endif
                                             </div>
@@ -162,11 +190,11 @@
                                                     <div style="margin-bottom: 4px;">
                                                         <span style="color: #059669;">✓</span> PM Snack: 
                                                         @if($selection['adults'] > 0 && $selection['children'] > 0)
-                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pm_snack_adult_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['pm_snack_child_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pricing_details']['adult_pm_snack_price'] ?? $selection['pm_snack_adult_price'] ?? 0) }} + {{ $selection['children'] }} children × {{ $fmtMoney($selection['pricing_details']['child_pm_snack_price'] ?? $selection['pm_snack_child_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
                                                         @elseif($selection['adults'] > 0)
-                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pm_snack_adult_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
+                                                            {{ $selection['adults'] }} adults × {{ $fmtMoney($selection['pricing_details']['adult_pm_snack_price'] ?? $selection['pm_snack_adult_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
                                                         @else
-                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['pm_snack_child_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
+                                                            {{ $selection['children'] }} children × {{ $fmtMoney($selection['pricing_details']['child_pm_snack_price'] ?? $selection['pm_snack_child_price'] ?? 0) }} = {{ $fmtMoney($selection['pm_snack_cost']) }}
                                                         @endif
                                                     </div>
                                                 @else

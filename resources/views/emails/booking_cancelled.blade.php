@@ -78,7 +78,35 @@
                             <div class="kv"><strong>Nights:</strong> {{ $nights }}</div>
                         @endif
                         <div class="kv"><strong>Guests:</strong> Adults: {{ $booking->adults ?? 0 }}, Children: {{ $booking->children ?? 0 }}, Total: {{ $booking->total_guests ?? (($booking->adults ?? 0) + ($booking->children ?? 0)) }}</div>
-                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($booking->final_price) }}</div>
+                        @php
+                            $totalPaid = $booking->payments->where('status', 'paid')->sum('amount');
+                            $otherCharges = $booking->otherCharges->sum('amount');
+                            $actualFinalPrice = (float) $booking->final_price - (float) ($booking->discount_amount ?? 0) - (float) ($booking->pwd_senior_discount ?? 0) - (float) ($booking->special_discount ?? 0);
+                            $totalPayable = $actualFinalPrice + $otherCharges;
+                            $remainingBalance = max(0, $totalPayable - $totalPaid);
+                            $hasDiscounts = ($booking->discount_amount ?? 0) > 0 || ($booking->pwd_senior_discount ?? 0) > 0 || ($booking->special_discount ?? 0) > 0;
+                        @endphp
+                        @if($hasDiscounts)
+                        <div class="kv"><strong>Total Price:</strong> {{ $fmtMoney($booking->final_price) }}</div>
+                        @if($booking->discount_amount > 0)
+                        <div class="kv"><strong>Promo Discount:</strong> -{{ $fmtMoney($booking->discount_amount) }}</div>
+                        @endif
+                        @if($booking->pwd_senior_discount > 0)
+                        <div class="kv"><strong>PWD/Senior Discount:</strong> -{{ $fmtMoney($booking->pwd_senior_discount) }}</div>
+                        @endif
+                        @if($booking->special_discount > 0)
+                        <div class="kv"><strong>Special Discount:</strong> -{{ $fmtMoney($booking->special_discount) }}</div>
+                        @endif
+                        @endif
+                        @if($otherCharges > 0)
+                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($actualFinalPrice) }}</div>
+                        <div class="kv"><strong>Other charges:</strong> {{ $fmtMoney($otherCharges) }}</div>
+                        <div class="kv"><strong>Total Amount Due:</strong> {{ $fmtMoney($totalPayable) }}</div>
+                        @else
+                        <div class="kv"><strong>Total Amount:</strong> {{ $fmtMoney($actualFinalPrice) }}</div>
+                        @endif
+                        <div class="kv"><strong>Total Paid:</strong> {{ $fmtMoney($totalPaid) }}</div>
+                        <div class="kv"><strong>Remaining Balance:</strong> {{ $fmtMoney($remainingBalance) }}</div>
                     </div>
 
                     @if(!empty($booking->bookingRooms) && $booking->bookingRooms->count())
