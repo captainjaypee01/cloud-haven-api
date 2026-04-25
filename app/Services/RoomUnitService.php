@@ -442,8 +442,9 @@ class RoomUnitService
         $roomUnits = DB::table('room_units')
             ->join('rooms', 'room_units.room_id', '=', 'rooms.id')
             ->where('rooms.room_type', 'day_tour')
-            ->orderBy('room_units.room_id')
+            ->orderBy('rooms.name')
             ->orderByRaw('CAST(room_units.unit_number AS UNSIGNED)')
+            ->orderBy('room_units.unit_number')
             ->select([
                 'room_units.id',
                 'room_units.room_id',
@@ -554,6 +555,11 @@ class RoomUnitService
             'days' => $days,
             'rooms' => array_values($roomsData)
         ];
+
+        // Ensure room groups are always returned in ascending room name order.
+        usort($result['rooms'], function ($a, $b) {
+            return strnatcasecmp($a['room_name'], $b['room_name']);
+        });
 
         // Cache the result for 1 minute
         cache()->put($cacheKey, $result, 60);
