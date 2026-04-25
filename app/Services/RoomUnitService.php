@@ -409,6 +409,13 @@ class RoomUnitService
             'rooms' => array_values($roomsData)
         ];
 
+        foreach ($result['rooms'] as &$room) {
+            usort($room['units'], function ($a, $b) {
+                return strnatcasecmp($a['unit_number'], $b['unit_number']);
+            });
+        }
+        unset($room);
+
         // Cache the result for 1 minute
         cache()->put($cacheKey, $result, 60);
         
@@ -555,6 +562,13 @@ class RoomUnitService
             'days' => $days,
             'rooms' => array_values($roomsData)
         ];
+
+        foreach ($result['rooms'] as &$room) {
+            usort($room['units'], function ($a, $b) {
+                return strnatcasecmp($a['unit_number'], $b['unit_number']);
+            });
+        }
+        unset($room);
 
         // Ensure room groups are always returned in ascending room name order.
         usort($result['rooms'], function ($a, $b) {
