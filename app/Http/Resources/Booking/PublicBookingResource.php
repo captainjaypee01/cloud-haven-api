@@ -25,9 +25,9 @@ class PublicBookingResource extends JsonResource
             'reference_number'          => $this->reference_number,
             'booking_type'              => $this->booking_type ?? 'overnight', // Default to overnight for legacy bookings
             'booking_source'            => $this->booking_source ?? 'online', // Default to online for legacy bookings
-            'check_in_date'             => $this->check_in_date,
+            'check_in_date'             => optional($this->check_in_date)->toDateString(),
             'check_in_time'             => $this->check_in_time,
-            'check_out_date'             => $this->check_out_date,
+            'check_out_date'             => optional($this->check_out_date)->toDateString(),
             'check_out_time'             => $this->check_out_time,
             'guest_name'             => $this->guest_name,
             'guest_email'             => $this->guest_email,
