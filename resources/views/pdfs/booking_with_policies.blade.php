@@ -417,7 +417,7 @@
         <div class="subsection-title">1. CHECK-IN/OUT, BOOKING, RESCHEDULING</div>
         <ul>
             <li><strong>1.1</strong> Check-in time: 3:00 PM/Check-out time 1:00 PM: For overnight stay extended hours may be allowed depending on room availability; rate adjustment applies; requires at least 16 hours advance notice.</li>
-            <li><strong>1.2</strong> You may enter the resort gate 15 minutes before check-in time to settle the balance. Please wait in the parking area or at any available tables and chairs at poolside while waiting for the check-in time at 3:00PM.</li>
+            <li><strong>1.2</strong> You may enter the resort gate 5 minutes before check-in time to settle the balance. Please wait in the parking area or at any available tables and chairs at poolside while waiting for the check-in time at 3:00PM.</li>
             <li><strong>1.3</strong> Rescheduling Policy: For rescheduling of reservation, kindly inform the resort 1 week before the booking schedule. Deposit made for bookings is strictly non-refundable but we allow re-scheduling of reservation (valid for 30 days).</li>
             <li><strong>1.4</strong> Final Number of Rooms and Headcount: The confirmation of the final rooms and head count is one week before the booking schedule. If the resort is not informed and you are reducing your room or head count, you will not be able to refund. Drivers are included in the final head count. 3 years old and below are free of charge.</li>
             <li><strong>1.5</strong> Forfeited Reservation: If the client fails to arrive on the date of their reservation.</li>
@@ -429,6 +429,7 @@
             <li><strong>2.1</strong> Room capacity shall be STRICTLY OBSERVED.</li>
             <li><strong>2.2</strong> Bringing food is not allowed inside the rooms. You can order through the resort restaurant menu an hour in advance. You are allowed however to bring snacks, chips, bread, pizza, fruits, fast food meal, liquor and drinks-NO CORKAGE.</li>
             <li><strong>2.3</strong> Bringing Lechon (with corkage fee=2500)</li>
+            <li><strong>2.4</strong> Mobile Bar: with corkage fee ₱2,500</li>
         </ul>
 
         <div class="subsection-title">3. DAMAGES AND LOSSES OF RESORT'S PROPERTY</div>
