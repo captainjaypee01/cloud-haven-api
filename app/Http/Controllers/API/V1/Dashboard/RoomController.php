@@ -30,6 +30,7 @@ class RoomController extends Controller
         $checkOut = $request->query('check_out');
         if ($checkIn && $checkOut) {
             $rooms = $this->roomService->listRoomsWithAvailability($checkIn, $checkOut);
+            $rooms = $this->roomService->enrichRoomsWithStayPricing($rooms, $checkIn, $checkOut);
             $response = new CollectionResponse(new PublicRoomCollection($rooms), JsonResponse::HTTP_OK);
             
             // Add no-cache headers when availability data is included
@@ -47,10 +48,15 @@ class RoomController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($room): ItemResponse|ErrorResponse
+    public function show(Request $request, $room): ItemResponse|ErrorResponse
     {
         try {
             $data = $this->roomService->showBySlug($room);
+            $checkIn = $request->query('check_in');
+            $checkOut = $request->query('check_out');
+            if ($checkIn && $checkOut) {
+                $data = $this->roomService->enrichRoomsWithStayPricing(collect([$data]), $checkIn, $checkOut)->first();
+            }
         } catch (ModelNotFoundException $e) {
             return new ErrorResponse('Room not found.');
         }

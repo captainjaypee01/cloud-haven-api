@@ -7,9 +7,11 @@ use App\Contracts\Room\CreateRoomContract;
 use App\Contracts\Room\DeleteRoomContract;
 use App\Contracts\Room\UpdateRoomContract;
 use App\Contracts\Room\UpdateStatusContract;
+use App\Contracts\Services\RoomPricingServiceInterface;
 use App\Contracts\Services\RoomServiceInterface;
 use App\Models\Room;
 use App\DTO\Rooms\RoomDtoFactory;
+use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class RoomService implements RoomServiceInterface
@@ -22,6 +24,7 @@ class RoomService implements RoomServiceInterface
         private   DeleteRoomContract        $deleter,
         private   UpdateStatusContract      $statusUpdater,
         private   RoomDtoFactory            $dtoFactory,
+        private   RoomPricingServiceInterface $roomPricingService,
     ) {}
 
     /**
@@ -165,5 +168,34 @@ class RoomService implements RoomServiceInterface
     public function listFeaturedRooms()
     {
         return $this->query->getFeaturedRooms();
+    }
+
+    /**
+     * Attach stay-level pricing from the room calendar for public listings.
+     */
+    public function enrichRoomsWithStayPricing($rooms, string $checkIn, string $checkOut)
+    {
+        $nights = max(Carbon::parse($checkIn)->diffInDays(Carbon::parse($checkOut)), 1);
+
+        return collect($rooms)->map(function ($room) use ($checkIn, $checkOut, $nights) {
+            $quote = $this->roomPricingService->buildQuoteForStay(
+                [$room->slug => $room],
+                [(object) ['room_id' => $room->slug, 'adults' => 1, 'children' => 0]],
+                $checkIn,
+                $checkOut
+            );
+
+            $room->stay_total = $quote->totalRoom;
+            $room->price_per_night_avg = $nights > 0 ? round($quote->totalRoom / $nights, 2) : $quote->totalRoom;
+            $room->nightly_rates = array_map(
+                fn ($night) => [
+                    'date' => $night->date,
+                    'rate' => $night->rooms[0]->rate ?? 0,
+                ],
+                $quote->nights
+            );
+
+            return $room;
+        });
     }
 }

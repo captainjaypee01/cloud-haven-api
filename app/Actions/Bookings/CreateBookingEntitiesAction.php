@@ -3,35 +3,33 @@
 namespace App\Actions\Bookings;
 
 use App\DTO\Bookings\BookingData;
+use App\DTO\RoomQuoteDTO;
 use App\Models\Booking;
 use App\Models\BookingRoom;
 use App\Models\Promo;
 use App\Models\Room;
 use App\Services\RoomUnitService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class CreateBookingEntitiesAction
 {
     public function __construct(
-        private readonly RoomUnitService $roomUnitService
+        private readonly RoomUnitService $roomUnitService,
+        private readonly PersistBookingRoomNightlyRatesAction $persistNightlyRates,
     ) {}
 
     public function execute(BookingData $bookingData, array $roomDataArr, $userId, $totals): Booking
     {
-        // Prevent mixing room types
         $this->validateRoomTypes($roomDataArr);
         
-        // Extract discount from totals (calculated in CalculateBookingTotalAction)
         $discount = 0;
         $promoDiscountData = null;
         
         if (isset($totals['promo_discount']) && $totals['promo_discount']) {
-            // Use the promo discount calculated by CalculateBookingTotalAction
             $promoDiscountData = $totals['promo_discount'];
             $discount = $promoDiscountData['discount_amount'];
             
-            // Increment promo usage count
             if (!empty($bookingData->promo_id)) {
                 $promo = Promo::find($bookingData->promo_id);
                 if ($promo) {
@@ -40,14 +38,17 @@ class CreateBookingEntitiesAction
             }
         }
         
-        // Calculate downpayment amount
         $actualFinalPrice = $totals['final_price'] - $discount;
         $dpPercent = config('booking.downpayment_percent', 0.5);
         $downpaymentAmount = $actualFinalPrice * $dpPercent;
+
+        /** @var RoomQuoteDTO|null $roomQuote */
+        $roomQuote = $totals['room_quote'] ?? null;
+        $roomQuotePayload = $roomQuote ? $roomQuote->toArray() : null;
         
         $booking = Booking::create([
             'user_id' => $userId,
-            'booking_source' => 'online', // Default to online for all current bookings
+            'booking_source' => 'online',
             'check_in_date' => $bookingData->check_in_date,
             'check_in_time' => '06:00',
             'check_out_date' => $bookingData->check_out_date,
@@ -70,37 +71,47 @@ class CreateBookingEntitiesAction
             'status' => 'pending',
             'reserved_until' => now()->addHours(config('booking.reservation_hold_duration_hours', 2)),
             'meal_quote_data' => isset($totals['meal_quote']) ? json_encode($totals['meal_quote']->toArray()) : null,
+            'room_quote_data' => $roomQuotePayload,
         ]);
 
         $roomIds = array_unique(array_map(fn($r) => $r->room_id, $roomDataArr));
         $rooms = Room::whereIn('slug', $roomIds)->get()->keyBy('slug');
+        $nights = max(1, Carbon::parse($bookingData->check_in_date)->diffInDays($bookingData->check_out_date));
+        $lineTotals = $roomQuote?->getLineTotalsByIndex() ?? [];
 
-        foreach ($roomDataArr as $roomData) {
+        foreach ($roomDataArr as $index => $roomData) {
             $room = $rooms[$roomData->room_id];
             
-            // Try to assign a room unit immediately for both overnight and day tour bookings
             $assignedUnit = $this->roomUnitService->assignUnitToBooking(
                 $room->id,
                 $bookingData->check_in_date,
                 $bookingData->check_out_date
             );
 
+            $lineTotal = $lineTotals[$index] ?? ($room->price_per_night * $nights);
+            $avgNightly = $nights > 0 ? round($lineTotal / $nights, 2) : (float) $room->price_per_night;
+
             $bookingRoom = BookingRoom::create([
                 'booking_id' => $booking->id,
                 'room_id' => $room->id,
-                'room_unit_id' => $assignedUnit?->id, // Assign unit immediately if available
-                'price_per_night' => $room->price_per_night,
+                'room_unit_id' => $assignedUnit?->id,
+                'price_per_night' => $avgNightly,
+                'total_price' => $lineTotal,
                 'adults' => $roomData->adults,
                 'children' => $roomData->children,
                 'total_guests' => $roomData->adults + $roomData->children,
             ]);
 
-            if ($assignedUnit) {
-                // Unit assigned successfully
-            } else {
+            if (! $assignedUnit) {
                 Log::warning("No available units found for room {$room->name} (ID: {$room->id}) during booking creation for booking {$booking->reference_number}");
             }
         }
+
+        if ($roomQuote) {
+            $booking->load('bookingRooms.room');
+            $this->persistNightlyRates->execute($booking, $roomQuote);
+        }
+
         return $booking;
     }
 

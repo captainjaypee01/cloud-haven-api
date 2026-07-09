@@ -9,7 +9,9 @@ use App\Models\Booking;
 use App\Models\BookingRoom;
 use App\Models\Room;
 use App\Services\EmailTrackingService;
+use App\Services\Bookings\BookingBalanceService;
 use App\Services\CacheInvalidationService;
+use App\Services\RoomQuoteSnapshotService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,10 +22,17 @@ class ModifyBookingAction
         private CheckRoomAvailabilityAction $checkAvailability,
         private CalculateBookingTotalAction $calcTotal,
         private CacheInvalidationService $cacheInvalidation,
+        private RoomQuoteSnapshotService $roomQuoteSnapshotService,
+        private PersistBookingRoomNightlyRatesAction $persistNightlyRates,
+        private SyncBookingDownpaymentAction $syncDownpayment,
+        private BookingBalanceService $bookingBalance,
     ) {}
 
-    public function execute(Booking $booking, BookingModificationData $modificationData): Booking
-    {
+    public function execute(
+        Booking $booking,
+        BookingModificationData $modificationData,
+        bool $acknowledgeDownpaymentShortfall = false,
+    ): Booking {
         Log::info('Starting booking modification', [
             'booking_id' => $booking->id,
             'booking_reference' => $booking->reference_number,
@@ -32,13 +41,13 @@ class ModifyBookingAction
             'modification_reason' => $modificationData->modification_reason,
         ]);
 
-        return DB::transaction(function () use ($booking, $modificationData) {
+        return DB::transaction(function () use ($booking, $modificationData, $acknowledgeDownpaymentShortfall) {
             // 1. Validate room availability for new configuration
             $this->validateRoomAvailability($booking, $modificationData);
 
             // 2. Get room data for calculations
             $roomsArray = $modificationData->rooms;
-            $roomIds = array_unique(array_map(fn($r) => $r['room_id'], $roomsArray));
+            $roomIds = array_unique(array_map(fn ($r) => $r['room_id'], $roomsArray));
             $rooms = Room::whereIn('slug', $roomIds)->get()->keyBy('slug');
 
             // 3. Use rooms array directly for calculations
@@ -46,6 +55,12 @@ class ModifyBookingAction
 
             // 4. Recalculate totals using existing meal quote data
             $totals = $this->recalculateTotals($booking, $bookingRoomArr, $rooms);
+
+            $this->bookingBalance->assertDownpaymentMetOrAcknowledged(
+                $booking,
+                $totals,
+                $acknowledgeDownpaymentShortfall
+            );
 
             // 5. Update booking totals
             $booking->update([
@@ -55,10 +70,19 @@ class ModifyBookingAction
                 'extra_guest_count' => $totals['extra_guest_count'],
                 'final_price' => $totals['final_price'],
                 'discount_amount' => $totals['promo_discount']['discount_amount'] ?? 0,
+                'downpayment_amount' => $this->syncDownpayment->calculateFromTotals($totals),
+                'room_quote_data' => isset($totals['room_quote']) ? $totals['room_quote']->toArray() : null,
             ]);
 
             // 6. Update booking rooms
-            $this->updateBookingRooms($booking, $modificationData, $rooms);
+            $this->updateBookingRooms($booking, $modificationData, $rooms, $totals['room_quote'] ?? null);
+
+            // 6b. Persist nightly reporting rows
+            if (isset($totals['room_quote'])) {
+                $booking->refresh();
+                $booking->load('bookingRooms.room');
+                $this->persistNightlyRates->execute($booking, $totals['room_quote']);
+            }
 
             // 7. Update booking totals (adults, children, total_guests)
             $this->updateBookingGuestCounts($booking, $modificationData);
@@ -105,33 +129,27 @@ class ModifyBookingAction
 
     private function recalculateTotals(Booking $booking, array $bookingRoomArr, $rooms): array
     {
-        // Use existing meal quote data from booking
         $mealQuote = $booking->meal_quote_data;
         
-        // If no meal quote data exists, create a new one
         if (!$mealQuote) {
             $computeMealQuoteAction = app(\App\Actions\ComputeMealQuoteAction::class);
             $mealQuote = $computeMealQuoteAction->execute($booking->check_in_date, $booking->check_out_date);
         }
 
-        // Calculate room totals
-        $totalRoom = 0;
-        $nights = Carbon::parse($booking->check_in_date)->diffInDays($booking->check_out_date);
-        
-        foreach ($bookingRoomArr as $roomData) {
-            $room = $rooms[$roomData['room_id']] ?? null;
-            if (!$room) {
-                continue;
-            }
-            $totalRoom += $room->price_per_night * $nights;
-        }
+        $snapshot = $this->roomQuoteSnapshotService->parseSnapshot($booking);
+        $bookingRoomObjects = array_map(fn ($rd) => (object) $rd, $bookingRoomArr);
 
-        // Calculate meal total using existing meal quote data
+        $roomQuote = $this->roomQuoteSnapshotService->buildForStay(
+            $snapshot,
+            $rooms->all(),
+            $bookingRoomObjects,
+            $booking->check_in_date,
+            $booking->check_out_date,
+        );
+
+        $totalRoom = $roomQuote->totalRoom;
         $mealTotal = $this->calculateMealTotalFromQuote($mealQuote, $bookingRoomArr, $rooms);
-
-        // Calculate extra guest fees
         $extraGuestData = $this->calculateExtraGuestFeesFromQuote($mealQuote, $bookingRoomArr, $rooms);
-
         $finalTotal = $totalRoom + $mealTotal + $extraGuestData['total_fee'];
 
         $totals = [
@@ -140,6 +158,7 @@ class ModifyBookingAction
             'extra_guest_fee' => $extraGuestData['total_fee'],
             'extra_guest_count' => $extraGuestData['total_count'],
             'final_price' => $finalTotal,
+            'room_quote' => $roomQuote,
         ];
 
         // Recalculate promo discount if promo exists
@@ -248,21 +267,24 @@ class ModifyBookingAction
         ];
     }
 
-    private function updateBookingRooms(Booking $booking, BookingModificationData $modificationData, $rooms): void
+    private function updateBookingRooms(Booking $booking, BookingModificationData $modificationData, $rooms, $roomQuote = null): void
     {
-        // Delete existing booking rooms
         $booking->bookingRooms()->delete();
 
-        // Create new booking rooms
-        foreach ($modificationData->rooms as $roomData) {
+        $nights = max(1, Carbon::parse($booking->check_in_date)->diffInDays($booking->check_out_date));
+        $lineTotals = $roomQuote?->getLineTotalsByIndex() ?? [];
+
+        foreach ($modificationData->rooms as $index => $roomData) {
             $room = $rooms[$roomData['room_id']];
-            $nights = Carbon::parse($booking->check_in_date)->diffInDays($booking->check_out_date);
+            $lineTotal = $lineTotals[$index] ?? ($room->price_per_night * $nights);
+            $avgNightly = $nights > 0 ? round($lineTotal / $nights, 2) : (float) $room->price_per_night;
             
             $bookingRoom = new BookingRoom([
                 'booking_id' => $booking->id,
                 'room_id' => $room->id,
                 'room_unit_id' => $roomData['room_unit_id'] ?? null,
-                'price_per_night' => $room->price_per_night,
+                'price_per_night' => $avgNightly,
+                'total_price' => $lineTotal,
                 'adults' => $roomData['adults'],
                 'children' => $roomData['children'],
                 'total_guests' => $roomData['total_guests'],

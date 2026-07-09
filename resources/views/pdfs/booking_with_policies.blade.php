@@ -275,6 +275,42 @@
                 @endforeach
             </tbody>
         </table>
+
+        @if(!$isDayTour && !empty($booking->room_quote_data))
+        @php
+            $roomQuoteData = $booking->room_quote_data;
+            if (is_string($roomQuoteData)) {
+                $roomQuote = json_decode($roomQuoteData, true) ?: [];
+            } else {
+                $roomQuote = $roomQuoteData ?: [];
+            }
+        @endphp
+        @if(!empty($roomQuote['nights']))
+        <div class="subsection-title">Nightly Room Rates (locked at booking)</div>
+        <table class="room-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($roomQuote['nights'] as $night)
+                @php
+                    $nightTotal = 0;
+                    foreach ($night['rooms'] ?? [] as $r) {
+                        $nightTotal += $r['rate'] ?? 0;
+                    }
+                @endphp
+                <tr>
+                    <td>{{ $night['date'] ?? '' }}</td>
+                    <td>{{ $fmtMoney($nightTotal) }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+        @endif
         @endif
     </div>
 

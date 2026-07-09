@@ -21,4 +21,5 @@ interface RoomServiceInterface
     public function availableUnits(int $roomId, string $start, string $end): int;
     public function getDetailedAvailability(int $roomId, string $start, string $end): array;
     public function listFeaturedRooms();
+    public function enrichRoomsWithStayPricing($rooms, string $checkIn, string $checkOut);
 }

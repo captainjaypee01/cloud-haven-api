@@ -145,17 +145,24 @@ class PromoCalculationService
     private function calculatePerNightAmounts(array $totals, int $nights, array $bookingRoomArr, array $rooms, $mealQuote = null): array
     {
         $perNightAmounts = [];
+        $roomQuote = $totals['room_quote'] ?? null;
 
-        // Calculate per-night room cost
-        $perNightRoom = $totals['total_room'] / $nights;
-        
-        // Calculate per-night total
-        $perNightTotal = $totals['final_price'] / $nights;
+        $perNightTotal = $nights > 0 ? $totals['final_price'] / $nights : 0;
 
         for ($i = 0; $i < $nights; $i++) {
             $perNightMeal = 0;
+            $perNightRoom = $nights > 0 ? $totals['total_room'] / $nights : 0;
+
+            if ($roomQuote instanceof \App\DTO\RoomQuoteDTO && isset($roomQuote->nights[$i])) {
+                $perNightRoom = $roomQuote->nights[$i]->nightTotal();
+            } elseif (is_array($roomQuote) && isset($roomQuote['nights'][$i]['rooms'])) {
+                $perNightRoom = array_reduce(
+                    $roomQuote['nights'][$i]['rooms'],
+                    fn (float $carry, array $room) => $carry + (float) ($room['rate'] ?? 0),
+                    0.0
+                );
+            }
             
-            // Calculate actual meal cost for this specific night based on guest counts and room data
             if ($mealQuote && isset($mealQuote->nights) && is_array($mealQuote->nights) && isset($mealQuote->nights[$i])) {
                 $mealNight = $mealQuote->nights[$i];
                 

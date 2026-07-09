@@ -4,6 +4,7 @@ namespace App\Actions\Bookings;
 
 use App\Models\Booking;
 use App\Models\Promo;
+use App\Services\Bookings\BookingBalanceService;
 use App\Services\CacheInvalidationService;
 use App\Services\Bookings\BookingRoomUnitReassignmentService;
 use Carbon\Carbon;
@@ -18,10 +19,18 @@ class AdjustBookingNightsAction
         private CalculateBookingTotalAction $calculateBookingTotal,
         private BookingRoomUnitReassignmentService $roomUnitReassignment,
         private CacheInvalidationService $cacheInvalidation,
+        private PersistBookingRoomNightlyRatesAction $persistNightlyRates,
+        private SyncBookingRoomLineTotalsFromQuoteAction $syncRoomLineTotals,
+        private SyncBookingDownpaymentAction $syncDownpayment,
+        private BookingBalanceService $bookingBalance,
     ) {}
 
-    public function execute(Booking $booking, string $newCheckOutDate, ?string $modificationReason = null): Booking
-    {
+    public function execute(
+        Booking $booking,
+        string $newCheckOutDate,
+        ?string $modificationReason = null,
+        bool $acknowledgeDownpaymentShortfall = false,
+    ): Booking {
         $booking->load('bookingRooms.room');
 
         $oldCheckOut = $booking->check_out_date;
@@ -70,7 +79,14 @@ class AdjustBookingNightsAction
             $newCheckOut,
             (int) $booking->adults,
             (int) $booking->children,
-            $promo
+            $promo,
+            $booking,
+        );
+
+        $this->bookingBalance->assertDownpaymentMetOrAcknowledged(
+            $booking,
+            $totals,
+            $acknowledgeDownpaymentShortfall
         );
 
         $discountAmount = isset($totals['promo_discount']) ? ($totals['promo_discount']['discount_amount'] ?? 0) : 0;
@@ -82,9 +98,10 @@ class AdjustBookingNightsAction
             $oldCheckOut,
             $totals,
             $discountAmount,
-            $modificationReason
+            $modificationReason,
         ) {
             $mealQuote = $totals['meal_quote'];
+            $roomQuote = $totals['room_quote'] ?? null;
 
             $updatePayload = [
                 'check_out_date' => $newCheckOut,
@@ -94,7 +111,9 @@ class AdjustBookingNightsAction
                 'extra_guest_count' => $totals['extra_guest_count'],
                 'final_price' => $totals['final_price'],
                 'discount_amount' => $discountAmount,
+                'downpayment_amount' => $this->syncDownpayment->calculateFromTotals($totals),
                 'meal_quote_data' => $mealQuote ? json_encode($mealQuote->toArray()) : null,
+                'room_quote_data' => $roomQuote ? $roomQuote->toArray() : null,
             ];
             if ($modificationReason !== null && $modificationReason !== '') {
                 $updatePayload['modification_reason'] = $modificationReason;
@@ -104,6 +123,11 @@ class AdjustBookingNightsAction
 
             $booking->refresh();
             $booking->load('bookingRooms.room');
+
+            if ($roomQuote) {
+                $this->persistNightlyRates->execute($booking, $roomQuote);
+                $this->syncRoomLineTotals->execute($booking, $roomQuote, $checkIn, $newCheckOut);
+            }
 
             $this->roomUnitReassignment->reassignRoomUnitsForBooking($booking, $checkIn, $newCheckOut);
 

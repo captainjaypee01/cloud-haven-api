@@ -19,8 +19,11 @@ use App\Http\Requests\Booking\UpdateGuestDetailsRequest;
 use App\Services\Bookings\WalkInBookingService;
 use App\Actions\Bookings\AdjustBookingNightsAction;
 use App\Actions\Bookings\ModifyBookingAction;
+use App\Actions\Bookings\PreviewBookingChangeAction;
 use App\Actions\Bookings\RescheduleBookingAction;
+use App\Exceptions\DownpaymentShortfallException;
 use App\Exceptions\RoomNotAvailableException;
+use App\Http\Requests\Booking\PreviewBookingChangeRequest;
 use App\Actions\DayTour\ModifyDayTourBookingAction;
 use App\Http\Requests\DayTour\DayTourBookingModificationRequest;
 use Carbon\Carbon;
@@ -40,7 +43,8 @@ class BookingController extends Controller
         private readonly ModifyBookingAction $modifyBookingAction,
         private readonly ModifyDayTourBookingAction $modifyDayTourBookingAction,
         private readonly RescheduleBookingAction $rescheduleBookingAction,
-        private readonly AdjustBookingNightsAction $adjustBookingNightsAction
+        private readonly AdjustBookingNightsAction $adjustBookingNightsAction,
+        private readonly PreviewBookingChangeAction $previewBookingChangeAction,
     ) {}
     /**
      * Display a listing of the resource.
@@ -232,6 +236,7 @@ class BookingController extends Controller
                     'after_or_equal:today',
                     'before_or_equal:' . $maxRescheduleDate->toDateString()
                 ],
+                'acknowledge_downpayment_shortfall' => ['sometimes', 'boolean'],
             ]);
             
             // Set both check-in and check-out to the same date for Day Tour
@@ -247,6 +252,7 @@ class BookingController extends Controller
                     'before_or_equal:' . $maxRescheduleDate->toDateString()
                 ],
                 'check_out_date' => 'required|date|after:check_in_date',
+                'acknowledge_downpayment_shortfall' => ['sometimes', 'boolean'],
             ]);
         }
         
@@ -323,7 +329,8 @@ class BookingController extends Controller
             $updatedBooking = $this->rescheduleBookingAction->execute(
                 $bookingModel,
                 $validated['check_in_date'],
-                $validated['check_out_date']
+                $validated['check_out_date'],
+                (bool) ($validated['acknowledge_downpayment_shortfall'] ?? false),
             );
             
             // Send reschedule email notification
@@ -369,6 +376,8 @@ class BookingController extends Controller
             
             return new ItemResponse(new BookingResource($updatedBooking));
             
+        } catch (DownpaymentShortfallException $e) {
+            return $this->downpaymentShortfallResponse($e);
         } catch (\InvalidArgumentException $e) {
             Log::warning('Reschedule failed - invalid configuration or pricing for new dates', [
                 'admin_user_id' => Auth::user()->id,
@@ -669,7 +678,11 @@ class BookingController extends Controller
                 'modification_reason' => $modificationData->modification_reason,
             ]);
 
-            $updatedBooking = $this->modifyBookingAction->execute($booking, $modificationData);
+            $updatedBooking = $this->modifyBookingAction->execute(
+                $booking,
+                $modificationData,
+                (bool) ($request->validated()['acknowledge_downpayment_shortfall'] ?? false),
+            );
 
             Log::info('Booking modification completed successfully', [
                 'admin_user_id' => Auth::user()->id,
@@ -682,6 +695,8 @@ class BookingController extends Controller
             return new ItemResponse(new BookingResource($updatedBooking));
         } catch (ModelNotFoundException $e) {
             return new ErrorResponse('Booking not found.');
+        } catch (DownpaymentShortfallException $e) {
+            return $this->downpaymentShortfallResponse($e);
         } catch (\App\Exceptions\RoomNotAvailableException $e) {
             Log::warning('Booking modification failed - room not available', [
                 'admin_user_id' => Auth::user()->id,
@@ -732,12 +747,15 @@ class BookingController extends Controller
             $updatedBooking = $this->adjustBookingNightsAction->execute(
                 $booking,
                 $newCheckOut,
-                $validated['modification_reason'] ?? null
+                $validated['modification_reason'] ?? null,
+                (bool) ($validated['acknowledge_downpayment_shortfall'] ?? false),
             );
 
             return new ItemResponse(new BookingResource($updatedBooking));
         } catch (ModelNotFoundException $e) {
             return new ErrorResponse('Booking not found.');
+        } catch (DownpaymentShortfallException $e) {
+            return $this->downpaymentShortfallResponse($e);
         } catch (RoomNotAvailableException $e) {
             Log::warning('Adjust nights failed - room not available', [
                 'admin_user_id' => Auth::user()->id,
@@ -818,5 +836,48 @@ class BookingController extends Controller
             ]);
             return new ErrorResponse('Unable to modify Day Tour booking. Please try again.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    public function previewChange(PreviewBookingChangeRequest $request, $bookingId)
+    {
+        try {
+            $booking = $this->bookingService->show($bookingId);
+            $validated = $request->validated();
+            $changeType = $validated['change_type'];
+
+            $params = match ($changeType) {
+                'adjust_nights' => ['new_check_out_date' => $validated['new_check_out_date']],
+                'reschedule' => [
+                    'check_in_date' => $validated['check_in_date'],
+                    'check_out_date' => $validated['check_out_date'],
+                ],
+                'modify' => ['rooms' => $validated['rooms']],
+            };
+
+            $preview = $this->previewBookingChangeAction->execute($booking, $changeType, $params);
+
+            return response()->json(['data' => $preview]);
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking not found.');
+        } catch (\InvalidArgumentException $e) {
+            return new ErrorResponse($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            Log::error('Booking change preview failed', [
+                'admin_user_id' => Auth::user()?->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return new ErrorResponse('Unable to preview booking change.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private function downpaymentShortfallResponse(DownpaymentShortfallException $e): JsonResponse
+    {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'downpayment_shortfall' => true,
+            'balance_preview' => $e->balanceComparison,
+        ], 422);
     }
 }

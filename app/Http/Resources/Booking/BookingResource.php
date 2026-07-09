@@ -42,6 +42,7 @@ class BookingResource extends JsonResource
             'extra_guest_fee'           => $this->extra_guest_fee,
             'extra_guest_count'         => $this->extra_guest_count,
             'meal_quote_data'           => $this->meal_quote_data,
+            'room_quote_data'           => $this->room_quote_data,
             'discount_amount'           => $this->discount_amount,
             'pwd_senior_discount'       => $this->pwd_senior_discount,
             'pwd_senior_discount_reason' => $this->pwd_senior_discount_reason,

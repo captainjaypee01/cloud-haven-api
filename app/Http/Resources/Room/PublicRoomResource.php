@@ -30,7 +30,10 @@ class PublicRoomResource extends JsonResource
             'min_guests'            => $this->min_guests ?? 1,
             'room_type'             => $this->room_type ?? 'overnight',
             'allows_day_use'        => $this->allows_day_use, // For backward compatibility
-            'price'                 => $this->price_per_night,
+            'price'                 => $this->price_per_night_avg ?? $this->price_per_night,
+            'stay_total'            => $this->when(isset($this->stay_total), $this->stay_total),
+            'price_per_night_avg'   => $this->when(isset($this->price_per_night_avg), $this->price_per_night_avg),
+            'nightly_rates'         => $this->when(isset($this->nightly_rates), $this->nightly_rates),
             // 'view'                  => $viewList[array_rand($viewList)],
             // 'floor'                 => $floorList[array_rand($viewList)],
             'available_count'       => $this->available_count ?? null,

@@ -16,6 +16,7 @@ class AdjustBookingNightsRequest extends FormRequest
         return [
             'new_check_out_date' => ['required', 'date'],
             'modification_reason' => ['nullable', 'string', 'max:1000'],
+            'acknowledge_downpayment_shortfall' => ['sometimes', 'boolean'],
         ];
     }
 

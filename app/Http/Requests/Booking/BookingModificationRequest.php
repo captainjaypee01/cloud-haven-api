@@ -30,6 +30,7 @@ class BookingModificationRequest extends FormRequest
             'rooms.*.room_unit_id' => ['nullable', 'integer', 'exists:room_units,id'],
             'modification_reason' => ['required', 'string', 'max:1000'],
             'send_email' => ['nullable', 'boolean'],
+            'acknowledge_downpayment_shortfall' => ['sometimes', 'boolean'],
         ];
     }
 

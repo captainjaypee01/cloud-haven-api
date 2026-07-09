@@ -7,6 +7,7 @@ use App\Contracts\Services\MealPricingServiceInterface;
 use App\Models\Booking;
 use App\Models\DayTourPricing;
 use App\Models\Promo;
+use App\Services\Bookings\BookingBalanceService;
 use App\Services\Bookings\BookingRoomUnitReassignmentService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -19,14 +20,56 @@ class RescheduleBookingAction
         private CalculateBookingTotalAction $calculateBookingTotal,
         private MealCalendarServiceInterface $calendarService,
         private MealPricingServiceInterface $mealPricingService,
+        private PersistBookingRoomNightlyRatesAction $persistNightlyRates,
+        private SyncBookingRoomLineTotalsFromQuoteAction $syncRoomLineTotals,
+        private SyncBookingDownpaymentAction $syncDownpayment,
+        private BookingBalanceService $bookingBalance,
     ) {}
 
     /**
      * Reschedule a booking: update dates, recalculate pricing and meal quote for the new dates,
      * then reassign room units if needed.
      */
-    public function execute(Booking $booking, string $newCheckIn, string $newCheckOut): Booking
-    {
+    public function execute(
+        Booking $booking,
+        string $newCheckIn,
+        string $newCheckOut,
+        bool $acknowledgeDownpaymentShortfall = false,
+    ): Booking {
+        if ($booking->booking_type !== 'day_tour') {
+            $booking->load('bookingRooms.room', 'payments', 'otherCharges');
+            $bookingRoomArr = [];
+            foreach ($booking->bookingRooms as $br) {
+                $slug = $br->room?->slug;
+                if (! $slug) {
+                    continue;
+                }
+                $bookingRoomArr[] = (object) [
+                    'room_id' => $slug,
+                    'adults' => $br->adults,
+                    'children' => $br->children,
+                ];
+            }
+
+            if ($bookingRoomArr !== []) {
+                $promo = $booking->promo_id ? Promo::find($booking->promo_id) : null;
+                $totals = $this->calculateBookingTotal->execute(
+                    $bookingRoomArr,
+                    $newCheckIn,
+                    $newCheckOut,
+                    (int) $booking->adults,
+                    (int) $booking->children,
+                    $promo,
+                    $booking,
+                );
+                $this->bookingBalance->assertDownpaymentMetOrAcknowledged(
+                    $booking,
+                    $totals,
+                    $acknowledgeDownpaymentShortfall
+                );
+            }
+        }
+
         DB::beginTransaction();
 
         try {
@@ -105,11 +148,13 @@ class RescheduleBookingAction
             $checkOut,
             (int) $booking->adults,
             (int) $booking->children,
-            $promo
+            $promo,
+            $booking,
         );
 
         $discountAmount = isset($totals['promo_discount']) ? ($totals['promo_discount']['discount_amount'] ?? 0) : 0;
         $mealQuote = $totals['meal_quote'];
+        $roomQuote = $totals['room_quote'] ?? null;
 
         $booking->update([
             'total_price' => $totals['total_room'],
@@ -118,8 +163,17 @@ class RescheduleBookingAction
             'extra_guest_count' => $totals['extra_guest_count'],
             'final_price' => $totals['final_price'],
             'discount_amount' => $discountAmount,
+            'downpayment_amount' => $this->syncDownpayment->calculateFromTotals($totals),
             'meal_quote_data' => $mealQuote ? json_encode($mealQuote->toArray()) : null,
+            'room_quote_data' => $roomQuote ? $roomQuote->toArray() : null,
         ]);
+
+        if ($roomQuote) {
+            $booking->refresh();
+            $booking->load('bookingRooms.room');
+            $this->persistNightlyRates->execute($booking, $roomQuote);
+            $this->syncRoomLineTotals->execute($booking, $roomQuote, $checkIn, $checkOut);
+        }
     }
 
     /**

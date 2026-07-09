@@ -60,6 +60,7 @@ class Booking extends Model
         'cancelled_by',
         'cancellation_reason',
         'meal_quote_data',
+        'room_quote_data',
         'created_at',
         'updated_at',
         'deleted_at'
@@ -115,6 +116,28 @@ class Booking extends Model
         } else {
             $this->attributes['meal_quote_data'] = $value;
         }
+    }
+
+    public function getRoomQuoteDataAttribute($value)
+    {
+        if (is_string($value)) {
+            return json_decode($value, true) ?: [];
+        }
+        return $value ?: [];
+    }
+
+    public function setRoomQuoteDataAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['room_quote_data'] = json_encode($value);
+        } else {
+            $this->attributes['room_quote_data'] = $value;
+        }
+    }
+
+    public function nightlyRoomRates()
+    {
+        return $this->hasMany(BookingRoomNightlyRate::class);
     }
 
     public function user()
