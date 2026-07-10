@@ -72,7 +72,7 @@ class PaymentController extends Controller
     public function uploadProof(Request $request, $referenceNumber, $paymentId = null)
     {
         $validated = $request->validate([
-            'proof_file' => 'required|file|mimes:jpeg,jpg,png,pdf|max:5120', // 5MB max
+            'proof_file' => 'required|file|mimes:jpeg,jpg,png,pdf|max:12288', // 12MB, matches frontend
             'transaction_id' => 'nullable|string|max:255',
             'remarks' => 'nullable|string|max:1000',
         ]);
