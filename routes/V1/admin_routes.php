@@ -54,6 +54,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             Route::patch('bookings/{booking}/modify', 'BookingController@modifyBooking');
             Route::patch('bookings/{booking}/adjust-nights', 'BookingController@adjustNights');
             Route::post('bookings/{booking}/change-preview', 'BookingController@previewChange');
+            Route::post('bookings/{booking}/resend-email', 'BookingController@resendEmail');
             Route::patch('bookings/{booking}/modify-day-tour', 'BookingController@modifyDayTourBooking');
             
             // Room Units Calendar - All roles can view

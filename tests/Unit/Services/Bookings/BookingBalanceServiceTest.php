@@ -1,6 +1,5 @@
 <?php
 
-use App\Exceptions\DownpaymentShortfallException;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Services\Bookings\BookingBalanceService;
@@ -35,52 +34,6 @@ test('requires downpayment check when guest has paid any amount', function () {
     ]);
 
     expect($this->service->requiresDownpaymentCheck($booking->fresh()))->toBeTrue();
-});
-
-test('blocks save when downpayment shortfall is not acknowledged', function () {
-    $booking = Booking::factory()->create([
-        'status' => 'downpayment',
-        'final_price' => 10000,
-        'discount_amount' => 0,
-    ]);
-
-    Payment::factory()->create([
-        'booking_id' => $booking->id,
-        'status' => 'paid',
-        'amount' => 5000,
-    ]);
-
-    $booking->refresh()->load('payments');
-
-    expect(fn () => $this->service->assertDownpaymentMetOrAcknowledged(
-        $booking,
-        ['final_price' => 20000],
-        false
-    ))->toThrow(DownpaymentShortfallException::class);
-});
-
-test('allows save when downpayment shortfall is acknowledged', function () {
-    $booking = Booking::factory()->create([
-        'status' => 'downpayment',
-        'final_price' => 10000,
-        'discount_amount' => 0,
-    ]);
-
-    Payment::factory()->create([
-        'booking_id' => $booking->id,
-        'status' => 'paid',
-        'amount' => 5000,
-    ]);
-
-    $booking->refresh()->load('payments');
-
-    $this->service->assertDownpaymentMetOrAcknowledged(
-        $booking,
-        ['final_price' => 20000],
-        true
-    );
-
-    expect(true)->toBeTrue();
 });
 
 test('compare current and proposed includes balance deltas', function () {

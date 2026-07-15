@@ -21,9 +21,10 @@ use App\Actions\Bookings\AdjustBookingNightsAction;
 use App\Actions\Bookings\ModifyBookingAction;
 use App\Actions\Bookings\PreviewBookingChangeAction;
 use App\Actions\Bookings\RescheduleBookingAction;
-use App\Exceptions\DownpaymentShortfallException;
+use App\Actions\Bookings\ResendBookingEmailAction;
 use App\Exceptions\RoomNotAvailableException;
 use App\Http\Requests\Booking\PreviewBookingChangeRequest;
+use App\Http\Requests\Booking\ResendBookingEmailRequest;
 use App\Actions\DayTour\ModifyDayTourBookingAction;
 use App\Http\Requests\DayTour\DayTourBookingModificationRequest;
 use Carbon\Carbon;
@@ -45,6 +46,7 @@ class BookingController extends Controller
         private readonly RescheduleBookingAction $rescheduleBookingAction,
         private readonly AdjustBookingNightsAction $adjustBookingNightsAction,
         private readonly PreviewBookingChangeAction $previewBookingChangeAction,
+        private readonly ResendBookingEmailAction $resendBookingEmailAction,
     ) {}
     /**
      * Display a listing of the resource.
@@ -236,7 +238,6 @@ class BookingController extends Controller
                     'after_or_equal:today',
                     'before_or_equal:' . $maxRescheduleDate->toDateString()
                 ],
-                'acknowledge_downpayment_shortfall' => ['sometimes', 'boolean'],
             ]);
             
             // Set both check-in and check-out to the same date for Day Tour
@@ -252,7 +253,6 @@ class BookingController extends Controller
                     'before_or_equal:' . $maxRescheduleDate->toDateString()
                 ],
                 'check_out_date' => 'required|date|after:check_in_date',
-                'acknowledge_downpayment_shortfall' => ['sometimes', 'boolean'],
             ]);
         }
         
@@ -330,7 +330,6 @@ class BookingController extends Controller
                 $bookingModel,
                 $validated['check_in_date'],
                 $validated['check_out_date'],
-                (bool) ($validated['acknowledge_downpayment_shortfall'] ?? false),
             );
             
             // Send reschedule email notification
@@ -376,8 +375,6 @@ class BookingController extends Controller
             
             return new ItemResponse(new BookingResource($updatedBooking));
             
-        } catch (DownpaymentShortfallException $e) {
-            return $this->downpaymentShortfallResponse($e);
         } catch (\InvalidArgumentException $e) {
             Log::warning('Reschedule failed - invalid configuration or pricing for new dates', [
                 'admin_user_id' => Auth::user()->id,
@@ -681,7 +678,6 @@ class BookingController extends Controller
             $updatedBooking = $this->modifyBookingAction->execute(
                 $booking,
                 $modificationData,
-                (bool) ($request->validated()['acknowledge_downpayment_shortfall'] ?? false),
             );
 
             Log::info('Booking modification completed successfully', [
@@ -695,8 +691,6 @@ class BookingController extends Controller
             return new ItemResponse(new BookingResource($updatedBooking));
         } catch (ModelNotFoundException $e) {
             return new ErrorResponse('Booking not found.');
-        } catch (DownpaymentShortfallException $e) {
-            return $this->downpaymentShortfallResponse($e);
         } catch (\App\Exceptions\RoomNotAvailableException $e) {
             Log::warning('Booking modification failed - room not available', [
                 'admin_user_id' => Auth::user()->id,
@@ -748,14 +742,11 @@ class BookingController extends Controller
                 $booking,
                 $newCheckOut,
                 $validated['modification_reason'] ?? null,
-                (bool) ($validated['acknowledge_downpayment_shortfall'] ?? false),
             );
 
             return new ItemResponse(new BookingResource($updatedBooking));
         } catch (ModelNotFoundException $e) {
             return new ErrorResponse('Booking not found.');
-        } catch (DownpaymentShortfallException $e) {
-            return $this->downpaymentShortfallResponse($e);
         } catch (RoomNotAvailableException $e) {
             Log::warning('Adjust nights failed - room not available', [
                 'admin_user_id' => Auth::user()->id,
@@ -872,12 +863,41 @@ class BookingController extends Controller
         }
     }
 
-    private function downpaymentShortfallResponse(DownpaymentShortfallException $e): JsonResponse
+    /**
+     * Resend booking reservation or confirmation email to the guest.
+     */
+    public function resendEmail(ResendBookingEmailRequest $request, $bookingId)
     {
-        return response()->json([
-            'error' => $e->getMessage(),
-            'downpayment_shortfall' => true,
-            'balance_preview' => $e->balanceComparison,
-        ], 422);
+        try {
+            $booking = $this->bookingService->show($bookingId);
+            $emailType = $request->validated()['email_type'];
+
+            $result = $this->resendBookingEmailAction->execute($booking, $emailType);
+
+            Log::info('Admin resent booking email', [
+                'admin_user_id' => Auth::user()->id,
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'email_type' => $emailType,
+                'recipient' => $booking->guest_email,
+            ]);
+
+            return response()->json([
+                'message' => $result['message'],
+                'data' => $result,
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return new ErrorResponse('Booking not found.');
+        } catch (\InvalidArgumentException $e) {
+            return new ErrorResponse($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            Log::error('Failed to resend booking email', [
+                'admin_user_id' => Auth::user()?->id,
+                'booking_id' => $bookingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return new ErrorResponse('Unable to resend booking email. Please try again.', JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

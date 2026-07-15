@@ -7,7 +7,6 @@ use App\Contracts\Services\MealPricingServiceInterface;
 use App\Models\Booking;
 use App\Models\DayTourPricing;
 use App\Models\Promo;
-use App\Services\Bookings\BookingBalanceService;
 use App\Services\Bookings\BookingRoomUnitReassignmentService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +22,6 @@ class RescheduleBookingAction
         private PersistBookingRoomNightlyRatesAction $persistNightlyRates,
         private SyncBookingRoomLineTotalsFromQuoteAction $syncRoomLineTotals,
         private SyncBookingDownpaymentAction $syncDownpayment,
-        private BookingBalanceService $bookingBalance,
     ) {}
 
     /**
@@ -34,42 +32,7 @@ class RescheduleBookingAction
         Booking $booking,
         string $newCheckIn,
         string $newCheckOut,
-        bool $acknowledgeDownpaymentShortfall = false,
     ): Booking {
-        if ($booking->booking_type !== 'day_tour') {
-            $booking->load('bookingRooms.room', 'payments', 'otherCharges');
-            $bookingRoomArr = [];
-            foreach ($booking->bookingRooms as $br) {
-                $slug = $br->room?->slug;
-                if (! $slug) {
-                    continue;
-                }
-                $bookingRoomArr[] = (object) [
-                    'room_id' => $slug,
-                    'adults' => $br->adults,
-                    'children' => $br->children,
-                ];
-            }
-
-            if ($bookingRoomArr !== []) {
-                $promo = $booking->promo_id ? Promo::find($booking->promo_id) : null;
-                $totals = $this->calculateBookingTotal->execute(
-                    $bookingRoomArr,
-                    $newCheckIn,
-                    $newCheckOut,
-                    (int) $booking->adults,
-                    (int) $booking->children,
-                    $promo,
-                    $booking,
-                );
-                $this->bookingBalance->assertDownpaymentMetOrAcknowledged(
-                    $booking,
-                    $totals,
-                    $acknowledgeDownpaymentShortfall
-                );
-            }
-        }
-
         DB::beginTransaction();
 
         try {

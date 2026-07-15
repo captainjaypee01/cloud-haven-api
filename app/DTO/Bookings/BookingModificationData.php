@@ -12,7 +12,6 @@ class BookingModificationData extends Data
         public array $rooms,
         public ?string $modification_reason = null,
         public bool $send_email = false,
-        public bool $acknowledge_downpayment_shortfall = false,
     ) {}
 
     public static function rules(): array
@@ -26,7 +25,6 @@ class BookingModificationData extends Data
             'rooms.*.room_unit_id' => ['nullable', 'integer', 'exists:room_units,id'],
             'modification_reason' => ['nullable', 'string', 'max:500'],
             'send_email' => ['nullable', 'boolean'],
-            'acknowledge_downpayment_shortfall' => ['sometimes', 'boolean'],
         ];
     }
 }

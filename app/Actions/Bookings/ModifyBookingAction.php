@@ -9,7 +9,6 @@ use App\Models\Booking;
 use App\Models\BookingRoom;
 use App\Models\Room;
 use App\Services\EmailTrackingService;
-use App\Services\Bookings\BookingBalanceService;
 use App\Services\CacheInvalidationService;
 use App\Services\RoomQuoteSnapshotService;
 use Carbon\Carbon;
@@ -25,13 +24,11 @@ class ModifyBookingAction
         private RoomQuoteSnapshotService $roomQuoteSnapshotService,
         private PersistBookingRoomNightlyRatesAction $persistNightlyRates,
         private SyncBookingDownpaymentAction $syncDownpayment,
-        private BookingBalanceService $bookingBalance,
     ) {}
 
     public function execute(
         Booking $booking,
         BookingModificationData $modificationData,
-        bool $acknowledgeDownpaymentShortfall = false,
     ): Booking {
         Log::info('Starting booking modification', [
             'booking_id' => $booking->id,
@@ -41,7 +38,7 @@ class ModifyBookingAction
             'modification_reason' => $modificationData->modification_reason,
         ]);
 
-        return DB::transaction(function () use ($booking, $modificationData, $acknowledgeDownpaymentShortfall) {
+        return DB::transaction(function () use ($booking, $modificationData) {
             // 1. Validate room availability for new configuration
             $this->validateRoomAvailability($booking, $modificationData);
 
@@ -55,12 +52,6 @@ class ModifyBookingAction
 
             // 4. Recalculate totals using existing meal quote data
             $totals = $this->recalculateTotals($booking, $bookingRoomArr, $rooms);
-
-            $this->bookingBalance->assertDownpaymentMetOrAcknowledged(
-                $booking,
-                $totals,
-                $acknowledgeDownpaymentShortfall
-            );
 
             // 5. Update booking totals
             $booking->update([

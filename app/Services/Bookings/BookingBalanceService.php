@@ -131,21 +131,4 @@ class BookingBalanceService
 
         return $this->getAmountPaid($booking) > 0;
     }
-
-    public function assertDownpaymentMetOrAcknowledged(Booking $booking, array $proposedTotals, bool $acknowledged): void
-    {
-        if (! $this->requiresDownpaymentCheck($booking)) {
-            return;
-        }
-
-        $comparison = $this->compareCurrentAndProposed($booking, $proposedTotals);
-
-        if ($comparison['downpayment_shortfall'] && ! $acknowledged) {
-            throw new \App\Exceptions\DownpaymentShortfallException(
-                'The guest has not met the required downpayment for the new booking total. '
-                .'Collect payment or acknowledge to proceed.',
-                $comparison
-            );
-        }
-    }
 }

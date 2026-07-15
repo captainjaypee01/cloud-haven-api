@@ -4,7 +4,6 @@ namespace App\Actions\Bookings;
 
 use App\Models\Booking;
 use App\Models\Promo;
-use App\Services\Bookings\BookingBalanceService;
 use App\Services\CacheInvalidationService;
 use App\Services\Bookings\BookingRoomUnitReassignmentService;
 use Carbon\Carbon;
@@ -22,14 +21,12 @@ class AdjustBookingNightsAction
         private PersistBookingRoomNightlyRatesAction $persistNightlyRates,
         private SyncBookingRoomLineTotalsFromQuoteAction $syncRoomLineTotals,
         private SyncBookingDownpaymentAction $syncDownpayment,
-        private BookingBalanceService $bookingBalance,
     ) {}
 
     public function execute(
         Booking $booking,
         string $newCheckOutDate,
         ?string $modificationReason = null,
-        bool $acknowledgeDownpaymentShortfall = false,
     ): Booking {
         $booking->load('bookingRooms.room');
 
@@ -81,12 +78,6 @@ class AdjustBookingNightsAction
             (int) $booking->children,
             $promo,
             $booking,
-        );
-
-        $this->bookingBalance->assertDownpaymentMetOrAcknowledged(
-            $booking,
-            $totals,
-            $acknowledgeDownpaymentShortfall
         );
 
         $discountAmount = isset($totals['promo_discount']) ? ($totals['promo_discount']['discount_amount'] ?? 0) : 0;
