@@ -355,6 +355,12 @@ class PaymentController extends Controller
                     Mail::to($booking->guest_email)->queue(new \App\Mail\PaymentFailed($booking, $payment));
                 }
             }
+        } elseif ($newStatus === 'paid') {
+            // Payment status unchanged but details changed (e.g. downpayment_status, amount).
+            // Recalculate booking status so a manual downpayment flag on a sub-50% payment
+            // is reflected even when no status transition occurred.
+            $this->bookingService->markPaid($booking);
+            $booking->refresh();
         }
 
         return new EmptyResponse();
