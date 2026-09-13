@@ -269,6 +269,7 @@ class CreateDayTourBookingAction
                 'children' => $selection->children,
                 'include_lunch' => $selection->include_lunch,
                 'include_pm_snack' => $selection->include_pm_snack,
+                'includes_plated_lunch' => (bool) $dayTourPricing->includes_plated_lunch,
                 'lunch_cost' => $lunchCost,
                 'pm_snack_cost' => $pmSnackCost,
                 'meal_cost' => $lunchCost + $pmSnackCost,

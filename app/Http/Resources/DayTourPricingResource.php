@@ -19,6 +19,7 @@ class DayTourPricingResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'price_per_pax' => (float) $this->price_per_pax,
+            'includes_plated_lunch' => (bool) $this->includes_plated_lunch,
             'effective_from' => $this->effective_from?->format('Y-m-d'),
             'effective_until' => $this->effective_until?->format('Y-m-d'),
             'is_active' => (bool) $this->is_active,

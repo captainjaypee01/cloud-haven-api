@@ -16,6 +16,7 @@ class DayTourPricing extends Model
         'name',
         'description',
         'price_per_pax',
+        'includes_plated_lunch',
         'effective_from',
         'effective_until',
         'is_active'
@@ -23,6 +24,7 @@ class DayTourPricing extends Model
 
     protected $casts = [
         'price_per_pax' => 'decimal:2',
+        'includes_plated_lunch' => 'boolean',
         'effective_from' => 'date',
         'effective_until' => 'date',
         'is_active' => 'boolean'

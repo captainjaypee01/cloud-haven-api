@@ -46,6 +46,7 @@ class DayTourService implements DayTourServiceInterface
         // Get active Day Tour pricing for the date
         $dayTourPricing = \App\Models\DayTourPricing::getActivePricingForDate($localDate);
         $pricePerPax = $dayTourPricing ? (float) $dayTourPricing->price_per_pax : 0.0;
+        $includesPlatedLunch = $dayTourPricing ? (bool) $dayTourPricing->includes_plated_lunch : true;
 
         $roomDTOs = [];
         foreach ($dayTourRooms as $room) {
@@ -100,6 +101,7 @@ class DayTourService implements DayTourServiceInterface
             pmSnackPolicy: $pmSnackPolicy,
             lunchPrices: $prices['lunch'],
             pmSnackPrices: $prices['snack'],
+            includesPlatedLunch: $includesPlatedLunch,
             rooms: $roomDTOs
         );
     }

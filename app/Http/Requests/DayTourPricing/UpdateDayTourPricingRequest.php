@@ -28,6 +28,7 @@ class UpdateDayTourPricingRequest extends FormRequest
             'effective_from' => ['required', 'date'],
             'effective_until' => ['nullable', 'date', 'after:effective_from'],
             'is_active' => ['boolean'],
+            'includes_plated_lunch' => ['boolean'],
         ];
     }
 

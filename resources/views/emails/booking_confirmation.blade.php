@@ -173,7 +173,7 @@
                                                             {{ $selection['children'] }} children × {{ $fmtMoney($selection['pricing_details']['child_lunch_price'] ?? 0) }} = {{ $fmtMoney($selection['lunch_cost']) }}
                                                         @endif
                                                     </div>
-                                                @else
+                                                @elseif($selection['includes_plated_lunch'] ?? true)
                                                     <div style="margin-bottom: 4px; color: #9ca3af;">
                                                         Plated Lunch
                                                     </div>

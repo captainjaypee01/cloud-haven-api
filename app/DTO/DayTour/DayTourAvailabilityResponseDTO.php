@@ -10,6 +10,7 @@ class DayTourAvailabilityResponseDTO
      * @param string $pmSnackPolicy (hidden|optional|required)
      * @param array|null $lunchPrices ['adult' => float, 'child' => float]
      * @param array|null $pmSnackPrices ['adult' => float, 'child' => float]
+     * @param bool $includesPlatedLunch Whether the active Day Tour pricing package bundles a complimentary plated lunch
      * @param DayTourRoomAvailabilityDTO[] $rooms
      */
     public function __construct(
@@ -18,6 +19,7 @@ class DayTourAvailabilityResponseDTO
         public string $pmSnackPolicy,
         public ?array $lunchPrices = null,
         public ?array $pmSnackPrices = null,
+        public bool $includesPlatedLunch = true,
         public array $rooms = []
     ) {}
 
@@ -29,6 +31,7 @@ class DayTourAvailabilityResponseDTO
             'pm_snack_policy' => $this->pmSnackPolicy,
             'lunch_prices' => $this->lunchPrices,
             'pm_snack_prices' => $this->pmSnackPrices,
+            'includes_plated_lunch' => $this->includesPlatedLunch,
             'rooms' => array_map(fn($room) => $room->toArray(), $this->rooms),
         ];
     }

@@ -336,6 +336,8 @@
                     <p><strong>{{ $selection['room_name'] }} - {{ $selection['adults'] + $selection['children'] }} guests</strong></p>
                     @if($selection['include_lunch'])
                         <p>✓ Buffet Lunch: {{ $fmtMoney($selection['lunch_cost']) }}</p>
+                    @elseif($selection['includes_plated_lunch'] ?? true)
+                        <p>Plated Lunch</p>
                     @endif
                     @if($selection['include_pm_snack'])
                         <p>✓ PM Snack: {{ $fmtMoney($selection['pm_snack_cost']) }}</p>
