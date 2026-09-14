@@ -180,6 +180,10 @@
                                                     <div style="margin-bottom: 4px; color: #9ca3af;">
                                                         Plated Lunch
                                                     </div>
+                                                @else
+                                                    <div style="margin-bottom: 4px; color: #ef4444;">
+                                                        ❌ Plated Lunch
+                                                    </div>
                                                 @endif
                                             </div>
                                             

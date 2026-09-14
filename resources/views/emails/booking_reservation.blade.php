@@ -180,6 +180,10 @@
                                                     <div style="margin-bottom: 4px; color: #9ca3af;">
                                                         Plated Lunch
                                                     </div>
+                                                @else
+                                                    <div style="margin-bottom: 4px; color: #ef4444;">
+                                                        ❌ Plated Lunch
+                                                    </div>
                                                 @endif
                                             </div>
                                             
@@ -466,8 +470,13 @@
                         
                         <p class="m-0"><strong>1. CHECK-IN/OUT, BOOKING, RESCHEDULING</strong></p>
                         <ul style="margin:8px 0 0 18px; padding:0;">
+                        @if($isDayTour)
+                        <li><strong>1.1</strong> Day Tour hours: 8:00 AM entry to 5:00 PM exit. Early entry or extended hours may be allowed depending on availability; rate adjustment applies.</li>
+                        <li><strong>1.2</strong> You may enter the resort gate at your scheduled Day Tour time to settle the balance. Please wait in the parking area or at any available tables and chairs at poolside while waiting for your Day Tour start time at 8:00 AM.</li>
+                        @else
                         <li><strong>1.1</strong> Check-in time: 3:00 PM/Check-out time 1:00 PM: For overnight stay extended hours may be allowed depending on room availability; rate adjustment applies; requires at least 16 hours advance notice.</li>
                         <li><strong>1.2</strong> You may enter the resort gate 5 minutes before check-in time to settle the balance. Please wait in the parking area or at any available tables and chairs at poolside while waiting for the check-in time at 3:00PM.</li>
+                        @endif
                         <li><strong>1.3</strong> Rescheduling Policy: For rescheduling of reservation, kindly inform the resort 1 week before the booking schedule. Deposit made for bookings is strictly non-refundable but we allow re-scheduling of reservation (valid for 30 days).</li>
                         <li><strong>1.4</strong> Final Number of Rooms and Headcount: The confirmation of the final rooms and head count is one week before the booking schedule. If the resort is not informed and you are reducing your room or head count, you will not be able to refund. Drivers are included in the final head count. 3 years old and below are free of charge.</li>
                         <li><strong>1.5</strong> Forfeited Reservation: If the client fails to arrive on the date of their reservation.</li>
