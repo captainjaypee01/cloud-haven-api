@@ -71,6 +71,25 @@ BOOKING_SCHEDULER_INTERVAL_MINUTES=120
      - All payments are rejected AND grace period has expired
 8. **Manual Cancellation**: Admin staff can manually cancel bookings with specific reasons
 9. **Email Notification**: Cancelled bookings trigger an automatic email to the guest
+10. **Reactivation / Extend Hold**: Admin/Superadmin can reactivate an expired booking instead of re-keying it (see below)
+
+## Reactivating Expired Bookings
+
+`POST /api/v1/admin/bookings/{booking}/reactivate` (Admin, Superadmin)
+
+```json
+{ "hold_hours": 6, "notify_guest": false }
+```
+
+- **Eligible**: `pending` bookings (extends the hold), or `cancelled` bookings whose `cancellation_reason` is an automatic hold-expiry reason (`booking.reactivatable_cancellation_reasons`: `no_payment_received`, `rejected_proof_expired`). Manual cancellations, rejected proofs, deleted bookings, and bookings whose check-in date has passed are refused.
+- **Availability**: An expired hold no longer reserves its room units, so availability is re-checked for the original dates (excluding the booking itself). Units taken in the meantime are swapped for a free unit of the same room type; if none is free the request fails with `room_not_available`.
+- **Effect**: status → `pending`, `reserved_until` → now + `hold_hours`, cancellation fields cleared, Redis lock re-created, availability cache cleared. The booking is then subject to the normal expiry scheduler again.
+- `hold_hours` defaults to `BOOKING_RESERVATION_HOLD_HOURS` and is capped by:
+
+```env
+# Max hold (hours) an admin can grant when reactivating/extending. Default: 72
+BOOKING_REACTIVATION_MAX_HOLD_HOURS=72
+```
 
 ## Benefits
 

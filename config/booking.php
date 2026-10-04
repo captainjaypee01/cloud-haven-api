@@ -5,6 +5,19 @@ return [
     'reservation_hold_duration_hours' => (int) env('BOOKING_RESERVATION_HOLD_HOURS', 2), // Default 2 hours
     'scheduler_interval_minutes' => (int) env('BOOKING_SCHEDULER_INTERVAL_MINUTES', 30), // Default 30 minutes
     'proof_rejection_grace_period_days' => (int) env('BOOKING_PROOF_REJECTION_GRACE_PERIOD_DAYS', 2), // Default 2 days
+    'reactivation_max_hold_hours' => (int) env('BOOKING_REACTIVATION_MAX_HOLD_HOURS', 72), // Max hold an admin can grant when reactivating/extending
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reactivatable Cancellation Reasons
+    |--------------------------------------------------------------------------
+    |
+    | Keys of cancellation_reasons that an admin may reverse with the
+    | "Reactivate" action. Only automatic hold-expiry cancellations qualify;
+    | manual cancellations and rejected proofs stay cancelled.
+    |
+    */
+    'reactivatable_cancellation_reasons' => ['no_payment_received', 'rejected_proof_expired'],
     
     /*
     |--------------------------------------------------------------------------
