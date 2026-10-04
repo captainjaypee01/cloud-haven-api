@@ -178,23 +178,9 @@ class PromoCalculationService
                     }
                     
                     $perNightMeal = ($totalAdults * $mealNight->adultPrice) + ($totalChildren * $mealNight->childPrice);
-                } else if ($mealNight->type === 'free_breakfast' && $mealNight->adultBreakfastPrice !== null) {
-                    // For free breakfast nights, calculate extra guest breakfast fees
-                    $totalExtraGuests = 0;
-                    
-                    foreach ($bookingRoomArr as $roomData) {
-                        $roomAdults = $roomData->adults ?? 0;
-                        $roomChildren = $roomData->children ?? 0;
-                        $roomMaxGuests = $rooms[$roomData->room_id]->max_guests ?? 2;
-                        $totalGuestsInRoom = $roomAdults + $roomChildren;
-                        
-                        if ($totalGuestsInRoom > $roomMaxGuests) {
-                            $totalExtraGuests += $totalGuestsInRoom - $roomMaxGuests;
-                        }
-                    }
-                    
-                    $perNightMeal = $totalExtraGuests * $mealNight->adultBreakfastPrice;
                 }
+                // Free-breakfast nights have no meal cost: the extra-guest charge there is an
+                // extra guest fee, not a meal, so meal-scoped promos don't discount it.
             } else {
                 // Fallback to simple division if no meal quote data
                 $perNightMeal = $totals['meal_total'] / $nights;

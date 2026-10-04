@@ -173,6 +173,10 @@ class ModifyBookingAction
         return $totals;
     }
 
+    /**
+     * Meal cost = buffet nights only. Free-breakfast extra-guest charges are extra guest fees.
+     * Keep in sync with CalculateBookingTotalAction.
+     */
     private function calculateMealTotalFromQuote($mealQuote, array $bookingRoomArr, $rooms): float
     {
         $totalMealCost = 0;
@@ -182,37 +186,32 @@ class ModifyBookingAction
         }
 
         foreach ($mealQuote['nights'] as $night) {
-            $nightCost = 0;
+            if ($night['type'] !== 'buffet') {
+                continue;
+            }
 
             foreach ($bookingRoomArr as $roomData) {
                 $room = $rooms[$roomData['room_id']] ?? null;
                 if (!$room) {
                     continue;
                 }
-                
+
                 $adults = $roomData['adults'] ?? 0;
                 $children = $roomData['children'] ?? 0;
 
-                if ($night['type'] === 'buffet') {
-                    // Buffet: ALL guests pay the buffet meal price
-                    $nightCost += ($adults * ($night['adult_price'] ?? 0)) + ($children * ($night['child_price'] ?? 0));
-                } else {
-                    // Free breakfast: only extra guests pay for breakfast
-                    $totalGuests = $adults + $children;
-                    $extraGuests = max(0, $totalGuests - $room->max_guests);
-                    
-                    // Use adult breakfast price for extra guests
-                    $baseCost = $extraGuests * ($night['adult_breakfast_price'] ?? 0);
-                    $nightCost += $baseCost;
-                }
+                // Buffet: ALL guests pay the buffet meal price
+                $totalMealCost += ($adults * ($night['adult_price'] ?? 0)) + ($children * ($night['child_price'] ?? 0));
             }
-
-            $totalMealCost += $nightCost;
         }
 
         return round($totalMealCost, 2);
     }
 
+    /**
+     * Extra guest fee per extra guest per night: buffet nights use extra_guest_fee,
+     * free-breakfast nights use adult_breakfast_price. total_count is the number of extra guests.
+     * Keep in sync with CalculateBookingTotalAction.
+     */
     private function calculateExtraGuestFeesFromQuote($mealQuote, array $bookingRoomArr, $rooms): array
     {
         $totalExtraGuestFee = 0;
@@ -223,33 +222,28 @@ class ModifyBookingAction
         }
 
         foreach ($mealQuote['nights'] as $night) {
-            // Only calculate extra guest fees for buffet days
-            if ($night['type'] === 'buffet' && ($night['extra_guest_fee'] ?? 0) > 0) {
-                $nightExtraGuestCount = 0;
-                $nightExtraGuestFee = 0;
+            $rate = $night['type'] === 'buffet'
+                ? ($night['extra_guest_fee'] ?? 0)
+                : ($night['adult_breakfast_price'] ?? 0);
+            if ($rate <= 0) {
+                continue;
+            }
 
-                foreach ($bookingRoomArr as $roomData) {
-                    $room = $rooms[$roomData['room_id']] ?? null;
-                    if (!$room) {
-                        continue;
-                    }
-                    
-                    $adults = $roomData['adults'] ?? 0;
-                    $children = $roomData['children'] ?? 0;
-                    $totalGuests = $adults + $children;
-                    
-                    // Calculate extra guests for this room
-                    $extraGuestsInRoom = max(0, $totalGuests - $room->max_guests);
-                    
-                    if ($extraGuestsInRoom > 0) {
-                        $nightExtraGuestCount += $extraGuestsInRoom;
-                        $nightExtraGuestFee += $extraGuestsInRoom * ($night['extra_guest_fee'] ?? 0);
-                    }
+            $nightExtraGuestCount = 0;
+
+            foreach ($bookingRoomArr as $roomData) {
+                $room = $rooms[$roomData['room_id']] ?? null;
+                if (!$room) {
+                    continue;
                 }
 
-                $totalExtraGuestCount += $nightExtraGuestCount;
-                $totalExtraGuestFee += $nightExtraGuestFee;
+                $adults = $roomData['adults'] ?? 0;
+                $children = $roomData['children'] ?? 0;
+                $nightExtraGuestCount += max(0, ($adults + $children) - $room->max_guests);
             }
+
+            $totalExtraGuestFee += $nightExtraGuestCount * $rate;
+            $totalExtraGuestCount = max($totalExtraGuestCount, $nightExtraGuestCount);
         }
 
         return [
