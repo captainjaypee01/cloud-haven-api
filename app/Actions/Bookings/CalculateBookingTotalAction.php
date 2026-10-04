@@ -85,12 +85,19 @@ class CalculateBookingTotalAction
         return $discountResult;
     }
 
+    /**
+     * Meal cost = buffet nights only (all guests pay the buffet rate).
+     * Free-breakfast nights have no meal cost; the extra-guest charge on those
+     * nights is an extra guest fee (see calculateExtraGuestFees).
+     */
     private function calculateMealTotalForBooking($mealQuote, array $bookingRoomArr, $rooms, ?Promo $promo = null): float
     {
         $totalMealCost = 0;
 
         foreach ($mealQuote->nights as $night) {
-            $nightCost = 0;
+            if ($night->type !== 'buffet') {
+                continue;
+            }
 
             foreach ($bookingRoomArr as $roomData) {
                 $room = $rooms[$roomData->room_id] ?? null;
@@ -100,51 +107,46 @@ class CalculateBookingTotalAction
                 $adults = $roomData->adults ?? 0;
                 $children = $roomData->children ?? 0;
 
-                if ($night->type === 'buffet') {
-                    $nightCost += ($adults * ($night->adultPrice ?? 0)) + ($children * ($night->childPrice ?? 0));
-                } else {
-                    $totalGuests = $adults + $children;
-                    $extraGuests = max(0, $totalGuests - $room->max_guests);
-                    $baseCost = $extraGuests * ($night->adultBreakfastPrice ?? 0);
-                    $nightCost += $baseCost;
-                }
+                $totalMealCost += ($adults * ($night->adultPrice ?? 0)) + ($children * ($night->childPrice ?? 0));
             }
-
-            $totalMealCost += $nightCost;
         }
 
         return round($totalMealCost, 2);
     }
 
+    /**
+     * Extra guest fee (breakfast, amenities and related services) for guests beyond room capacity.
+     * Rate per extra guest per night comes from the meal pricing tier:
+     * - buffet nights: extra_guest_fee
+     * - free-breakfast nights: adult_breakfast_price
+     *
+     * total_count is the number of extra guests (not guest-nights).
+     */
     private function calculateExtraGuestFees($mealQuote, array $bookingRoomArr, $rooms): array
     {
         $totalExtraGuestFee = 0;
         $totalExtraGuestCount = 0;
 
         foreach ($mealQuote->nights as $night) {
-            if ($night->type === 'buffet' && $night->extraGuestFee > 0) {
-                $nightExtraGuestCount = 0;
-                $nightExtraGuestFee = 0;
-
-                foreach ($bookingRoomArr as $roomData) {
-                    $room = $rooms[$roomData->room_id] ?? null;
-                    if (!$room) {
-                        continue;
-                    }
-                    $adults = $roomData->adults ?? 0;
-                    $children = $roomData->children ?? 0;
-                    $totalGuests = $adults + $children;
-                    $extraGuestsInRoom = max(0, $totalGuests - $room->max_guests);
-                    
-                    if ($extraGuestsInRoom > 0) {
-                        $nightExtraGuestCount += $extraGuestsInRoom;
-                        $nightExtraGuestFee += $extraGuestsInRoom * $night->extraGuestFee;
-                    }
-                }
-
-                $totalExtraGuestCount += $nightExtraGuestCount;
-                $totalExtraGuestFee += $nightExtraGuestFee;
+            $rate = $night->type === 'buffet' ? ($night->extraGuestFee ?? 0) : ($night->adultBreakfastPrice ?? 0);
+            if ($rate <= 0) {
+                continue;
             }
+
+            $nightExtraGuestCount = 0;
+
+            foreach ($bookingRoomArr as $roomData) {
+                $room = $rooms[$roomData->room_id] ?? null;
+                if (!$room) {
+                    continue;
+                }
+                $adults = $roomData->adults ?? 0;
+                $children = $roomData->children ?? 0;
+                $nightExtraGuestCount += max(0, ($adults + $children) - $room->max_guests);
+            }
+
+            $totalExtraGuestFee += $nightExtraGuestCount * $rate;
+            $totalExtraGuestCount = max($totalExtraGuestCount, $nightExtraGuestCount);
         }
 
         return [

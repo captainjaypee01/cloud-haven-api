@@ -358,8 +358,8 @@
                 <p><strong>Total Meal Cost: {{ $fmtMoney($mealQuote['meal_subtotal'] ?? $booking->meal_price) }}</strong></p>
                 
                 @if($booking->extra_guest_fee > 0 && $booking->extra_guest_count > 0)
-                    <p><strong>Extra Guest Fees (Buffet Days):</strong> {{ $fmtMoney($booking->extra_guest_fee) }}</p>
-                    <p><em>Additional fees for {{ $booking->extra_guest_count }} extra guest{{ $booking->extra_guest_count > 1 ? 's' : '' }} beyond room capacity on buffet days (entrance fees, extra mattresses, etc.)</em></p>
+                    <p><strong>Extra Guest Fees:</strong> {{ $fmtMoney($booking->extra_guest_fee) }}</p>
+                    <p><em>For {{ $booking->extra_guest_count }} extra guest{{ $booking->extra_guest_count > 1 ? 's' : '' }} beyond room capacity. Includes breakfast, entrance, amenities and related services.</em></p>
                 @endif
             @endif
         </div>
