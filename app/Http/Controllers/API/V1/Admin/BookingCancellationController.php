@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers\API\V1\Admin;
 
+use App\Actions\Bookings\ReactivateBookingAction;
+use App\Actions\Bookings\ResendBookingEmailAction;
+use App\Exceptions\RoomNotAvailableException;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Booking\BookingResource;
 use App\Models\Booking;
 use App\Services\Bookings\BookingCancellationService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -14,7 +18,9 @@ use Illuminate\Support\Facades\Validator;
 class BookingCancellationController extends Controller
 {
     public function __construct(
-        private BookingCancellationService $cancellationService
+        private BookingCancellationService $cancellationService,
+        private ReactivateBookingAction $reactivateBookingAction,
+        private ResendBookingEmailAction $resendBookingEmailAction,
     ) {}
 
     /**
@@ -156,6 +162,77 @@ class BookingCancellationController extends Controller
             'success' => true,
             'message' => $result['message'],
             'booking' => $result['booking']
+        ]);
+    }
+
+    /**
+     * Reactivate an expired booking (or extend a pending booking's hold) instead of re-keying it
+     */
+    public function reactivate(Request $request, Booking $booking)
+    {
+        $maxHoldHours = config('booking.reactivation_max_hold_hours', 72);
+
+        $validator = Validator::make($request->all(), [
+            'hold_hours' => "sometimes|integer|min:1|max:{$maxHoldHours}",
+            'notify_guest' => 'sometimes|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $holdHours = (int) $request->input('hold_hours', config('booking.reservation_hold_duration_hours', 2));
+
+        Log::info('Admin reactivating booking', [
+            'admin_user_id' => Auth::id(),
+            'booking_id' => $booking->id,
+            'booking_reference' => $booking->reference_number,
+            'booking_status' => $booking->status,
+            'hold_hours' => $holdHours,
+        ]);
+
+        try {
+            $booking = $this->reactivateBookingAction->execute($booking, $holdHours, Auth::id());
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'error_code' => 'cannot_reactivate'
+            ], 422);
+        } catch (RoomNotAvailableException $e) {
+            Log::warning('Booking reactivation rejected - room not available', [
+                'admin_user_id' => Auth::id(),
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->reference_number,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'One or more rooms are no longer available for these dates. Please reschedule or create a new booking.',
+                'error_code' => 'room_not_available'
+            ], 422);
+        }
+
+        if ($request->boolean('notify_guest')) {
+            try {
+                $this->resendBookingEmailAction->execute($booking, 'reservation');
+            } catch (\Exception $e) {
+                // Don't fail the reactivation if the email cannot be sent
+                Log::warning('Failed to send reservation email after reactivation', [
+                    'booking_id' => $booking->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Booking reactivated. Hold extended until {$booking->local_reserved_until}.",
+            'booking' => new BookingResource($booking)
         ]);
     }
 

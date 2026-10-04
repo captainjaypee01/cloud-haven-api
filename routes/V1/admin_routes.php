@@ -107,6 +107,7 @@ Route::prefix('admin')->namespace('App\Http\Controllers\API\V1\Admin')
             // Booking cancellation management
             Route::post('bookings/{booking}/cancel', 'BookingCancellationController@cancel');
             Route::get('bookings/{booking}/can-cancel', 'BookingCancellationController@canCancel');
+            Route::post('bookings/{booking}/reactivate', 'BookingCancellationController@reactivate');
             
             // Promos
             Route::patch('promos/bulk-update-status', 'PromoController@bulkUpdateStatus');
